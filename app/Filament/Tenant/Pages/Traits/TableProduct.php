@@ -4,8 +4,6 @@ namespace App\Filament\Tenant\Pages\Traits;
 
 use App\Models\Tenants\Product;
 use App\Models\Tenants\Setting;
-use Closure;
-use Filament\Forms\Components\TextInput;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\HeaderActionsPosition;
 use Filament\Tables\Columns\ImageColumn;
@@ -99,40 +97,38 @@ trait TableProduct
             ])
             ->headerActionsPosition(HeaderActionsPosition::Bottom)
             ->searchPlaceholder(__('Search (SKU, name, barcode)'))
+            ->recordAction('insert_amount')
+            ->recordClasses(function (Product $product): ?string {
+                $inCart = isset($this->cartItems) && $this->cartItems && $this->cartItems->contains('product_id', $product->id);
+
+                return $inCart
+                    ? 'product-ordered cursor-pointer select-none transition-all duration-150'
+                    : 'cursor-pointer select-none transition-all duration-150';
+            })
             ->actions([
                 Action::make('insert_amount')
                     ->translateLabel()
                     ->icon('heroicon-o-plus')
                     ->button()
-                    ->form([
-                        TextInput::make('amount')
-                            ->translateLabel()
-                            ->extraAttributes([
-                                'focus',
-                            ])
-                            ->rules([
-                                function (Product $product) {
-                                    return function (string $attribute, $value, Closure $fail) use ($product) {
-                                        if (! $this->validateStock($product, $value)) {
-                                            $fail('Stock is out');
-                                        }
-                                    };
-                                },
-                            ])
-                            ->default(1),
-                    ])
+                    ->color('primary')
                     ->extraAttributes([
                         'class' => 'mr-auto',
                     ])
-                    ->action(fn (Product $product, array $data) => $this->addCart($product, $data))
+                    ->action(fn (Product $product) => $this->addCart($product))
                     ->hiddenLabel(),
                 Action::make('cart')
                     ->label(function (Product $product) {
-                        return $product->CartItems()->first()?->qty ?? '';
+                        $cartItem = isset($this->cartItems) && $this->cartItems ? $this->cartItems->firstWhere('product_id', $product->id) : null;
+
+                        return $cartItem ? (string) $cartItem->qty : '';
                     })
-                    ->color('white')
-                    ->icon('heroicon-o-shopping-bag')
-                    ->hidden(fn (Product $product) => ! $product->CartItems()->exists()),
+                    ->color('primary')
+                    ->icon('heroicon-s-shopping-bag')
+                    ->button()
+                    ->action(fn (Product $product) => $this->addCart($product))
+                    ->hidden(function (Product $product) {
+                        return ! (isset($this->cartItems) && $this->cartItems && $this->cartItems->contains('product_id', $product->id));
+                    }),
             ]);
     }
 }

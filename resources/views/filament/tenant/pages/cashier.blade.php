@@ -97,10 +97,10 @@
                   @endif
                 </div>
               </div>
-              <div class="flex h-8 space-x-3">
-                <button class="rounded-lg !bg-lakasir-primary px-2 py-1"
-                  wire:click.stop="addCart( {{ $item->product_id }} )" wire:loading.attr="disabled">
-                  <x-heroicon-o-plus-small class="h-4 w-4 !text-white" />
+              <div class="flex h-8 items-center space-x-3">
+                <button class="rounded-lg !bg-gray-100 px-2 py-1"
+                  x-on:click="$wire.reduceCart({{ $item->product_id }});" wire:loading.attr="disabled">
+                  <x-heroicon-o-minus-small class="h-4 w-4 !text-green-900" />
                 </button>
                 <x-filament::input.wrapper class="w-20" x-data="cart">
                   <x-filament::input type="text"
@@ -109,15 +109,15 @@
                     x-on:keyup.debounce.500ms="(e) => add('{{ $item->product_id }}', e.target.value)"
                     placeholder="{{ __('Discount') }}" class="w-1/2 text-right" inputMode="numeric" />
                 </x-filament::input.wrapper>
-                <button class="rounded-lg !bg-gray-100 px-2 py-1"
-                  x-on:click="$wire.reduceCart({{ $item->product_id }});" wire:loading.attr="disabled">
-                  <x-heroicon-o-minus-small class="h-4 w-4 !text-green-900" />
+                <button class="rounded-lg !bg-lakasir-primary px-2 py-1"
+                  wire:click.stop="addCart( {{ $item->product_id }} )" wire:loading.attr="disabled">
+                  <x-heroicon-o-plus-small class="h-4 w-4 !text-white" />
                 </button>
-                <button class="rounded-lg !bg-danger-100 px-2 py-1" wire:click="deleteCart({{ $item->id }})"
+                <livewire:price-setting :cart-item="$item" key="{{ $item->id }}" />
+                <button class="ml-auto rounded-lg !bg-danger-100 px-2 py-1" wire:click="deleteCart({{ $item->id }})"
                   wire:loading.attr="disabled">
                   <x-heroicon-o-trash class="h-4 w-4 !text-danger-900" />
                 </button>
-                <livewire:price-setting :cart-item="$item" key="{{ $item->id }}" />
               </div>
             </div>
           @empty
