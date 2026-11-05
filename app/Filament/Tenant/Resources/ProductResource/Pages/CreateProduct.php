@@ -18,6 +18,7 @@ class CreateProduct extends CreateRecord
 
     private ProductService $productService;
     private array $barcodesData = [];
+    private array $variationsData = [];
 
     public function __construct()
     {
@@ -32,6 +33,9 @@ class CreateProduct extends CreateRecord
             ProductObserver::setTempBarcodesData($this->barcodesData);
         }
         unset($data['barcodes']);
+
+        $this->variationsData = $data['variations'] ?? [];
+        unset($data['variations']);
 
         return $data;
     }
@@ -61,6 +65,32 @@ class CreateProduct extends CreateRecord
                         'description' => $barcodeData['description'] ?? null,
                         'is_active' => true,
                     ]);
+                }
+            }
+        }
+
+        if (!empty($this->variationsData)) {
+            foreach ($this->variationsData as $varIndex => $varData) {
+                if (!empty($varData['name'])) {
+                    $variation = $product->variations()->create([
+                        'name' => $varData['name'],
+                        'type' => $varData['type'] ?? 'single',
+                        'is_required' => $varData['is_required'] ?? false,
+                        'sort_order' => $varIndex,
+                    ]);
+
+                    if (!empty($varData['options'])) {
+                        foreach ($varData['options'] as $optIndex => $optData) {
+                            if (!empty($optData['name'])) {
+                                $variation->options()->create([
+                                    'name' => $optData['name'],
+                                    'price' => (float) ($optData['price'] ?? 0),
+                                    'is_default' => $optData['is_default'] ?? false,
+                                    'sort_order' => $optIndex,
+                                ]);
+                            }
+                        }
+                    }
                 }
             }
         }

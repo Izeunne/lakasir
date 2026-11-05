@@ -15,6 +15,10 @@ class SellingDetail extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'selected_variations' => 'array',
+    ];
+
     public function selling()
     {
         return $this->belongsTo(Selling::class);

@@ -15,16 +15,6 @@
       <p class="font-bold">{{ $cartDetail['member_label'] ?? 'No Member Selected' }}</p>
     </div>
   @endfeature
-  <div class="flex justify-between hover:underline cursor-pointer"
-      x-on:mousedown="$dispatch('open-modal', {
-       id: 'edit-detail',
-       inputId: 'noteInput',
-       index: 1,
-       title: '@lang('Note')'
-      })">
-    <p>{{ __('Note') }}</p>
-    <div>{!! $cartDetail['note'] ?? '-' !!}</div>
-  </div>
   @if($about && $about->business_type == 'fnb')
     <div class="flex justify-between hover:underline cursor-pointer"
         x-on:mousedown="$dispatch('open-modal', {

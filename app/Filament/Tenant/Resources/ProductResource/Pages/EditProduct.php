@@ -65,6 +65,25 @@ class EditProduct extends EditRecord
             ];
         })->toArray();
 
+        $data['variations'] = $this->getRecord()->variations()->with('options')->get()->map(function ($variation) {
+            return [
+                'id' => $variation->id,
+                'name' => $variation->name,
+                'type' => $variation->type,
+                'is_required' => (bool) $variation->is_required,
+                'sort_order' => $variation->sort_order,
+                'options' => $variation->options->map(function ($option) {
+                    return [
+                        'id' => $option->id,
+                        'name' => $option->name,
+                        'price' => $option->price,
+                        'is_default' => (bool) $option->is_default,
+                        'sort_order' => $option->sort_order,
+                    ];
+                })->toArray(),
+            ];
+        })->toArray();
+
         return $data;
     }
 
@@ -72,6 +91,7 @@ class EditProduct extends EditRecord
     {
         $barcodes = $data['barcodes'] ?? [];
         unset($data['barcodes']);
+        unset($data['variations']);
 
         return $data;
     }
@@ -119,6 +139,34 @@ class EditProduct extends EditRecord
                     'description' => $barcodeData['description'] ?? null,
                     'is_active' => true,
                 ]);
+            }
+        }
+
+        $variationsData = $this->data['variations'] ?? [];
+
+        $product->variations()->delete();
+
+        foreach ($variationsData as $varIndex => $varData) {
+            if (!empty($varData['name'])) {
+                $variation = $product->variations()->create([
+                    'name' => $varData['name'],
+                    'type' => $varData['type'] ?? 'single',
+                    'is_required' => $varData['is_required'] ?? false,
+                    'sort_order' => $varIndex,
+                ]);
+
+                if (!empty($varData['options'])) {
+                    foreach ($varData['options'] as $optIndex => $optData) {
+                        if (!empty($optData['name'])) {
+                            $variation->options()->create([
+                                'name' => $optData['name'],
+                                'price' => (float) ($optData['price'] ?? 0),
+                                'is_default' => $optData['is_default'] ?? false,
+                                'sort_order' => $optIndex,
+                            ]);
+                        }
+                    }
+                }
             }
         }
     }

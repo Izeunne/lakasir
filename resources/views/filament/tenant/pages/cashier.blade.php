@@ -68,17 +68,40 @@
           <p class="mb-2 hidden text-2xl font-semibold lg:block">{{ __('Current Orders') }}</p>
           <div class="flex gap-x-1"></div>
         </div>
-        <div class="max-h-[35%] min-h-40 overflow-auto overflow-y-scroll" wire:loading.class="opacity-20"
-          wire:target="addCart,reduceCart,deleteCart,addDiscountPricePerItem,addCartUsingScanner">
-          @forelse($cartItems as $item)
-            <div class="mb-2 rounded-lg border bg-white px-4 py-2 dark:border-gray-900 dark:bg-gray-900"
-              id="{{ $item->id }}" key="{{ rand() }}">
+        <div class="max-h-[35%] min-h-40 space-y-2 overflow-auto overflow-y-scroll" wire:loading.class="opacity-20"
+          wire:target="addCart,addVariationItem,reduceCart,increaseCart,deleteCart,addDiscountPricePerItem,addCartUsingScanner,confirmAddVariationCart">
+          @php
+            $orderedCartItems = $cartItems
+              ->groupBy('product_id')
+              ->map(fn ($group) => $group->sortBy('id'))
+              ->flatten(1);
+          @endphp
+          @forelse($orderedCartItems as $item)
+            <div class="mb-4 rounded-lg border bg-white px-4 py-2 dark:border-gray-900 dark:bg-gray-900"
+              style="margin-bottom: 14px;"
+              id="cart-item-{{ $item->id }}" wire:key="cart-item-{{ $item->id }}">
               <div class="grid items-center space-x-3">
-                <div class="flex justify-between">
-                  <p class="font-semibold"> {{ $item->product->name }}</p>
-                  <p class="font-semibold text-lakasir-primary">{{ $item->price_format_money }}</p>
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <p class="font-semibold text-gray-900 dark:text-white">{{ $item->product->name }}</p>
+                    @if (!empty($item->selected_variations))
+                      <div class="mt-1 space-y-0.5 text-xs text-gray-500 dark:text-gray-400">
+                        @foreach ($item->selected_variations as $var)
+                          <div class="flex items-center gap-x-1">
+                            <span class="font-medium text-gray-700 dark:text-gray-300">{{ $var['variation_name'] }}:</span>
+                            <span>{{ $var['option_name'] }}</span>
+                            @if (!empty($var['price']) && $var['price'] > 0)
+                              <span class="font-semibold text-lakasir-primary">(+{{ price_format($var['price']) }})</span>
+                            @endif
+                          </div>
+                        @endforeach
+                      </div>
+                    @endif
+                  </div>
+                  <p class="whitespace-nowrap font-semibold text-lakasir-primary">{{ $item->price_format_money }}</p>
                 </div>
               </div>
+
               <div class="grid grid-cols-2 items-center space-y-2 py-2 text-right">
                 <div class="col-span-2">
                   @feature(Discount::class)
@@ -97,20 +120,21 @@
                   @endif
                 </div>
               </div>
+
               <div class="flex h-8 items-center space-x-3">
                 <button class="rounded-lg !bg-gray-100 px-2 py-1"
-                  x-on:click="$wire.reduceCart({{ $item->product_id }});" wire:loading.attr="disabled">
+                  x-on:click="$wire.reduceCart({{ $item->id }});" wire:loading.attr="disabled">
                   <x-heroicon-o-minus-small class="h-4 w-4 !text-green-900" />
                 </button>
                 <x-filament::input.wrapper class="w-20" x-data="cart">
                   <x-filament::input type="text"
-                    id="{{ $item->product->name }}-{{ $item->id }}-qty-{{ rand() }}"
+                    id="{{ $item->product->name }}-{{ $item->id }}-qty"
                     data-value="{{ $item->qty }}" value="{{ $item->qty }}"
-                    x-on:keyup.debounce.500ms="(e) => add('{{ $item->product_id }}', e.target.value)"
-                    placeholder="{{ __('Discount') }}" class="w-1/2 text-right" inputMode="numeric" />
+                    x-on:keyup.debounce.500ms="(e) => add('{{ $item->id }}', e.target.value)"
+                    placeholder="{{ __('Qty') }}" class="w-1/2 text-right" inputMode="numeric" />
                 </x-filament::input.wrapper>
                 <button class="rounded-lg !bg-lakasir-primary px-2 py-1"
-                  wire:click.stop="addCart( {{ $item->product_id }} )" wire:loading.attr="disabled">
+                  wire:click.stop="increaseCart({{ $item->id }})" wire:loading.attr="disabled">
                   <x-heroicon-o-plus-small class="h-4 w-4 !text-white" />
                 </button>
                 <livewire:price-setting :cart-item="$item" key="{{ $item->id }}" />
@@ -119,6 +143,113 @@
                   <x-heroicon-o-trash class="h-4 w-4 !text-danger-900" />
                 </button>
               </div>
+
+              {{-- Catatan Per Item --}}
+              <div class="mt-2" style="margin-top: 10px;">
+                <x-filament::input.wrapper>
+                  <x-slot name="prefix">
+                    <x-heroicon-o-pencil-square class="h-4 w-4 text-gray-400" />
+                  </x-slot>
+                  <x-filament::input
+                    type="text"
+                    id="note-{{ $item->id }}"
+                    value="{{ $item->note }}"
+                    wire:keyup.debounce.500ms="updateCartItemNote({{ $item->id }}, $event.target.value)"
+                    placeholder="{{ __('Catatan item (opsional)...') }}"
+                    class="text-xs" />
+                </x-filament::input.wrapper>
+              </div>
+
+              {{-- Tombol Buka Tutup & Opsi Variasi --}}
+              @if ($item->product && $item->product->variations->isNotEmpty())
+                @php
+                  $hasMissing = $item->hasMissingRequiredVariations();
+                  $shouldExpand = $hasMissing || ($expandedVariationCartItemId === $item->id);
+                @endphp
+                <div x-data="{ expanded: {{ $shouldExpand ? 'true' : 'false' }} }" class="mt-3 border-t pt-2 dark:border-gray-800">
+                  <div class="flex items-center justify-between">
+                    <button type="button" @click="expanded = !expanded"
+                      class="flex items-center gap-1.5 text-xs font-semibold text-lakasir-primary hover:opacity-80">
+                      <span x-text="expanded ? '{{ __('Tutup Variasi') }}' : '{{ __('Atur / Ubah Variasi') }}'"></span>
+                      <x-heroicon-m-chevron-down class="h-3.5 w-3.5 transition-transform duration-200" ::class="expanded ? 'rotate-180' : ''" />
+                    </button>
+
+                    @if ($hasMissing)
+                      <span class="rounded-full bg-danger-100 px-2 py-0.5 text-[10px] font-bold text-danger-700 dark:bg-danger-900/40 dark:text-danger-400">
+                        {{ __('Wajib Dipilih') }}
+                      </span>
+                    @elseif (!empty($item->selected_variations))
+                      <span class="text-[11px] text-gray-500 dark:text-gray-400">
+                        {{ count($item->selected_variations) }} {{ __('terpilih') }}
+                      </span>
+                    @endif
+                  </div>
+
+                  {{-- Kontainer Pilihan Variasi yang bisa dibuka-tutup --}}
+                  <div x-show="expanded" x-collapse class="mt-2 space-y-2.5 rounded-lg bg-gray-50 p-2.5 dark:bg-gray-800/60">
+                    @foreach ($item->product->variations as $variation)
+                      @php
+                        $selectedOptionIds = collect($item->selected_variations ?? [])
+                            ->where('variation_id', $variation->id)
+                            ->pluck('option_id')
+                            ->all();
+                        $isVarMissing = $variation->is_required && empty($selectedOptionIds);
+                      @endphp
+
+                      <div class="space-y-1.5 rounded-md border p-2 transition-colors {{ $isVarMissing ? 'border-danger-300 bg-danger-50/40 dark:border-danger-800 dark:bg-danger-950/20' : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800' }}">
+                        <div class="flex items-center justify-between">
+                          <span class="text-xs font-bold text-gray-800 dark:text-gray-200">{{ $variation->name }}</span>
+                          @if ($variation->is_required)
+                            <span class="text-[10px] font-bold {{ $isVarMissing ? 'text-danger-600 dark:text-danger-400' : 'text-gray-400' }}">
+                              * {{ __('Wajib') }}
+                            </span>
+                          @else
+                            <span class="text-[10px] text-gray-400">{{ __('Opsional') }}</span>
+                          @endif
+                        </div>
+
+                        <div class="flex flex-wrap gap-1.5">
+                          @foreach ($variation->options as $option)
+                            @php
+                              $isSelected = in_array($option->id, $selectedOptionIds);
+                            @endphp
+
+                            <button
+                              type="button"
+                              wire:click="toggleCartItemVariationOption({{ $item->id }}, {{ $variation->id }}, {{ $option->id }}, '{{ $variation->type }}')"
+                              class="flex items-center gap-1 rounded-md px-2.5 py-1 text-xs transition-all {{ $isSelected ? 'bg-lakasir-primary text-white font-semibold shadow-sm' : 'bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200' }}">
+                              <span>{{ $option->name }}</span>
+                              @if ($option->price > 0)
+                                <span class="text-[10px] opacity-80">(+{{ price_format($option->price) }})</span>
+                              @endif
+                            </button>
+                          @endforeach
+
+                          @if (!$variation->is_required && $variation->type === 'single' && !empty($selectedOptionIds))
+                            <button
+                              type="button"
+                              wire:click="clearCartItemVariation({{ $item->id }}, {{ $variation->id }})"
+                              class="rounded-md border border-gray-300 px-2 py-1 text-[11px] text-gray-500 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-400">
+                              {{ __('Kosongkan') }}
+                            </button>
+                          @endif
+                        </div>
+                      </div>
+                    @endforeach
+                  </div>
+                </div>
+
+                <div class="mt-2 pt-1" style="margin-top: 10px;">
+                  <button
+                    type="button"
+                    wire:click="addVariationItem({{ $item->product_id }})"
+                    wire:loading.attr="disabled"
+                    class="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-lakasir-primary/50 bg-lakasir-primary/5 px-4 py-2 text-xs font-semibold text-lakasir-primary transition hover:bg-lakasir-primary/15">
+                    <x-heroicon-m-plus-circle class="h-4 w-4" />
+                    <span>{{ __('Tambah Item Terpisah') }}</span>
+                  </button>
+                </div>
+              @endif
             </div>
           @empty
             <div
@@ -140,8 +271,16 @@
             @include('filament.tenant.pages.cashier.total')
           </div>
         </div>
-        <button class="w-full rounded-lg bg-lakasir-primary px-2 py-4 text-white"
-          x-on:mousedown="$dispatch('open-modal', {id: 'proceed-the-payment'})">{{ __('Proceed to payment') }}</button>
+        @if ($this->hasMissingRequiredVariations())
+          <button type="button" wire:click="notifyMissingVariations"
+            class="flex w-full items-center justify-center gap-2 rounded-lg bg-gray-400 px-2 py-4 font-semibold text-white cursor-not-allowed">
+            <x-heroicon-m-exclamation-triangle class="h-5 w-5 text-amber-300" />
+            <span>{{ __('Pilih Variasi Wajib Dahulu') }}</span>
+          </button>
+        @else
+          <button class="w-full rounded-lg bg-lakasir-primary px-2 py-4 font-semibold text-white transition hover:opacity-90"
+            x-on:mousedown="$dispatch('open-modal', {id: 'proceed-the-payment'})">{{ __('Proceed to payment') }}</button>
+        @endif
       </div>
     </div>
   </div>
@@ -292,6 +431,134 @@
         <x-filament::button color="gray" x-on:click="$dispatch('close-modal', {id: 'modal-selected-table'})">
           {{ __('Close') }}
         </x-filament::button>
+      </div>
+    </x-slot>
+  </x-filament::modal>
+
+  <x-filament::modal id="variation-modal" width="xl" :close-by-clicking-away="false" :close-by-escaping="true">
+    <x-slot name="header">
+      @if ($selectedProductForVariation)
+        <div class="flex items-center justify-between pr-6">
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ $selectedProductForVariation->name }}</h2>
+            <p class="text-sm font-semibold text-lakasir-primary">
+              {{ price_format($selectedProductForVariation->selling_price) }}
+              @if ($selectedProductForVariation->unit)
+                <span class="text-xs font-normal text-gray-400">/ {{ $selectedProductForVariation->unit }}</span>
+              @endif
+            </p>
+          </div>
+          @if ($selectedProductForVariation->hero_image)
+            <img src="{{ $selectedProductForVariation->hero_image }}" class="h-14 w-14 rounded-lg border object-cover dark:border-gray-700" alt="{{ $selectedProductForVariation->name }}">
+          @endif
+        </div>
+      @else
+        <div class="h-6"></div>
+      @endif
+    </x-slot>
+
+    @if ($selectedProductForVariation)
+      <div class="max-h-[60vh] space-y-5 overflow-y-auto px-1 py-2">
+        @foreach ($selectedProductForVariation->variations as $variation)
+          <div class="space-y-3 rounded-xl border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-800 dark:bg-gray-900/40">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-base font-bold text-gray-900 dark:text-white">{{ $variation->name }}</span>
+                @if ($variation->is_required)
+                  <span class="rounded-full bg-danger-100 px-2 py-0.5 text-xs font-semibold text-danger-700 dark:bg-danger-900/40 dark:text-danger-400">
+                    {{ __('Wajib') }}
+                  </span>
+                @else
+                  <span class="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-normal text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                    {{ __('Opsional') }}
+                  </span>
+                @endif
+              </div>
+              <span class="text-xs text-gray-500 dark:text-gray-400">
+                {{ $variation->type === 'multiple' ? __('Bisa pilih lebih dari satu') : __('Pilih 1') }}
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+              @foreach ($variation->options as $option)
+                @php
+                  $isSelected = false;
+                  if ($variation->type === 'single') {
+                      $isSelected = ($selectedVariationOptions[$variation->id] ?? null) == $option->id;
+                  } else {
+                      $isSelected = in_array($option->id, $selectedVariationOptions[$variation->id] ?? []);
+                  }
+                @endphp
+
+                <button
+                  type="button"
+                  wire:click="selectVariationOption({{ $variation->id }}, {{ $option->id }}, '{{ $variation->type }}')"
+                  class="flex items-center justify-between rounded-lg border p-3 text-left transition-all duration-150 {{ $isSelected ? 'border-lakasir-primary bg-lakasir-primary/10 font-semibold text-lakasir-primary ring-1 ring-lakasir-primary' : 'border-gray-200 bg-white text-gray-800 hover:border-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200' }}">
+                  <div class="flex items-center gap-2">
+                    <div class="flex h-4 w-4 items-center justify-center border rounded-{{ $variation->type === 'single' ? 'full' : 'md' }} {{ $isSelected ? 'border-lakasir-primary bg-lakasir-primary text-white' : 'border-gray-400 bg-white dark:bg-gray-700' }}">
+                      @if ($isSelected)
+                        @if ($variation->type === 'single')
+                          <div class="h-1.5 w-1.5 rounded-full bg-white"></div>
+                        @else
+                          <x-heroicon-m-check class="h-3 w-3" />
+                        @endif
+                      @endif
+                    </div>
+                    <span class="text-sm">{{ $option->name }}</span>
+                  </div>
+                  <span class="text-xs font-semibold {{ $option->price > 0 ? 'text-lakasir-primary' : 'text-gray-400' }}">
+                    {{ $option->price > 0 ? '+ ' . price_format($option->price) : 'Gratis' }}
+                  </span>
+                </button>
+              @endforeach
+            </div>
+          </div>
+        @endforeach
+
+        {{-- Jumlah Pesanan --}}
+        <div class="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900">
+          <div>
+            <span class="text-sm font-bold text-gray-800 dark:text-gray-200">{{ __('Jumlah') }}</span>
+            <p class="text-xs text-gray-500">{{ __('Tentukan jumlah porsi/item') }}</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              wire:click="decrementVariationQty"
+              class="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-200 font-bold text-gray-700 hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">
+              <x-heroicon-o-minus class="h-4 w-4" />
+            </button>
+            <span class="w-8 text-center text-lg font-bold text-gray-900 dark:text-white">{{ $variationQty }}</span>
+            <button
+              type="button"
+              wire:click="incrementVariationQty"
+              class="flex h-8 w-8 items-center justify-center rounded-lg bg-lakasir-primary font-bold text-white hover:opacity-90">
+              <x-heroicon-o-plus class="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    @endif
+
+    <x-slot name="footer">
+      <div class="flex w-full items-center justify-between">
+        <div class="text-left">
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ __('Total Harga') }}</p>
+          <p class="text-xl font-extrabold text-lakasir-primary">
+            {{ price_format($this->variationTotalPrice) }}
+          </p>
+        </div>
+        <div class="flex gap-2">
+          <x-filament::button color="gray" x-on:click="$dispatch('close-modal', {id: 'variation-modal'})">
+            {{ __('Batal') }}
+          </x-filament::button>
+          <x-filament::button
+            wire:click="confirmAddVariationCart"
+            :disabled="!$this->canSubmitVariations"
+            icon="heroicon-o-shopping-bag">
+            {{ __('Tambah ke Keranjang') }}
+          </x-filament::button>
+        </div>
       </div>
     </x-slot>
   </x-filament::modal>
@@ -516,6 +783,15 @@
               .toString();
             printerAction.table([sellingDetail.product.name, moneyFormat(sellingDetail.price / sellingDetail
               .qty) + ' x ' + sellingDetail.qty.toString()])
+            if (sellingDetail.selected_variations && sellingDetail.selected_variations.length > 0) {
+              sellingDetail.selected_variations.forEach(v => {
+                let extra = v.price > 0 ? ` (+${moneyFormat(v.price)})` : '';
+                printerAction.text(`  - ${v.variation_name}: ${v.option_name}${extra}`);
+              });
+            }
+            if (sellingDetail.note) {
+              printerAction.text(`  * ${sellingDetail.note}`);
+            }
             if (sellingDetail.discount_price > 0) {
               price = price - sellingDetail.discount_price;
               printerAction
@@ -628,11 +904,8 @@
 
     Alpine.data('cart', () => {
       return {
-        add: (productId, amount) => {
-          $wire.addCart(productId, {
-            amount: amount ?? 0
-          })
-          console.log(productId, amount)
+        add: (cartItemId, amount) => {
+          $wire.updateCartItemQty(cartItemId, amount ?? 0)
         }
       }
     })

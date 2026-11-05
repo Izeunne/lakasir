@@ -25,6 +25,7 @@ trait TableProduct
                 // * show the product when the type is service but that has a 0 stock
                 // * show the product when the type is procut but that has a 0 stock and then has a is_non_stock true
                 Product::query()
+                    ->with(['variations.options'])
                     ->where(function ($query) {
                         $query->where('type', 'product')
                             ->where(function ($query) {
@@ -118,9 +119,9 @@ trait TableProduct
                     ->hiddenLabel(),
                 Action::make('cart')
                     ->label(function (Product $product) {
-                        $cartItem = isset($this->cartItems) && $this->cartItems ? $this->cartItems->firstWhere('product_id', $product->id) : null;
+                        $totalQty = isset($this->cartItems) && $this->cartItems ? $this->cartItems->where('product_id', $product->id)->sum('qty') : null;
 
-                        return $cartItem ? (string) $cartItem->qty : '';
+                        return $totalQty ? (string) $totalQty : '';
                     })
                     ->color('primary')
                     ->icon('heroicon-s-shopping-bag')

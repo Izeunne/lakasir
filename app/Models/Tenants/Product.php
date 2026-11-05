@@ -255,6 +255,16 @@ class Product extends Model
     }
 
     /**
+     * Get all variations associated with the product.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function variations(): HasMany
+    {
+        return $this->hasMany(ProductVariation::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    /**
      * Get all barcodes associated with the product.
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany

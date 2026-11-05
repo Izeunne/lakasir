@@ -8,6 +8,7 @@ use App\Features\ProductInitialPrice;
 use App\Features\ProductSku;
 use App\Features\ProductStock;
 use App\Features\ProductType;
+use App\Features\ProductVariation as ProductVariationFeature;
 use App\Models\Tenants\Category;
 use App\Models\Tenants\Setting;
 use App\Rules\UniqueBarcode;
@@ -19,6 +20,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Set;
 use Filament\Support\RawJs;
 use Laravel\Pennant\Feature;
@@ -236,4 +238,72 @@ trait HasProductForm
             ->required()
             ->native(false);
     }
+
+    public function generateVariationFormComponent(): Repeater
+    {
+        return Repeater::make('variations')
+            ->label(__('Variasi / Modifiers Produk'))
+            ->visible(Feature::active(ProductVariationFeature::class))
+            ->schema([
+                TextInput::make('name')
+                    ->label(__('Nama Variasi / Pertanyaan'))
+                    ->placeholder(__('Contoh: Suhu, Ukuran Gelas, Topping'))
+                    ->required()
+                    ->columnSpan(2),
+
+                Select::make('type')
+                    ->label(__('Tipe Pilihan'))
+                    ->options([
+                        'single' => __('Pilih Satu (Single Choice)'),
+                        'multiple' => __('Bisa Pilih Banyak (Multiple Choice)'),
+                    ])
+                    ->default('single')
+                    ->required()
+                    ->columnSpan(1),
+
+                Toggle::make('is_required')
+                    ->label(__('Wajib Dipilih'))
+                    ->default(false)
+                    ->inline(false)
+                    ->columnSpan(1),
+
+                Repeater::make('options')
+                    ->label(__('Pilihan Jawaban / Opsi'))
+                    ->schema([
+                        TextInput::make('name')
+                            ->label(__('Nama Pilihan'))
+                            ->placeholder(__('Contoh: Dingin, Panas, Large, Boba'))
+                            ->required()
+                            ->columnSpan(2),
+
+                        TextInput::make('price')
+                            ->label(__('Tambahan Harga (+Rp)'))
+                            ->numeric()
+                            ->default(0)
+                            ->prefix(Setting::get('currency', 'IDR'))
+                            ->required()
+                            ->columnSpan(1),
+
+                        Toggle::make('is_default')
+                            ->label(__('Default'))
+                            ->default(false)
+                            ->inline(false)
+                            ->columnSpan(1),
+                    ])
+                    ->columns(4)
+                    ->addActionLabel(__('Tambah Pilihan Opsi'))
+                    ->reorderable()
+                    ->collapsible()
+                    ->defaultItems(1)
+                    ->columnSpanFull()
+                    ->itemLabel(fn (array $state): ?string => isset($state['name']) ? $state['name'] . (isset($state['price']) && $state['price'] > 0 ? ' (+' . price_format($state['price']) . ')' : '') : null),
+            ])
+            ->columns(4)
+            ->addActionLabel(__('Tambah Kelompok Variasi'))
+            ->reorderable()
+            ->collapsible()
+            ->defaultItems(0)
+            ->itemLabel(fn (array $state): ?string => isset($state['name']) ? $state['name'] . ($state['is_required'] ?? false ? ' * (' . __('Wajib') . ')' : ' (' . __('Opsional') . ')') : null);
+    }
 }
+

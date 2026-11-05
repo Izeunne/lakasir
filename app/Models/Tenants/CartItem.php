@@ -24,6 +24,12 @@ class CartItem extends Model
         'user_id',
         'product_id',
         'price_unit_id',
+        'selected_variations',
+        'note',
+    ];
+
+    protected $casts = [
+        'selected_variations' => 'array',
     ];
 
     protected $appends = ['price_format_money', 'discount_price_format', 'final_price_format'];
@@ -83,5 +89,31 @@ class CartItem extends Model
     public function priceUnit(): BelongsTo
     {
         return $this->belongsTo(PriceUnit::class);
+    }
+
+    public function hasMissingRequiredVariations(): bool
+    {
+        $product = $this->product;
+        if (! $product) {
+            return false;
+        }
+
+        $variations = $product->relationLoaded('variations') ? $product->variations : $product->variations()->with('options')->get();
+        if ($variations->isEmpty()) {
+            return false;
+        }
+
+        $selectedOptionIds = collect($this->selected_variations ?? [])->pluck('option_id')->all();
+
+        foreach ($variations as $variation) {
+            if ($variation->is_required) {
+                $variationOptionIds = $variation->options->pluck('id')->all();
+                if (count(array_intersect($selectedOptionIds, $variationOptionIds)) === 0) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

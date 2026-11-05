@@ -91,7 +91,7 @@ class Cashier extends Page implements HasForms, HasTable
 
         $this->cartItems = CartItem::query()
             ->select('*')
-            ->with('product')
+            ->with(['product.variations.options'])
             ->orderByDesc('created_at')
             ->cashier()
             ->get();
@@ -224,6 +224,15 @@ class Cashier extends Page implements HasForms, HasTable
 
     public function proceedThePayment(SellingService $sellingService): void
     {
+        if ($this->hasMissingRequiredVariations()) {
+            Notification::make()
+                ->title(__('Variasi Wajib Belum Dipilih'))
+                ->body(__('Harap lengkapi semua variasi wajib pada item pesanan sebelum melanjutkan pembayaran.'))
+                ->danger()
+                ->send();
+            return;
+        }
+
         $this->cartDetail = array_merge($this->cartDetail, [
             'total_price' => $this->total_price,
         ]);
@@ -237,6 +246,8 @@ class Cashier extends Page implements HasForms, HasTable
                     'price' => $cartItem->price,
                     'discount_price' => $cartItem->discount_price,
                     'price_unit_id' => $cartItem->price_unit_id,
+                    'selected_variations' => $cartItem->selected_variations,
+                    'note' => $cartItem->note,
                 ];
             })->toArray(),
         ]);

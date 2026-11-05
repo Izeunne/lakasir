@@ -55,7 +55,24 @@
           @foreach($record->sellingDetails as $detail)
             <tr>
               <td class="p-2 border">
-                <h3 class="text-primary">{{ $detail->product->name }}</h3><span class="text-sm text-secondary"></span></td>
+                <h3 class="text-primary">{{ $detail->product->name }}</h3>
+                @if (!empty($detail->selected_variations))
+                  <div class="mt-1 space-y-0.5 text-xs text-gray-500">
+                    @foreach ($detail->selected_variations as $var)
+                      <div>- {{ $var['variation_name'] }}: {{ $var['option_name'] }}
+                        @if (!empty($var['price']) && $var['price'] > 0)
+                          (+{{ Number::currency($var['price'], Setting::get('currency', 'IDR')) }})
+                        @endif
+                      </div>
+                    @endforeach
+                  </div>
+                @endif
+                @if (!empty($detail->note))
+                  <div class="mt-1 text-xs italic text-gray-500">
+                    @lang('Note'): {{ $detail->note }}
+                  </div>
+                @endif
+              </td>
               <td class="p-2 border text-center text-primary">{{ Number::currency($detail->price_per_unit, Setting::get('currency', 'IDR')) }}</td>
               <td class="p-2 border text-center text-primary">{{ $detail->qty }}</td>
               <td class="p-2 border text-center text-primary">{{ Number::currency($detail->discount_price, Setting::get('currency', 'IDR')) }}</td>
@@ -167,6 +184,15 @@
           let price = sellingDetail.price;
           let text = moneyFormat(sellingDetail.price / sellingDetail.qty) + ' x ' + sellingDetail.qty.toString();
           printerAction.table([sellingDetail.product.name, moneyFormat(sellingDetail.price / sellingDetail.qty) + ' x ' + sellingDetail.qty.toString()])
+          if (sellingDetail.selected_variations && sellingDetail.selected_variations.length > 0) {
+            sellingDetail.selected_variations.forEach(v => {
+              let extra = v.price > 0 ? ` (+${moneyFormat(v.price)})` : '';
+              printerAction.text(`  - ${v.variation_name}: ${v.option_name}${extra}`);
+            });
+          }
+          if (sellingDetail.note) {
+            printerAction.text(`  * ${sellingDetail.note}`);
+          }
           if (sellingDetail.discount_price > 0) {
             price = price - sellingDetail.discount_price;
             printerAction

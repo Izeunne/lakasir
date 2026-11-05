@@ -185,6 +185,8 @@ class ProductResource extends Resource
             $this->generateTypeFormComponent()
                 ->columnSpan(1),
             $this->generateNonStockFormComponent(),
+            $this->generateVariationFormComponent()
+                ->columnSpanFull(),
         ];
     }
 
