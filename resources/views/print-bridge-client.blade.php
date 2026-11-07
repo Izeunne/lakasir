@@ -46,9 +46,24 @@
         </div>
 
         <div style="border-top: 1px solid #e2e8f0; padding-top: 16px;">
-            <strong style="font-size: 14px;">⚡ Uji Coba Pencetakan:</strong>
-            <p style="font-size: 12px; color: #64748b; margin-top: 4px;">Kirim 1 struk pengujian ke antrean untuk memastikan printer merespon.</p>
-            <button class="btn btn-outline" onclick="sendTestJob()">🖨️ Kirim Test Print ke Antrean</button>
+            <strong style="font-size: 14px;">⚡ Uji Coba Multi-Printer Routing:</strong>
+            <p style="font-size: 12px; color: #64748b; margin-top: 4px;">Pilih printer tujuan lalu kirim struk pengujian untuk memastikan routing bekerja.</p>
+            
+            <div style="margin: 12px 0;">
+                <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Target Printer (Alias Device di Android):</label>
+                <div style="display: flex; gap: 8px;">
+                    <select id="targetPrinterSelect" style="flex: 1; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" onchange="onTargetPrinterChange(this.value)">
+                        <option value="">(Default / Otomatis)</option>
+                        <option value="kasir">kasir (Printer Kasir)</option>
+                        <option value="dapur">dapur (Printer Dapur)</option>
+                        <option value="bar">bar (Printer Bar / Minuman)</option>
+                        <option value="__custom__">Custom Alias...</option>
+                    </select>
+                    <input type="text" id="customTargetPrinterInput" placeholder="Ketik alias printer..." style="display: none; flex: 1; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
+                </div>
+            </div>
+
+            <button class="btn btn-outline" onclick="sendTestJob()">🖨️ Kirim Test Print ke Target Printer</button>
             <p id="testStatus" style="font-size: 12px; margin-top: 8px; text-align: center;"></p>
         </div>
 
@@ -58,6 +73,16 @@
     </div>
 
     <script>
+        function onTargetPrinterChange(val) {
+            const customInput = document.getElementById('customTargetPrinterInput');
+            if (val === '__custom__') {
+                customInput.style.display = 'block';
+                customInput.focus();
+            } else {
+                customInput.style.display = 'none';
+            }
+        }
+
         function copyUrl() {
             const text = document.getElementById('clientUrl').innerText;
             navigator.clipboard.writeText(text).then(() => {
@@ -70,6 +95,11 @@
             statusEl.innerText = 'Mengirim job...';
             statusEl.style.color = '#4f46e5';
 
+            let targetPrinter = document.getElementById('targetPrinterSelect').value;
+            if (targetPrinter === '__custom__') {
+                targetPrinter = document.getElementById('customTargetPrinterInput').value.trim();
+            }
+
             try {
                 const response = await fetch('/api/print-queue/test?token={{ $token }}', {
                     method: 'POST',
@@ -78,11 +108,16 @@
                         'Accept': 'application/json',
                         'Authorization': 'Bearer {{ $token }}'
                     },
-                    body: JSON.stringify({ outlet_id: {{ $outletId }}, type: '{{ $type }}' })
+                    body: JSON.stringify({
+                        outlet_id: {{ $outletId }},
+                        type: '{{ $type }}',
+                        target_printer: targetPrinter || null
+                    })
                 });
                 const data = await response.json();
                 if (data.success) {
-                    statusEl.innerText = '✅ Berhasil! Job #' + data.job_id + ' masuk ke antrean.';
+                    const targetLabel = data.target_printer ? ('ke [' + data.target_printer + ']') : '(Default)';
+                    statusEl.innerText = '✅ Berhasil! Job #' + data.job_id + ' ' + targetLabel + ' masuk ke antrean.';
                     statusEl.style.color = '#10b981';
                 } else {
                     statusEl.innerText = '❌ Gagal: ' + (data.message || 'Error');

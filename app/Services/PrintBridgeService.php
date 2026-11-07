@@ -11,13 +11,14 @@ class PrintBridgeService
     /**
      * Push a selling transaction to the print queue for cashier receipt.
      */
-    public static function queueReceipt(Selling $selling, int $outletId = 1, string $paperWidth = '58mm'): PrintQueue
+    public static function queueReceipt(Selling $selling, int $outletId = 1, string $paperWidth = '58mm', ?string $targetPrinter = null): PrintQueue
     {
         $payloadData = self::buildReceiptData($selling, $paperWidth);
 
         return PrintQueue::create([
             'outlet_id' => $outletId,
             'queue_type' => 'cashier',
+            'target_printer' => $targetPrinter,
             'selling_id' => $selling->id,
             'status' => 'queued',
             'type' => 'receipt',
@@ -25,6 +26,7 @@ class PrintBridgeService
             'layout' => $payloadData['layout'],
             'transaction' => $payloadData['transaction'],
             'payload' => [
+                'target_printer' => $targetPrinter,
                 'paper_width' => $paperWidth,
             ],
         ]);
@@ -33,13 +35,14 @@ class PrintBridgeService
     /**
      * Push a kitchen order ticket to the print queue.
      */
-    public static function queueKitchenTicket(Selling $selling, int $outletId = 1, ?string $stationId = null, string $paperWidth = '80mm'): PrintQueue
+    public static function queueKitchenTicket(Selling $selling, int $outletId = 1, ?string $stationId = null, string $paperWidth = '80mm', ?string $targetPrinter = null): PrintQueue
     {
         $payloadData = self::buildKitchenData($selling, $stationId);
 
         return PrintQueue::create([
             'outlet_id' => $outletId,
             'queue_type' => 'kitchen',
+            'target_printer' => $targetPrinter,
             'station_id' => $stationId,
             'selling_id' => $selling->id,
             'status' => 'queued',
@@ -48,6 +51,7 @@ class PrintBridgeService
             'ticket' => $payloadData['ticket'],
             'transaction' => $payloadData['transaction'],
             'payload' => [
+                'target_printer' => $targetPrinter,
                 'paper_width' => $paperWidth,
             ],
         ]);
@@ -56,36 +60,39 @@ class PrintBridgeService
     /**
      * Push a manual test print job to verify connectivity.
      */
-    public static function queueTestJob(int $outletId = 1, string $type = 'cashier'): PrintQueue
+    public static function queueTestJob(int $outletId = 1, string $type = 'cashier', ?string $targetPrinter = null): PrintQueue
     {
         $now = now()->format('d/m/Y H:i:s');
         return PrintQueue::create([
             'outlet_id' => $outletId,
             'queue_type' => $type,
+            'target_printer' => $targetPrinter,
             'status' => 'queued',
             'type' => 'receipt',
             'paper_width' => '58mm',
             'layout' => [
                 'meta_rows' => [
                     ['label' => 'Test', 'value' => 'POS Mataverse x Lakasir'],
+                    ['label' => 'Target Printer', 'value' => $targetPrinter ?: 'Default (Auto)'],
                     ['label' => 'Waktu', 'value' => $now],
                     ['label' => 'Status', 'value' => 'Koneksi Berhasil'],
                 ],
                 'items' => [
                     [
-                        'name' => 'Print Bridge Integration Test',
+                        'name' => 'Multi-Printer Routing Test',
                         'detail_left' => '1x',
                         'detail_right' => 'OK',
-                        'notes' => 'Android Bridge terhubung ke Lakasir',
+                        'notes' => 'Target: ' . ($targetPrinter ?: 'Default Printer'),
                     ],
                 ],
                 'totals' => [
                     ['label' => 'Status Queue', 'value' => 'AKTIF', 'strong' => true],
+                    ['label' => 'Route Target', 'value' => $targetPrinter ?: 'Default'],
                 ],
                 'payments' => [],
                 'footer_lines' => [
+                    'Multi-Printer Routing Berhasil!',
                     'Lakasir POS Web Print Bridge',
-                    'Thermal ESC/POS Testing OK',
                 ],
             ],
             'transaction' => [

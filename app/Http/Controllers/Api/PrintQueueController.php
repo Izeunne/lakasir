@@ -45,6 +45,7 @@ class PrintQueueController extends Controller
             return [
                 'id' => (string) $job->id,
                 'type' => $job->type,
+                'target_printer' => $job->target_printer,
                 'paper_width' => $job->paper_width,
                 'layout' => $job->layout,
                 'transaction' => $job->transaction,
@@ -113,13 +114,15 @@ class PrintQueueController extends Controller
         $this->validateToken($request);
         $outletId = (int) ($request->input('outlet_id', 1));
         $type = (string) ($request->input('type', 'cashier'));
+        $targetPrinter = $request->input('target_printer');
 
-        $job = PrintBridgeService::queueTestJob($outletId, $type);
+        $job = PrintBridgeService::queueTestJob($outletId, $type, $targetPrinter);
 
         return response()->json([
             'success' => true,
             'message' => 'Test job queued successfully',
             'job_id' => $job->id,
+            'target_printer' => $targetPrinter,
         ]);
     }
 }
