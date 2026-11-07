@@ -1,4 +1,22 @@
 <x-filament-panels::page>
+  <!-- Android Print Bridge Quick Card -->
+  <div style="background: #eef2ff; border: 1.5px solid #6366f1; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <div style="font-size: 16px; font-weight: 700; color: #4338ca; display: flex; align-items: center; gap: 6px;">
+          <span>📱</span> POS Mataverse • Android Print Bridge
+          <span style="background: #10b981; color: white; font-size: 11px; padding: 2px 8px; border-radius: 9999px;">Tersedia</span>
+        </div>
+        <p style="font-size: 13px; color: #4b5563; margin-top: 4px;">
+          Mencetak struk kasir &amp; dapur secara otomatis tanpa dialog popup menggunakan aplikasi Android Print Bridge (Bluetooth / TCP LAN).
+        </p>
+      </div>
+      <a href="/print-client.html" target="_blank" style="background: #4f46e5; color: white; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+        <span>⚡</span> Buka Setup Android Bridge &amp; QR
+      </a>
+    </div>
+  </div>
+
   <div x-data="printer">
     <x-filament-panels::form
       x-ref="printerForm"
