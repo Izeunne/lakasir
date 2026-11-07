@@ -256,6 +256,12 @@ class PermissionSeeder extends Seeder
                         ],
                         'guard' => ['web'],
                     ],
+                    'store pin' => [
+                        'permission' => [
+                            'access',
+                        ],
+                        'guard' => ['web'],
+                    ],
                     'printer' => [
                         'permission' => [
                             'access',

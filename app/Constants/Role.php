@@ -12,4 +12,8 @@ use Sheenazien8\Konstantiq\ConstanstAbstraction;
 class Role extends ConstanstAbstraction
 {
     const admin = 'admin';
+
+    const kepala_toko = 'kepala toko';
+
+    const kasir = 'kasir';
 }

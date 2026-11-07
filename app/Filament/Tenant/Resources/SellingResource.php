@@ -3,20 +3,28 @@
 namespace App\Filament\Tenant\Resources;
 
 use App\Features\ProductInitialPrice;
+use App\Filament\Tenant\Pages\StorePin;
 use App\Filament\Tenant\Resources\SellingResource\Pages;
 use App\Models\Tenants\Profile;
 use App\Models\Tenants\Selling;
 use App\Models\Tenants\Setting;
 use App\Models\Tenants\User;
+use App\Services\Tenants\StockService;
 use App\Traits\HasTranslatableResource;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class SellingResource extends Resource
 {
@@ -41,6 +49,9 @@ class SellingResource extends Resource
                 TextColumn::make('code')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('order_type_label')
+                    ->label(__('Kategori'))
+                    ->badge(),
                 TextColumn::make('user.name')
                     ->label(__('Cashier'))
                     ->searchable(query: function (Builder $query, string $search): Builder {
@@ -55,6 +66,10 @@ class SellingResource extends Resource
                     ->default('-'),
                 TextColumn::make('customer_number')
                     ->translateLabel()
+                    ->default('-'),
+                TextColumn::make('note')
+                    ->label(__('Note Penjualan'))
+                    ->limit(35)
                     ->default('-'),
                 TextColumn::make('date')
                     ->dateTime(timezone: Profile::get()->timezone)
@@ -124,7 +139,104 @@ class SellingResource extends Resource
                             ->when($startDate && $endDate, fn (Builder $builder) => $builder->whereBetween('date', [$startDate, $endDate]));
                     }),
             ])
+            ->actions([
+                Action::make('edit_note')
+                    ->label(__('Note Penjualan'))
+                    ->icon('heroicon-o-pencil-square')
+                    ->color('primary')
+                    ->visible(function (): bool {
+                        /** @var ?User $user */
+                        $user = Filament::auth()->user();
+
+                        return $user ? $user->canEditSellingNote() : false;
+                    })
+                    ->fillForm(fn (Selling $record): array => [
+                        'note' => $record->note,
+                    ])
+                    ->form([
+                        Textarea::make('note')
+                            ->label(__('Note Penjualan'))
+                            ->rows(3)
+                            ->placeholder(__('Isi catatan untuk penjualan ini (misal: alasan kendala, nomor ojek online, dll)...')),
+                    ])
+                    ->action(function (Selling $record, array $data): void {
+                        $record->update([
+                            'note' => filled($data['note'] ?? null) ? trim($data['note']) : null,
+                        ]);
+
+                        Notification::make()
+                            ->title(__('Note Penjualan Disimpan'))
+                            ->success()
+                            ->send();
+                    }),
+                Action::make('delete_with_pin')
+                    ->label(__('Hapus'))
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->modalHeading(__('Hapus Riwayat Penjualan'))
+                    ->modalDescription(__('Masukkan PIN Toko untuk menghapus riwayat penjualan ini. Stok produk pada transaksi ini akan dikembalikan.'))
+                    ->modalSubmitActionLabel(__('Verifikasi PIN & Hapus'))
+                    ->visible(function (): bool {
+                        /** @var ?User $user */
+                        $user = Filament::auth()->user();
+
+                        return $user ? $user->canManageStorePin() : false;
+                    })
+                    ->form([
+                        TextInput::make('pin')
+                            ->label(__('PIN Toko'))
+                            ->password()
+                            ->revealable()
+                            ->numeric()
+                            ->required()
+                            ->placeholder(__('Masukkan PIN Toko')),
+                    ])
+                    ->action(function (Selling $record, array $data): void {
+                        if (! StorePin::isPinConfigured()) {
+                            Notification::make()
+                                ->title(__('PIN Toko Belum Diatur'))
+                                ->body(__('Silakan atur PIN Toko terlebih dahulu di menu PIN Toko sebelum menghapus penjualan.'))
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        if (! StorePin::verify($data['pin'] ?? null)) {
+                            Notification::make()
+                                ->title(__('PIN Toko Salah'))
+                                ->body(__('PIN Toko yang Anda masukkan tidak sesuai. Penghapusan dibatalkan.'))
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        self::deleteSellingAndRestoreStock($record);
+
+                        Notification::make()
+                            ->title(__('Riwayat Penjualan Dihapus'))
+                            ->body(__('Data penjualan berhasil dihapus dan stok produk telah dikembalikan.'))
+                            ->success()
+                            ->send();
+                    }),
+            ])
             ->deferFilters();
+    }
+
+    public static function deleteSellingAndRestoreStock(Selling $record): void
+    {
+        DB::transaction(function () use ($record) {
+            $stockService = app(StockService::class);
+            $record->loadMissing('sellingDetails.product');
+
+            foreach ($record->sellingDetails as $detail) {
+                if ($detail->product && ! $detail->product->is_non_stock) {
+                    $stockService->addStock($detail->product, $detail->qty);
+                }
+            }
+
+            $record->sellingDetails()->delete();
+            $record->delete();
+        });
     }
 
     public static function getPages(): array

@@ -23,6 +23,7 @@ use App\Filament\Tenant\Pages\ProductReport;
 use App\Filament\Tenant\Pages\PurchasingReport;
 use App\Filament\Tenant\Pages\Report;
 use App\Filament\Tenant\Pages\SellingReport;
+use App\Filament\Tenant\Pages\StorePin;
 use App\Filament\Tenant\Pages\TenantLogin;
 use App\Filament\Tenant\Resources\CategoryResource;
 use App\Filament\Tenant\Resources\MemberResource;
@@ -186,7 +187,7 @@ class TenantPanelProvider extends PanelProvider
                 $this->generateNavigationItem(RoleResource::class, Role::class),
                 $this->generateNavigationItem(PermissionResource::class, Permission::class),
             ]),
-            NavigationGroup::make(__('Report'))->label('')->collapsible(false)->items([
+            NavigationGroup::make(__('General'))->items([
                 $this->generateNavigationItem(
                     resource: Report::class,
                     activeWhen: [
@@ -196,12 +197,11 @@ class TenantPanelProvider extends PanelProvider
                         PurchasingReport::class,
                     ]
                 ),
-            ]),
-            NavigationGroup::make(__('General'))->label('')->collapsible(false)->items([
                 $this->generateNavigationItem(VoucherResource::class, Voucher::class),
             ]),
             NavigationGroup::make(__('Setting'))->collapsible(false)->items([
                 $this->generateNavigationItem(GeneralSetting::class),
+                $this->generateNavigationItem(StorePin::class),
                 $this->generateNavigationItem(Printer::class),
             ]),
         ];

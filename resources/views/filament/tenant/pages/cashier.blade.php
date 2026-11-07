@@ -66,8 +66,33 @@
         </div>
         <div class="flex items-center justify-between">
           <p class="mb-2 hidden text-2xl font-semibold lg:block">{{ __('Current Orders') }}</p>
-          <div class="flex gap-x-1"></div>
+          <div class="flex items-center gap-x-2">
+            <button
+              type="button"
+              x-on:click="$dispatch('open-modal', {id: 'draft-list-modal'})"
+              class="flex items-center gap-1.5 rounded-lg border border-lakasir-primary/40 bg-lakasir-primary/10 px-3 py-1.5 text-xs font-semibold text-lakasir-primary transition hover:bg-lakasir-primary hover:text-white">
+              <x-heroicon-o-bookmark-square class="h-4 w-4" />
+              <span>{{ __('Draft Pesanan') }}</span>
+              @if (isset($cartDrafts) && $cartDrafts->count() > 0)
+                <span class="rounded-full bg-lakasir-primary px-2 py-0.5 text-[10px] font-bold text-white">
+                  {{ $cartDrafts->count() }}
+                </span>
+              @endif
+            </button>
+          </div>
         </div>
+
+        @if ($activeDraftId)
+          <div class="flex items-center justify-between rounded-lg border border-lakasir-primary/40 bg-lakasir-primary/10 px-3 py-1.5 text-xs">
+            <div class="flex items-center gap-1.5 font-semibold text-lakasir-primary">
+              <x-heroicon-m-bookmark class="h-4 w-4" />
+              <span>{{ __('Draft Aktif') }}: {{ $draftName }}</span>
+            </div>
+            <button type="button" wire:click="clearCart" class="text-xs font-semibold text-gray-500 hover:underline dark:text-gray-300">
+              {{ __('Tutup Draft') }}
+            </button>
+          </div>
+        @endif
         <div class="max-h-[35%] min-h-40 space-y-2 overflow-auto overflow-y-scroll" wire:loading.class="opacity-20"
           wire:target="addCart,addVariationItem,reduceCart,increaseCart,deleteCart,addDiscountPricePerItem,addCartUsingScanner,confirmAddVariationCart">
           @php
@@ -259,6 +284,38 @@
             </div>
           @endforelse
         </div>
+        {{-- Pilihan Kategori Pesanan (Wajib) --}}
+        <div>
+          <div class="w-full rounded-lg border px-4 py-2.5 transition-colors {{ empty($orderType) ? 'border-danger-300 bg-danger-50/40 dark:border-danger-800 dark:bg-gray-900' : 'border-gray-200 bg-white dark:border-gray-900 dark:bg-gray-900' }}">
+            <div class="mb-2 flex items-center justify-between">
+              <span class="text-xs font-bold text-gray-800 dark:text-gray-200">{{ __('Kategori Pesanan') }}</span>
+              <span class="text-[10px] font-bold {{ empty($orderType) ? 'text-danger-600 dark:text-danger-400' : 'text-gray-400' }}">
+                * {{ __('Wajib Dipilih') }}
+              </span>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                wire:click="setOrderType('dine_in')"
+                class="flex items-center justify-center gap-1 rounded-lg border px-2 py-2 text-xs font-semibold transition {{ $orderType === 'dine_in' ? 'border-lakasir-primary bg-lakasir-primary text-white shadow-sm' : 'border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200' }}">
+                <span>Dine In</span>
+              </button>
+              <button
+                type="button"
+                wire:click="setOrderType('take_away')"
+                class="flex items-center justify-center gap-1 rounded-lg border px-2 py-2 text-xs font-semibold transition {{ $orderType === 'take_away' ? 'border-lakasir-primary bg-lakasir-primary text-white shadow-sm' : 'border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200' }}">
+                <span>Take Away</span>
+              </button>
+              <button
+                type="button"
+                wire:click="setOrderType('ojek_online')"
+                class="flex items-center justify-center gap-1 rounded-lg border px-2 py-2 text-xs font-semibold transition {{ $orderType === 'ojek_online' ? 'border-lakasir-primary bg-lakasir-primary text-white shadow-sm' : 'border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200' }}">
+                <span>Ojek Online</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div>
           <div
             class="w-full rounded-lg border bg-white px-4 py-2 text-gray-600 dark:border-gray-900 dark:bg-gray-900 dark:text-white">
@@ -271,16 +328,35 @@
             @include('filament.tenant.pages.cashier.total')
           </div>
         </div>
-        @if ($this->hasMissingRequiredVariations())
-          <button type="button" wire:click="notifyMissingVariations"
-            class="flex w-full items-center justify-center gap-2 rounded-lg bg-gray-400 px-2 py-4 font-semibold text-white cursor-not-allowed">
-            <x-heroicon-m-exclamation-triangle class="h-5 w-5 text-amber-300" />
-            <span>{{ __('Pilih Variasi Wajib Dahulu') }}</span>
+        <div class="grid grid-cols-3 gap-2">
+          <button
+            type="button"
+            wire:click="openSaveDraftModal"
+            class="col-span-1 flex items-center justify-center gap-1.5 rounded-lg border border-lakasir-primary bg-white px-2 py-4 text-sm font-semibold text-lakasir-primary transition hover:bg-lakasir-primary/10 dark:bg-gray-900">
+            <x-heroicon-o-bookmark class="h-5 w-5" />
+            <span>{{ $activeDraftId ? __('Update Draft') : __('Simpan Draft') }}</span>
           </button>
-        @else
-          <button class="w-full rounded-lg bg-lakasir-primary px-2 py-4 font-semibold text-white transition hover:opacity-90"
-            x-on:mousedown="$dispatch('open-modal', {id: 'proceed-the-payment'})">{{ __('Proceed to payment') }}</button>
-        @endif
+
+          @if ($this->hasMissingRequiredVariations())
+            <button type="button" wire:click="notifyMissingVariations"
+              class="col-span-2 flex w-full items-center justify-center gap-2 rounded-lg bg-gray-400 px-2 py-4 font-semibold text-white cursor-not-allowed">
+              <x-heroicon-m-exclamation-triangle class="h-5 w-5 text-amber-300" />
+              <span>{{ __('Pilih Variasi Wajib Dahulu') }}</span>
+            </button>
+          @elseif ($this->hasMissingOrderType())
+            <button type="button" wire:click="notifyMissingOrderType"
+              class="col-span-2 flex w-full items-center justify-center gap-2 rounded-lg bg-gray-400 px-2 py-4 font-semibold text-white cursor-not-allowed">
+              <x-heroicon-m-exclamation-triangle class="h-5 w-5 text-amber-300" />
+              <span>{{ __('Pilih Kategori Pesanan') }}</span>
+            </button>
+          @else
+            <button type="button"
+              wire:click="openProceedPaymentModal"
+              class="col-span-2 w-full rounded-lg bg-lakasir-primary px-2 py-4 font-semibold text-white transition hover:opacity-90">
+              {{ __('Proceed to payment') }}
+            </button>
+          @endif
+        </div>
       </div>
     </div>
   </div>
@@ -322,6 +398,21 @@
             </x-filament::input.wrapper>
             <div class="mb-4">
               @include('filament.tenant.pages.cashier.total')
+            </div>
+            <div class="mb-3">
+              <label class="mb-1 block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                {{ __('Note Penjualan (Opsional)') }}
+              </label>
+              <x-filament::input.wrapper>
+                <x-slot name="prefix">
+                  <x-heroicon-o-document-text class="h-4 w-4 text-gray-400" />
+                </x-slot>
+                <x-filament::input
+                  type="text"
+                  wire:model="cartDetail.note"
+                  placeholder="{{ __('Isi catatan transaksi / penjualan...') }}"
+                  class="text-sm" />
+              </x-filament::input.wrapper>
             </div>
             @error('payed_money')
               <span class="error text-danger-500">{{ $message }}</span>
@@ -601,6 +692,142 @@
     </x-slot>
   </x-filament::modal>
 
+  {{-- Modal Simpan Draft Pesanan --}}
+  <x-filament::modal id="save-draft-modal" width="md">
+    <x-slot name="heading">
+      {{ $activeDraftId ? __('Perbarui Draft Pesanan') : __('Simpan Pesanan ke Draft') }}
+    </x-slot>
+
+    <form wire:submit.prevent="saveCartAsDraft" class="space-y-4">
+      <div class="space-y-2">
+        <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">
+          {{ __('Nama Pelanggan / Keterangan Draft') }}
+        </label>
+        <x-filament::input.wrapper>
+          <x-filament::input
+            type="text"
+            wire:model="draftName"
+            placeholder="{{ __('Contoh: Budi - Meja 4 / Pesanan GoFood') }}" />
+        </x-filament::input.wrapper>
+      </div>
+
+      <div class="rounded-lg border bg-gray-50 p-3 text-xs space-y-1 dark:border-gray-800 dark:bg-gray-900">
+        <div class="flex justify-between">
+          <span class="text-gray-500">{{ __('Kategori Pesanan') }}:</span>
+          <span class="font-bold text-lakasir-primary">
+            {{ match($orderType) { 'dine_in' => 'Dine In', 'take_away' => 'Take Away', 'ojek_online' => 'Ojek Online', default => '-' } }}
+          </span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">{{ __('Total Item') }}:</span>
+          <span class="font-semibold">{{ $cartItems->sum('qty') }} {{ __('item') }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">{{ __('Estimasi Total') }}:</span>
+          <span class="font-bold text-lakasir-primary">{{ price_format($total_price) }}</span>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <x-filament::button color="gray" type="button" x-on:click="$dispatch('close-modal', {id: 'save-draft-modal'})">
+          {{ __('Batal') }}
+        </x-filament::button>
+        <x-filament::button type="submit" icon="heroicon-o-bookmark">
+          {{ __('Simpan Draft') }}
+        </x-filament::button>
+      </div>
+    </form>
+  </x-filament::modal>
+
+  {{-- Modal Daftar Draft Pesanan --}}
+  <x-filament::modal id="draft-list-modal" width="2xl">
+    <x-slot name="heading">
+      {{ __('Daftar Draft Pesanan Sementara') }}
+    </x-slot>
+
+    <div class="max-h-[65vh] space-y-3 overflow-y-auto py-1">
+      @if (isset($cartDrafts) && $cartDrafts->isNotEmpty())
+        @foreach ($cartDrafts as $draft)
+          <div class="rounded-lg border bg-white p-4 dark:border-gray-800 dark:bg-gray-900" style="margin-bottom: 10px;">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <p class="text-base font-bold text-gray-900 dark:text-white">{{ $draft->name }}</p>
+                  <span class="rounded-full bg-lakasir-primary/15 px-2.5 py-0.5 text-xs font-bold text-lakasir-primary">
+                    {{ $draft->order_type_label }}
+                  </span>
+                  @if ($draft->table)
+                    <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                      {{ __('Meja') }}: {{ $draft->table->number }}
+                    </span>
+                  @endif
+                </div>
+                <p class="mt-0.5 text-xs text-gray-400">
+                  {{ $draft->updated_at->format('d M Y H:i') }}
+                  @if ($draft->member)
+                    • {{ __('Member') }}: {{ $draft->member->name }}
+                  @endif
+                </p>
+              </div>
+              <p class="text-base font-bold text-lakasir-primary">{{ price_format($draft->total_price) }}</p>
+            </div>
+
+            <div class="mt-2 rounded-md bg-gray-50 p-2.5 text-xs text-gray-600 dark:bg-gray-800/60 dark:text-gray-300">
+              <p class="font-semibold mb-1">{{ collect($draft->items)->sum('qty') }} {{ __('item pesanan') }}</p>
+              @foreach ($draft->items ?? [] as $dItem)
+                @php
+                  $dProd = \App\Models\Tenants\Product::find($dItem['product_id'] ?? null);
+                @endphp
+                <div class="flex justify-between py-0.5">
+                  <div>
+                    <span class="font-medium">{{ $dProd?->name ?? 'Item' }}</span> (x{{ $dItem['qty'] ?? 1 }})
+                    @if (!empty($dItem['selected_variations']))
+                      <span class="text-gray-400">
+                        — {{ collect($dItem['selected_variations'])->map(fn ($v) => ($v['variation_name'] ?? '') . ': ' . ($v['option_name'] ?? ''))->implode(', ') }}
+                      </span>
+                    @endif
+                    @if (!empty($dItem['note']))
+                      <span class="italic text-gray-400">({{ $dItem['note'] }})</span>
+                    @endif
+                  </div>
+                  <span>{{ price_format($dItem['price'] ?? 0) }}</span>
+                </div>
+              @endforeach
+            </div>
+
+            <div class="mt-3 flex items-center justify-end gap-2">
+              <x-filament::button
+                color="danger"
+                size="sm"
+                outlined
+                icon="heroicon-o-trash"
+                wire:click="deleteDraft({{ $draft->id }})">
+                {{ __('Hapus') }}
+              </x-filament::button>
+              <x-filament::button
+                size="sm"
+                icon="heroicon-o-arrow-down-tray"
+                wire:click="loadDraft({{ $draft->id }})">
+                {{ __('Muat & Bayar / Edit') }}
+              </x-filament::button>
+            </div>
+          </div>
+        @endforeach
+      @else
+        <div class="flex h-36 flex-col items-center justify-center rounded-lg border border-dashed text-gray-400 dark:border-gray-800">
+          <x-heroicon-o-bookmark-slash class="h-8 w-8 mb-1" />
+          <p class="text-sm">{{ __('Belum ada draft pesanan yang disimpan.') }}</p>
+        </div>
+      @endif
+    </div>
+
+    <x-slot name="footer">
+      <x-filament::button color="gray" x-on:click="$dispatch('close-modal', {id: 'draft-list-modal'})">
+        {{ __('Tutup') }}
+      </x-filament::button>
+    </x-slot>
+  </x-filament::modal>
+
   <style>
     /* html5-qrcode library button & control styling */
     #qr-reader__dashboard_section_csr button,
@@ -767,6 +994,9 @@
               .text('-------------------------------');
           }
           printerAction.table(['@lang('Cashier')', selling.user.name])
+          if (selling.order_type_label != undefined && selling.order_type_label != null && selling.order_type_label != '-') {
+            printerAction.table(['@lang('Kategori')', selling.order_type_label])
+          }
           if (selling.table != undefined && selling.table != null) {
             printerAction.table(['@lang('Table')', selling.table.number])
           }

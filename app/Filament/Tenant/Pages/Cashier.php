@@ -8,6 +8,7 @@ use App\Filament\Tenant\Pages\Traits\CartInteraction;
 use App\Filament\Tenant\Pages\Traits\TableProduct;
 use App\Filament\Tenant\Resources\Traits\RefreshThePage;
 use App\Models\Tenants\About;
+use App\Models\Tenants\CartDraft;
 use App\Models\Tenants\CartItem;
 use App\Models\Tenants\Member;
 use App\Models\Tenants\PaymentMethod;
@@ -53,11 +54,19 @@ class Cashier extends Page implements HasForms, HasTable
 
     public Collection $cartItems;
 
+    public Collection $cartDrafts;
+
     public Collection $availableVoucher;
 
     protected static string $layout = 'filament-panels::components.layout.base';
 
     public array $cartDetail = [];
+
+    public ?string $orderType = null;
+
+    public ?int $activeDraftId = null;
+
+    public string $draftName = '';
 
     public array $paymentMethods;
 
@@ -95,6 +104,11 @@ class Cashier extends Page implements HasForms, HasTable
             ->orderByDesc('created_at')
             ->cashier()
             ->get();
+
+        $this->cartDrafts = CartDraft::query()
+            ->with(['member', 'table', 'user'])
+            ->latest()
+            ->get();
         $vouchers = TenantsVoucher::query()
             ->where('minimal_buying', '<=', $this->cartItems->sum('price'))
             ->where('start_date', '<=', today()->format('Y-m-d'))
@@ -117,11 +131,26 @@ class Cashier extends Page implements HasForms, HasTable
 
         $this->tableOption = Table::select('id', 'number')->get();
 
+        $existingTableId = $this->cartDetail['table_id'] ?? null;
+        $existingMemberId = $this->cartDetail['member_id'] ?? null;
+        $existingMemberLabel = $this->cartDetail['member_label'] ?? null;
+        $existingVoucher = $this->cartDetail['voucher'] ?? null;
+        $existingDiscount = $this->cartDetail['discount_price'] ?? null;
+        $existingNote = $this->cartDetail['note'] ?? null;
+
         $this->storeCartForm->fill([
-            'payment_method_id' => 1,
+            'payment_method_id' => $this->cartDetail['payment_method_id'] ?? 1,
             'total_price' => $this->total_price,
             'friend_price' => false,
+            'member_id' => $existingMemberId,
+            'voucher' => $existingVoucher,
+            'discount_price' => $existingDiscount,
+            'note' => $existingNote,
         ]);
+
+        $this->cartDetail['table_id'] = $existingTableId;
+        $this->cartDetail['member_label'] = $existingMemberLabel;
+        $this->cartDetail['order_type'] = $this->orderType;
 
         $this->fillPayemntMethod();
     }
@@ -233,8 +262,14 @@ class Cashier extends Page implements HasForms, HasTable
             return;
         }
 
+        if ($this->hasMissingOrderType()) {
+            $this->notifyMissingOrderType();
+            return;
+        }
+
         $this->cartDetail = array_merge($this->cartDetail, [
             'total_price' => $this->total_price,
+            'order_type' => $this->orderType,
         ]);
 
         $request = array_merge($this->cartDetail, [
@@ -290,6 +325,15 @@ class Cashier extends Page implements HasForms, HasTable
         CartItem::query()
             ->cashier()
             ->delete();
+
+        if ($this->activeDraftId) {
+            CartDraft::whereKey($this->activeDraftId)->delete();
+        }
+
+        $this->activeDraftId = null;
+        $this->draftName = '';
+        $this->orderType = null;
+        $this->cartDetail = [];
 
         Notification::make()
             ->title(__('Transaction created'))

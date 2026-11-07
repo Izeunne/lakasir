@@ -20,7 +20,20 @@ class Selling extends Model
 
     protected $appends = [
         'grand_total_price',
+        'order_type_label',
     ];
+
+    public function orderTypeLabel(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => match ($this->order_type) {
+                'dine_in' => 'Dine In',
+                'take_away' => 'Take Away',
+                'ojek_online' => 'Ojek Online',
+                default => '-',
+            }
+        );
+    }
 
     public function sellingDetails()
     {

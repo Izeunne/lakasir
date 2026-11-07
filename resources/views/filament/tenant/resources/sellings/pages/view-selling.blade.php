@@ -11,6 +11,7 @@
           <div class="details">
             <ul class="my-1">
               <li class="flex justify-between text-secondary text-sm mb-1"><span class="font-semibold">@lang('Code')</span><span>#{{ $record->code }}</span></li>
+              <li class="flex justify-between text-secondary text-sm mb-1"><span class="font-semibold">@lang('Kategori Pesanan')</span><span>{{ $record->order_type_label }}</span></li>
               @if(About::first() && About::first()->business_type == 'fnb')
                 <li class="flex justify-between text-secondary text-sm mb-1"><span class="font-semibold">@lang('Table')</span><span>{{ $record->table?->number ?? 'N/A' }}</span></li>
               @endif
@@ -18,6 +19,7 @@
               <li class="flex justify-between text-secondary text-sm mb-1"><span class="font-semibold">@lang('Date')</span><span>{{ now()->parse($record->date)->setTimezone(Profile::get()->timezone ?? 'UTC')->format('d F Y H:i') }}</span></li>
               <li class="flex justify-between text-secondary text-sm mb-1"><span class="font-semibold">@lang('Payment method')</span><span>{{ $record->paymentMethod->name }}</span></li>
               <li class="flex justify-between text-secondary text-sm mb-1"><span class="font-semibold">@lang('Voucher')</span><span>{{ $record->voucher ?? 'N/A' }}</span></li>
+              <li class="flex justify-between text-secondary text-sm mb-1"><span class="font-semibold">@lang('Note Penjualan')</span><span>{{ strip_tags($record->note) ?: '-' }}</span></li>
             </ul>
           </div>
         </div>
@@ -170,6 +172,9 @@
             .text('-------------------------------');
         }
         printerAction.table(['@lang('Cashier')', selling.user.name])
+        if(selling.order_type_label != undefined && selling.order_type_label != null && selling.order_type_label != '-') {
+          printerAction.table(['@lang('Kategori')', selling.order_type_label])
+        }
         if(selling.table != undefined && selling.table != null) {
           printerAction.table(['@lang('Table')', selling.table.number])
         }

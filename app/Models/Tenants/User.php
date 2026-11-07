@@ -114,4 +114,36 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName
     {
         return $builder->whereIsOwner(true);
     }
+
+    public function canManageStorePin(): bool
+    {
+        if ($this->is_owner) {
+            return true;
+        }
+
+        $roleNames = $this->roles->pluck('name')->map(fn ($r) => strtolower(trim($r)))->all();
+        foreach (['admin', 'superadmin', 'super admin', 'kepala toko', 'head of store', 'store manager'] as $allowedRole) {
+            if (in_array($allowedRole, $roleNames, true)) {
+                return true;
+            }
+        }
+
+        return $this->can('access store pin');
+    }
+
+    public function canEditSellingNote(): bool
+    {
+        if ($this->canManageStorePin()) {
+            return true;
+        }
+
+        $roleNames = $this->roles->pluck('name')->map(fn ($r) => strtolower(trim($r)))->all();
+        foreach (['kasir', 'cashier'] as $allowedRole) {
+            if (in_array($allowedRole, $roleNames, true)) {
+                return true;
+            }
+        }
+
+        return $this->can('create selling') || $this->can('update selling') || $this->can('read selling');
+    }
 }

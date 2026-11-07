@@ -2,6 +2,7 @@
 
 namespace App\Filament\Tenant\Pages\Traits;
 
+use App\Models\Tenants\CartDraft;
 use App\Models\Tenants\CartItem;
 use App\Models\Tenants\Product;
 use Filament\Facades\Filament;
@@ -624,10 +625,223 @@ trait CartInteraction
             ->cashier()
             ->delete();
 
+        $this->activeDraftId = null;
+        $this->draftName = '';
+        $this->orderType = null;
+        $this->cartDetail = [];
+
         Notification::make()
             ->title(__('Cart has been cleared'))
             ->success()
             ->send();
+        $this->mount();
+    }
+
+    public function setOrderType(string $type): void
+    {
+        if (! in_array($type, ['dine_in', 'take_away', 'ojek_online'], true)) {
+            return;
+        }
+
+        $this->orderType = $type;
+        $this->cartDetail['order_type'] = $type;
+    }
+
+    public function hasMissingOrderType(): bool
+    {
+        return empty($this->orderType);
+    }
+
+    public function notifyMissingOrderType(): void
+    {
+        Notification::make()
+            ->title(__('Kategori Pesanan Wajib Dipilih'))
+            ->body(__('Silakan pilih kategori pesanan (Dine In, Take Away, atau Ojek Online) terlebih dahulu.'))
+            ->warning()
+            ->send();
+    }
+
+    public function openProceedPaymentModal(): void
+    {
+        if (! isset($this->cartItems) || $this->cartItems->isEmpty()) {
+            Notification::make()
+                ->title(__('Keranjang Masih Kosong'))
+                ->body(__('Silakan pilih item pesanan terlebih dahulu.'))
+                ->warning()
+                ->send();
+            return;
+        }
+
+        if ($this->hasMissingRequiredVariations()) {
+            $this->notifyMissingVariations();
+            return;
+        }
+
+        if ($this->hasMissingOrderType()) {
+            $this->notifyMissingOrderType();
+            return;
+        }
+
+        $this->dispatch('open-modal', id: 'proceed-the-payment');
+    }
+
+    public function openSaveDraftModal(): void
+    {
+        if (! isset($this->cartItems) || $this->cartItems->isEmpty()) {
+            Notification::make()
+                ->title(__('Keranjang Masih Kosong'))
+                ->body(__('Silakan pilih item pesanan terlebih dahulu sebelum menyimpan draft.'))
+                ->warning()
+                ->send();
+            return;
+        }
+
+        if ($this->hasMissingRequiredVariations()) {
+            $this->notifyMissingVariations();
+            return;
+        }
+
+        if ($this->hasMissingOrderType()) {
+            $this->notifyMissingOrderType();
+            return;
+        }
+
+        if (blank($this->draftName)) {
+            $orderLabel = match ($this->orderType) {
+                'dine_in' => 'Dine In',
+                'take_away' => 'Take Away',
+                'ojek_online' => 'Ojek Online',
+                default => 'Pesanan',
+            };
+            $this->draftName = $orderLabel . ' #' . (CartDraft::count() + 1);
+        }
+
+        $this->dispatch('open-modal', id: 'save-draft-modal');
+    }
+
+    public function saveCartAsDraft(): void
+    {
+        if (! isset($this->cartItems) || $this->cartItems->isEmpty()) {
+            return;
+        }
+
+        if ($this->hasMissingRequiredVariations()) {
+            $this->notifyMissingVariations();
+            return;
+        }
+
+        if ($this->hasMissingOrderType()) {
+            $this->notifyMissingOrderType();
+            return;
+        }
+
+        $itemsPayload = $this->cartItems->map(fn (CartItem $cartItem) => [
+            'product_id' => $cartItem->product_id,
+            'qty' => $cartItem->qty,
+            'price' => $cartItem->price,
+            'discount_price' => $cartItem->discount_price,
+            'price_unit_id' => $cartItem->price_unit_id,
+            'selected_variations' => $cartItem->selected_variations,
+            'note' => $cartItem->note,
+        ])->values()->toArray();
+
+        $draftData = [
+            'user_id' => Filament::auth()->id(),
+            'name' => filled($this->draftName) ? trim($this->draftName) : ('Draft #' . (CartDraft::count() + 1)),
+            'order_type' => $this->orderType,
+            'member_id' => $this->cartDetail['member_id'] ?? null,
+            'table_id' => $this->cartDetail['table_id'] ?? null,
+            'voucher' => $this->cartDetail['voucher'] ?? null,
+            'discount_price' => floatval(str_replace(',', '', (string) ($this->cartDetail['discount_price'] ?? 0))),
+            'note' => $this->cartDetail['note'] ?? null,
+            'total_price' => $this->total_price,
+            'items' => $itemsPayload,
+        ];
+
+        if ($this->activeDraftId && ($existingDraft = CartDraft::find($this->activeDraftId))) {
+            $existingDraft->update($draftData);
+        } else {
+            CartDraft::create($draftData);
+        }
+
+        CartItem::query()->cashier()->delete();
+
+        $this->activeDraftId = null;
+        $this->draftName = '';
+        $this->orderType = null;
+        $this->cartDetail = [];
+
+        $this->dispatch('close-modal', id: 'save-draft-modal');
+
+        Notification::make()
+            ->title(__('Draft Pesanan Disimpan'))
+            ->body(__('Pesanan berhasil disimpan ke daftar draft sementara.'))
+            ->success()
+            ->send();
+
+        $this->mount();
+    }
+
+    public function loadDraft(int $draftId): void
+    {
+        $draft = CartDraft::find($draftId);
+        if (! $draft) {
+            return;
+        }
+
+        $auth = Filament::auth()->id();
+
+        CartItem::query()->cashier()->delete();
+
+        foreach ($draft->items ?? [] as $itemData) {
+            CartItem::create([
+                'user_id' => $auth,
+                'product_id' => $itemData['product_id'],
+                'qty' => $itemData['qty'] ?? 1,
+                'price' => $itemData['price'] ?? 0,
+                'discount_price' => $itemData['discount_price'] ?? 0,
+                'price_unit_id' => $itemData['price_unit_id'] ?? null,
+                'selected_variations' => $itemData['selected_variations'] ?? null,
+                'note' => $itemData['note'] ?? null,
+            ]);
+        }
+
+        $this->activeDraftId = $draft->id;
+        $this->draftName = $draft->name ?? '';
+        $this->orderType = $draft->order_type;
+        $this->cartDetail['member_id'] = $draft->member_id;
+        $this->cartDetail['table_id'] = $draft->table_id;
+        $this->cartDetail['voucher'] = $draft->voucher;
+        $this->cartDetail['discount_price'] = $draft->discount_price > 0 ? (string) $draft->discount_price : null;
+        $this->cartDetail['note'] = $draft->note;
+        $this->cartDetail['order_type'] = $draft->order_type;
+
+        $this->mount();
+        $this->fillMember();
+
+        $this->dispatch('close-modal', id: 'draft-list-modal');
+
+        Notification::make()
+            ->title(__('Draft Pesanan Dimuat'))
+            ->body(__('Draft ":name" berhasil dimuat ke keranjang.', ['name' => $draft->name]))
+            ->success()
+            ->send();
+    }
+
+    public function deleteDraft(int $draftId): void
+    {
+        CartDraft::whereKey($draftId)->delete();
+
+        if ($this->activeDraftId === $draftId) {
+            $this->activeDraftId = null;
+            $this->draftName = '';
+        }
+
+        Notification::make()
+            ->title(__('Draft Dihapus'))
+            ->success()
+            ->send();
+
         $this->mount();
     }
 
