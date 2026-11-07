@@ -73,7 +73,11 @@
             try {
                 const response = await fetch('/api/print-queue/test?token={{ $token }}', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Authorization': 'Bearer {{ $token }}'
+                    },
                     body: JSON.stringify({ outlet_id: {{ $outletId }}, type: '{{ $type }}' })
                 });
                 const data = await response.json();
