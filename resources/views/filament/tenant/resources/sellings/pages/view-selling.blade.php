@@ -143,6 +143,8 @@
     let about = @js($about);
     const printerData = getPrinter();
     const isPrinterActive = printerData && !(printerData instanceof Error) && (printerData.printerId || window.LakasirBridge);
+    const paperWidth = (printerData && !(printerData instanceof Error) && printerData.paper_width) ? printerData.paper_width : '58mm';
+    const dividerLine = paperWidth === '80mm' ? '------------------------------------------------' : '-------------------------------';
 
     try {
       if (!isPrinterActive) {
@@ -152,10 +154,10 @@
           .warning()
           .send();
 
-        window.open('/member/sellings/' + selling.id + '/receipt-pdf', '_blank');
+        window.open('/member/sellings/' + selling.id + '/receipt-pdf?width=' + paperWidth, '_blank');
         return;
       } else {
-        const printer = new Printer(printerData.printerId);
+        const printer = new Printer(printerData.printerId, paperWidth);
         let printerAction = printer.font('a');
         if(about != undefined || about != null) {
           printerAction.size(1)
@@ -168,7 +170,7 @@
               .text(printerData.header);
           }
           printerAction.align('left')
-            .text('-------------------------------');
+            .text(dividerLine);
         }
         printerAction.table(['@lang('Cashier')', selling.user.name])
         if(selling.order_type_label != undefined && selling.order_type_label != null && selling.order_type_label != '-') {
@@ -183,7 +185,7 @@
             .table(['Member', selling.member.name]);
         }
         printerAction
-          .text('-------------------------------');
+          .text(dividerLine);
         selling.selling_details.forEach(sellingDetail => {
           let price = sellingDetail.price;
           let text = moneyFormat(sellingDetail.price / sellingDetail.qty) + ' x ' + sellingDetail.qty.toString();
@@ -209,7 +211,7 @@
             .align('left')
         });
         printerAction
-          .text('-------------------------------');
+          .text(dividerLine);
         if("@js(feature(SellingTax::class))" == 'true') {
           printerAction.table(['@lang('Tax')', `${selling.tax}%`])
             .table(['@lang('Tax price')', moneyFormat(selling.tax_price)]);
@@ -218,7 +220,7 @@
           .table(['@lang('Subtotal')', moneyFormat(selling.total_price)])
           .table(['@lang('Discount')', `(${moneyFormat(selling.total_discount_per_item + selling.discount_price)})`])
           .table(['@lang('Total price')', moneyFormat(selling.grand_total_price)])
-          .text('-------------------------------')
+          .text(dividerLine)
           .table(['@lang('Payed money')', moneyFormat(selling.payed_money)])
           .table(['@lang('Change')', moneyFormat(selling.money_changes)])
           .align('center');
@@ -240,7 +242,7 @@
             .warning()
             .send();
 
-          window.open('/member/sellings/' + selling.id + '/receipt-pdf', '_blank');
+          window.open('/member/sellings/' + selling.id + '/receipt-pdf?width=' + paperWidth, '_blank');
         }
       }
     } catch (error) {
@@ -251,7 +253,7 @@
         .warning()
         .send();
 
-      window.open('/member/sellings/' + selling.id + '/receipt-pdf', '_blank');
+      window.open('/member/sellings/' + selling.id + '/receipt-pdf?width=' + paperWidth, '_blank');
     }
   });
 </script>

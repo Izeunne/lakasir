@@ -64,13 +64,18 @@
             $wire.data.driver = 'bluetooth';
             $wire.data.printer = 'Android Printer (Dual-Mode)';
             $wire.data.printerId = 'android_bridge_default';
+            $wire.data.paper_width = '58mm';
           }
         }
         if(localStorage.printer) {
           const printer = JSON.parse(localStorage.printer);
           $wire.data = {
+            paper_width: '58mm',
+            ...$wire.data,
             ...printer
-          }
+          };
+        } else if (!$wire.data.paper_width) {
+          $wire.data.paper_width = '58mm';
         }
       },
       fetchDeviceByDriver() {
@@ -113,12 +118,14 @@
         }
         localStorage.setItem("printer", JSON.stringify({
           ...$wire.data,
-        }))
+        }));
+
+        $wire.saveSettings($wire.data);
 
         new FilamentNotification()
           .title('@lang('Save success')')
           .success()
-          .send()
+          .send();
       },
       async test() {
         if (!window.LakasirBridge) {
@@ -128,13 +135,15 @@
           }
         }
         try {
-          const printer = new Printer($wire.data.printerId || 'android_bridge_default');
+          const paperWidth = $wire.data.paper_width || '58mm';
+          const printer = new Printer($wire.data.printerId || 'android_bridge_default', paperWidth);
+          const divider = paperWidth === '80mm' ? '------------------------------------------------' : '-------------------------------';
           printerAction = printer.font('a')
             .size(1)
             .align('center')
             .text('Lakasir POS')
             .size(0)
-            .text('Test Cetak Dual-Mode');
+            .text('Test Cetak (' + paperWidth + ')');
 
           if($wire.data.header != undefined) {
             printerAction
@@ -142,18 +151,19 @@
           }
 
           printerAction.align('left')
-            .text('-------------------------------')
+            .text(divider)
             .table(['Status Bridge', 'TERHUBUNG'])
             .table(['Metode Cetak', window.LakasirBridge ? 'Direct Native' : 'WebUSB'])
+            .table(['Ukuran Kertas', paperWidth])
             .table(['Waktu', new Date().toLocaleTimeString()])
-            .text('-------------------------------')
+            .text(divider)
             .tableCustom([
               { text: 'Item Uji Coba'},
               { text: '1 x 10.000', style: 'B'}
             ])
             .align('right')
             .text('10.000')
-            .text('-------------------------------')
+            .text(divider)
             .tableCustom([
               { text: 'Total', style: 'B'},
               { text: '10.000', style: 'B'}
@@ -168,7 +178,7 @@
             .print('kasir');
 
           new FilamentNotification()
-            .title('Perintah cetak berhasil dikirim')
+            .title('Perintah cetak (' + paperWidth + ') berhasil dikirim')
             .success()
             .send();
         } catch (e) {

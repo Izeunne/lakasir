@@ -9,8 +9,8 @@
     }
     body {
       font-family: 'DejaVu Sans', 'Helvetica', Arial, sans-serif;
-      font-size: 8pt;
-      line-height: 1.3;
+      font-size: {{ $paperWidth === '80mm' ? '9pt' : '8pt' }};
+      line-height: 1.35;
       color: #111;
       margin: 0;
       padding: 0;
@@ -35,25 +35,25 @@
     .table-full td {
       padding: 1.5px 0;
       vertical-align: top;
-      font-size: 8pt;
+      font-size: {{ $paperWidth === '80mm' ? '9pt' : '8pt' }};
     }
     .item-name {
       font-weight: 600;
       word-break: break-word;
     }
     .sub-item {
-      font-size: 7pt;
+      font-size: {{ $paperWidth === '80mm' ? '8pt' : '7pt' }};
       color: #444;
       padding-left: 6px;
     }
     .store-name {
-      font-size: 11pt;
+      font-size: {{ $paperWidth === '80mm' ? '12pt' : '11pt' }};
       font-weight: bold;
       letter-spacing: 0.5px;
       margin-bottom: 2px;
     }
     .store-address {
-      font-size: 7.5pt;
+      font-size: {{ $paperWidth === '80mm' ? '8.5pt' : '7.5pt' }};
       color: #333;
       margin-bottom: 4px;
     }

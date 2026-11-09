@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tenants\Selling;
+use App\Models\Tenants\Setting;
 use App\Services\Tenants\ReceiptPdfService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -14,7 +15,8 @@ class SellingReceiptPdfController extends Controller
      */
     public function generate(Request $request, Selling $selling, ReceiptPdfService $receiptPdfService): Response
     {
-        $paperWidth = $request->query('width', '58mm');
+        $defaultWidth = Setting::get('printer_paper_width', '58mm');
+        $paperWidth = $request->query('width', $defaultWidth);
         if (! in_array($paperWidth, ['58mm', '80mm'], true)) {
             $paperWidth = '58mm';
         }

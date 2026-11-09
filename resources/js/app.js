@@ -12,6 +12,7 @@ function getPrinter() {
       name: 'Android Print Bridge (Dual-Mode)',
       printer: 'Printer Android Terintegrasi',
       printerId: 'android_bridge_default',
+      paper_width: localStorage.printer ? (function() { try { return JSON.parse(localStorage.printer).paper_width || '58mm'; } catch(e) { return '58mm'; } })() : '58mm',
       header: localStorage.printer ? (function() { try { return JSON.parse(localStorage.printer).header; } catch(e) { return undefined; } })() : undefined,
       footer: localStorage.printer ? (function() { try { return JSON.parse(localStorage.printer).footer; } catch(e) { return undefined; } })() : undefined,
     };
@@ -22,7 +23,11 @@ function getPrinter() {
     return Error('printer didn\'t set');
   }
 
-  return JSON.parse(localStorage.printer);
+  const printer = JSON.parse(localStorage.printer);
+  if (!printer.paper_width) {
+    printer.paper_width = '58mm';
+  }
+  return printer;
 }
 
 /**

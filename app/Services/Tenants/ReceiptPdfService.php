@@ -15,7 +15,7 @@ class ReceiptPdfService
     /**
      * Generate DomPDF instance for the selling receipt.
      */
-    public function generate(Selling $selling, string $paperWidth = '58mm'): DomPdfWrapper
+    public function generate(Selling $selling, ?string $paperWidth = null): DomPdfWrapper
     {
         $selling->loadMissing([
             'sellingDetails.product',
@@ -24,6 +24,11 @@ class ReceiptPdfService
             'user',
             'table',
         ]);
+
+        $paperWidth = $paperWidth ?: Setting::get('printer_paper_width', '58mm');
+        if (! in_array($paperWidth, ['58mm', '80mm'], true)) {
+            $paperWidth = '58mm';
+        }
 
         $about = About::first();
         $currency = Setting::get('currency', 'IDR');
@@ -64,8 +69,9 @@ class ReceiptPdfService
     /**
      * Save receipt PDF to public storage and return its relative path.
      */
-    public function saveToStorage(Selling $selling, string $paperWidth = '58mm'): string
+    public function saveToStorage(Selling $selling, ?string $paperWidth = null): string
     {
+        $paperWidth = $paperWidth ?: Setting::get('printer_paper_width', '58mm');
         $pdf = $this->generate($selling, $paperWidth);
         $filename = "receipts/receipt-{$selling->code}.pdf";
 

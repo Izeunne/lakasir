@@ -93,3 +93,27 @@ test('save receipt pdf listener auto saves pdf upon selling created event', func
 
     Storage::disk('public')->assertExists("receipts/receipt-{$this->selling->code}.pdf");
 });
+
+test('receipt pdf service supports 80mm paper width and respects printer_paper_width setting', function () {
+    $service = app(ReceiptPdfService::class);
+
+    // Explicit 80mm
+    $pdf80 = $service->generate($this->selling, '80mm');
+    expect($pdf80)->toBeInstanceOf(\Barryvdh\DomPDF\PDF::class);
+
+    // Via setting
+    \App\Models\Tenants\Setting::set('printer_paper_width', '80mm');
+    $pdfFromSetting = $service->generate($this->selling);
+    expect($pdfFromSetting)->toBeInstanceOf(\Barryvdh\DomPDF\PDF::class);
+
+    $user = User::first();
+    $response = actingAs($user)->get("/member/sellings/{$this->selling->id}/receipt-pdf?width=80mm");
+    $response->assertOk()->assertHeader('content-type', 'application/pdf');
+});
+
+test('printer page saves paper_width setting properly', function () {
+    $printerPage = new \App\Filament\Tenant\Pages\Printer();
+    $printerPage->saveSettings(['paper_width' => '80mm']);
+
+    expect(\App\Models\Tenants\Setting::get('printer_paper_width'))->toBe('80mm');
+});

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Tenant\Pages;
 
+use App\Models\Tenants\Setting;
 use App\Traits\HasTranslatableResource;
 use Filament\Actions\Action;
 use Filament\Actions\Contracts\HasActions;
@@ -31,7 +32,9 @@ class Printer extends Page implements HasActions, HasForms
 
     public function mount()
     {
-        $this->form->fill();
+        $this->form->fill([
+            'paper_width' => Setting::get('printer_paper_width', '58mm'),
+        ]);
     }
 
     public function form(Form $form): Form
@@ -50,6 +53,15 @@ class Printer extends Page implements HasActions, HasForms
                     'usb' => 'USB',
                 ])
                 ->translateLabel(),
+            Components\Select::make('paper_width')
+                ->label(__('Ukuran Kertas'))
+                ->helperText(__('Pilih ukuran lebar kertas thermal printer'))
+                ->default('58mm')
+                ->options([
+                    '58mm' => '58 mm (Standar)',
+                    '80mm' => '80 mm (Lebar)',
+                ])
+                ->required(),
             Grid::make(columns: 3)
                 ->schema([
                     Components\TextInput::make('printer')
@@ -94,11 +106,19 @@ class Printer extends Page implements HasActions, HasForms
         ];
     }
 
+    public function saveSettings(array $data): void
+    {
+        if (isset($data['paper_width'])) {
+            Setting::set('printer_paper_width', $data['paper_width']);
+        }
+    }
+
     public function validateInput()
     {
         $this->validate([
             'data.printer' => 'required',
             'data.name' => 'required',
+            'data.paper_width' => 'required',
         ]);
     }
 }

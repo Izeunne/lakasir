@@ -49,12 +49,13 @@ trait TableProduct
                         ->translateLabel()
                         ->alignCenter()
                         ->extraAttributes([
-                            'class' => 'py-0',
+                            'class' => 'py-0 w-full',
                         ])
                         ->extraImgAttributes([
                             'class' => 'mb-3 object-cover -mt-4 w-full h-24 sm:h-28 rounded-t-lg',
                         ])
-                        ->height(100),
+                        ->height('auto')
+                        ->width('100%'),
                     TextColumn::make('selling_price')
                         ->color('primary')
                         ->money(Setting::get('currency', 'IDR'))

@@ -1,8 +1,8 @@
 class Printer {
-  constructor(printerId) {
-    console.log(this.commands);
+  constructor(printerId, paperWidth = '58mm') {
     this.commands = '';
-    this.lineWidth = 32;
+    this.paperWidth = paperWidth;
+    this.lineWidth = paperWidth === '80mm' ? 48 : 32;
     this.printerId = printerId;
   }
 
