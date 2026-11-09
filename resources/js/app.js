@@ -6,6 +6,17 @@ let selectedDevice = null;
  * @returns {Object|Error} The printer settings object or an Error if not set.
  */
 function getPrinter() {
+  if (window.LakasirBridge && typeof window.LakasirBridge.isBridgeAvailable === 'function') {
+    return {
+      driver: 'android_bridge',
+      name: 'Android Print Bridge (Dual-Mode)',
+      printer: 'Printer Android Terintegrasi',
+      printerId: 'android_bridge_default',
+      header: localStorage.printer ? (function() { try { return JSON.parse(localStorage.printer).header; } catch(e) { return undefined; } })() : undefined,
+      footer: localStorage.printer ? (function() { try { return JSON.parse(localStorage.printer).footer; } catch(e) { return undefined; } })() : undefined,
+    };
+  }
+
   if (localStorage.printer == undefined) {
     console.error('printer didn\'t set');
     return Error('printer didn\'t set');

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- POS Mataverse Theme Colors -->
+    <color name="mataverse_primary">#4F46E5</color>
+    <color name="mataverse_primary_dark">#3730A3</color>
+    <color name="mataverse_primary_container">#EEF2FF</color>
+    <color name="mataverse_on_primary">#FFFFFF</color>
+    <color name="mataverse_secondary">#0284C7</color>
+    <color name="mataverse_bg">#F8FAFC</color>
+    <color name="mataverse_surface">#FFFFFF</color>
+    <color name="mataverse_surface_variant">#F1F5F9</color>
+    <color name="mataverse_border">#E2E8F0</color>
+    <color name="mataverse_text_main">#0F172A</color>
+    <color name="mataverse_text_muted">#64748B</color>
+
+    <color name="mataverse_success">#10B981</color>
+    <color name="mataverse_success_container">#ECFDF5</color>
+    <color name="mataverse_error">#EF4444</color>
+    <color name="mataverse_error_container">#FEF2F2</color>
+    <color name="mataverse_warning">#F59E0B</color>
+
+    <!-- Legacy Aliases for backwards compatibility -->
+    <color name="bridge_blue">#4F46E5</color>
+    <color name="bridge_ink">#0F172A</color>
+    <color name="bridge_sand">#F8FAFC</color>
+</resources>

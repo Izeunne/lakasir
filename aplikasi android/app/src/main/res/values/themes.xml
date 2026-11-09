@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.WebPrintBridge" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/mataverse_primary</item>
+        <item name="colorOnPrimary">@color/mataverse_on_primary</item>
+        <item name="colorPrimaryContainer">@color/mataverse_primary_container</item>
+        <item name="colorSecondary">@color/mataverse_secondary</item>
+        <item name="colorSurface">@color/mataverse_surface</item>
+        <item name="colorSurfaceVariant">@color/mataverse_surface_variant</item>
+        <item name="android:statusBarColor" tools:targetApi="l">@color/mataverse_primary_dark</item>
+        <item name="android:windowBackground">@color/mataverse_bg</item>
+    </style>
+</resources>

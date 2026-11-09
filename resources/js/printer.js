@@ -6,10 +6,56 @@ class Printer {
     this.printerId = printerId;
   }
 
-  async print() {
+  async print(targetPrinter = 'kasir') {
     const commands = this.getCommands();
-    console.log(commands)
+    console.log('Mengirim perintah cetak ESC/POS...');
+
+    // 1. DUAL-MODE / HYBRID: Jika berjalan di dalam aplikasi Android Lakasir (WebView)
+    if (window.LakasirBridge && typeof window.LakasirBridge.printRaw === 'function') {
+      try {
+        const bytes = new Uint8Array(commands.length);
+        for (let i = 0; i < commands.length; i++) {
+          bytes[i] = commands.charCodeAt(i) & 0xff;
+        }
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        const base64 = window.btoa(binary);
+
+        const result = window.LakasirBridge.printRaw(base64, targetPrinter);
+        if (result === 'SUCCESS') {
+          console.log('Struk berhasil dicetak langsung via LakasirBridge Android');
+          this.clearCommands();
+          return true;
+        } else {
+          console.error('LakasirBridge error:', result);
+          if (typeof FilamentNotification !== 'undefined') {
+            new FilamentNotification()
+              .title('Gagal cetak via Android Bridge: ' + result)
+              .danger()
+              .send();
+          }
+          return false;
+        }
+      } catch (err) {
+        console.error('Error saat cetak via LakasirBridge:', err);
+      }
+    }
+
+    // 2. FALLBACK: WebUSB jika dibuka di Chrome Desktop/Laptop
     try {
+      if (!navigator.usb) {
+        console.warn('WebUSB tidak didukung di browser ini.');
+        if (typeof FilamentNotification !== 'undefined') {
+          new FilamentNotification()
+            .title('Perangkat/browser tidak mendukung cetak USB. Silakan gunakan Aplikasi Android Lakasir.')
+            .danger()
+            .send();
+        }
+        return false;
+      }
+
       const devices = await navigator.usb.getDevices();
       const device = devices.find(device => device.vendorId === this.printerId);
       if (device) {
@@ -22,23 +68,28 @@ class Printer {
         const endpoint = device.configuration.interfaces[0].alternate.endpoints.filter(endpoint => endpoint.direction === 'out')[0]
         await device.transferOut(endpoint.endpointNumber, data);
         await device.close();
-        console.log('Data sent to printer');
+        console.log('Data sent to printer via WebUSB');
         this.clearCommands();
+        return true;
       } else {
         console.log('No USB device with the specified vendor ID found');
-        new FilamentNotification()
-          .title('You should choose the printer first in printer setting')
-          .danger()
-          .actions([
-            new FilamentNotificationAction('Setting')
-              .icon('heroicon-o-cog-6-tooth')
-              .button()
-              .url('/member/printer'),
-          ])
-          .send()
+        if (typeof FilamentNotification !== 'undefined') {
+          new FilamentNotification()
+            .title('You should choose the printer first in printer setting')
+            .danger()
+            .actions([
+              new FilamentNotificationAction('Setting')
+                .icon('heroicon-o-cog-6-tooth')
+                .button()
+                .url('/member/printer'),
+            ])
+            .send()
+        }
+        return false;
       }
     } catch (e) {
       console.error(e);
+      return false;
     }
   }
 

@@ -1,6 +1,24 @@
 <x-filament-panels::page>
-  <!-- Android Print Bridge Quick Card -->
-  <div style="background: #eef2ff; border: 1.5px solid #6366f1; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+  <!-- Android Print Bridge Detected Card (Dual-Mode Native) -->
+  <div id="lakasirBridgeBanner" style="display: none; background: #ecfdf5; border: 1.5px solid #10b981; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <div style="font-size: 16px; font-weight: 700; color: #065f46; display: flex; align-items: center; gap: 6px;">
+          <span>📱</span> Lakasir Android Bridge (Dual-Mode Aktif)
+          <span style="background: #10b981; color: white; font-size: 11px; padding: 2px 8px; border-radius: 9999px;">Direct Native</span>
+        </div>
+        <p style="font-size: 13px; color: #047857; margin-top: 4px;">
+          POS sedang berjalan di aplikasi Android Lakasir. Pencetakan struk dan pembukaan laci kasir langsung diproses oleh driver Bluetooth/LAN di HP/tablet ini.
+        </p>
+      </div>
+      <button type="button" onclick="if (window.LakasirBridge) window.LakasirBridge.openSettings();" style="background: #059669; color: white; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+        <span>⚙️</span> Atur Printer di Android
+      </button>
+    </div>
+  </div>
+
+  <!-- Android Print Bridge Quick Card (Untuk Browser Luar) -->
+  <div id="standardBridgeBanner" style="background: #eef2ff; border: 1.5px solid #6366f1; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
       <div>
         <div style="font-size: 16px; font-weight: 700; color: #4338ca; display: flex; align-items: center; gap: 6px;">
@@ -35,6 +53,19 @@
   <script>
     Alpine.data('printer', () => ({
       init() {
+        if (window.LakasirBridge) {
+          const lakasirBanner = document.getElementById('lakasirBridgeBanner');
+          const stdBanner = document.getElementById('standardBridgeBanner');
+          if (lakasirBanner) lakasirBanner.style.display = 'block';
+          if (stdBanner) stdBanner.style.display = 'none';
+
+          if (!$wire.data.name) {
+            $wire.data.name = 'Lakasir POS Native';
+            $wire.data.driver = 'bluetooth';
+            $wire.data.printer = 'Android Printer (Dual-Mode)';
+            $wire.data.printerId = 'android_bridge_default';
+          }
+        }
         if(localStorage.printer) {
           const printer = JSON.parse(localStorage.printer);
           $wire.data = {
@@ -43,6 +74,10 @@
         }
       },
       fetchDeviceByDriver() {
+        if (window.LakasirBridge) {
+          window.LakasirBridge.openSettings();
+          return;
+        }
         if($wire.data.driver == 'bluetooth') {
           this.fetchBluetooth();
         }
@@ -64,11 +99,17 @@
           console.error(error);
         }
       },
-      async fetchBluetooth() {},
+      async fetchBluetooth() {
+        if (window.LakasirBridge) {
+          window.LakasirBridge.openSettings();
+        }
+      },
       save() {
-        $wire.validateInput();
-        if(!$wire.data.printer || !$wire.data.name) {
-          return;
+        if (!window.LakasirBridge) {
+          $wire.validateInput();
+          if(!$wire.data.printer || !$wire.data.name) {
+            return;
+          }
         }
         localStorage.setItem("printer", JSON.stringify({
           ...$wire.data,
@@ -80,18 +121,20 @@
           .send()
       },
       async test() {
-        $wire.validateInput();
-        if(!$wire.data.printer || !$wire.data.name) {
-          return;
+        if (!window.LakasirBridge) {
+          $wire.validateInput();
+          if(!$wire.data.printer || !$wire.data.name) {
+            return;
+          }
         }
         try {
-          const printer = new Printer($wire.data.printerId);
+          const printer = new Printer($wire.data.printerId || 'android_bridge_default');
           printerAction = printer.font('a')
             .size(1)
             .align('center')
-            .text('Toko Mitra Susu')
+            .text('Lakasir POS')
             .size(0)
-            .text('Jl. cipinang raya no 156');
+            .text('Test Cetak Dual-Mode');
 
           if($wire.data.header != undefined) {
             printerAction
@@ -100,33 +143,20 @@
 
           printerAction.align('left')
             .text('-------------------------------')
-            .table(['Cashier', 'Nama kasir'])
-            .table(['Payment method', 'Cash'])
+            .table(['Status Bridge', 'TERHUBUNG'])
+            .table(['Metode Cetak', window.LakasirBridge ? 'Direct Native' : 'WebUSB'])
+            .table(['Waktu', new Date().toLocaleTimeString()])
             .text('-------------------------------')
             .tableCustom([
-              { text: 'Test 1'},
-              { text: moneyFormat(2000) + ' x 1', style: 'B'}
+              { text: 'Item Uji Coba'},
+              { text: '1 x 10.000', style: 'B'}
             ])
             .align('right')
-            .text(moneyFormat(2000))
-            .tableCustom([
-              { text: 'Test 2'},
-              { text: moneyFormat(5000) + ' x 1', style: 'B'}
-            ])
-            .align('right')
-            .text(moneyFormat(2000))
+            .text('10.000')
             .text('-------------------------------')
             .tableCustom([
-              { text: 'Subtotal', style: 'B'},
-              { text: moneyFormat(5000) + ' x 1', style: 'B'}
-            ])
-            .tableCustom([
-              { text: 'Tax', style: 'B'},
-              { text: moneyFormat(5000) + ' x 1', style: 'B'}
-            ])
-            .tableCustom([
-              { text: 'Total price', style: 'B'},
-              { text: moneyFormat(5000) + ' x 1', style: 'B'}
+              { text: 'Total', style: 'B'},
+              { text: '10.000', style: 'B'}
             ])
             .newLine()
             .align('center');
@@ -135,9 +165,18 @@
               .text($wire.data.footer);
           }
           await printerAction.cut()
-            .print();
+            .print('kasir');
+
+          new FilamentNotification()
+            .title('Perintah cetak berhasil dikirim')
+            .success()
+            .send();
         } catch (e) {
-          console.error(e)
+          console.error(e);
+          new FilamentNotification()
+            .title('Gagal mengirim test cetak: ' + e.message)
+            .danger()
+            .send();
         }
       }
     }))
