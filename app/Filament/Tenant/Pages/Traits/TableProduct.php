@@ -52,7 +52,7 @@ trait TableProduct
                             'class' => 'py-0',
                         ])
                         ->extraImgAttributes([
-                            'class' => 'mb-4 object-cover -mt-4 xl:w-[200px] md:w-[180px] w-[150px]',
+                            'class' => 'mb-3 object-cover -mt-4 w-full h-24 sm:h-28 rounded-t-lg',
                         ])
                         ->height(100),
                     TextColumn::make('selling_price')
@@ -93,7 +93,9 @@ trait TableProduct
                 ]),
             ])
             ->contentGrid([
-                'md' => 3,
+                'sm' => 2,
+                'md' => 2,
+                'lg' => 3,
                 'xl' => 4,
             ])
             ->headerActionsPosition(HeaderActionsPosition::Bottom)

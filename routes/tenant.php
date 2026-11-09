@@ -25,6 +25,7 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\CashierReportController;
 use App\Http\Controllers\PrinterController;
 use App\Http\Controllers\ProductReportController;
+use App\Http\Controllers\SellingReceiptPdfController;
 use App\Http\Controllers\SellingReportController;
 use App\Http\Middleware\InitializeTenancyByDomain;
 use App\Livewire\ResetPassword;
@@ -51,6 +52,8 @@ Route::middleware([
             ->name('cashier-report.generate');
         Route::view('/member/sellings/{selling}/print', 'filament.tenant.pages.selling.print-receipt')
             ->name('selling.print');
+        Route::get('/member/sellings/{selling}/receipt-pdf', [SellingReceiptPdfController::class, 'generate'])
+            ->name('selling.receipt.pdf');
         Route::get('/reset-password/{token}', ResetPassword::class)
             ->middleware('guest')
             ->name('reset-password.index');

@@ -122,12 +122,12 @@
             android:progressTint="@color/mataverse_primary"
             android:visibility="gone" />
 
-        <!-- Single small floating button to open printer settings -->
+        <!-- Single small floating button to open printer settings (positioned at bottom-start to avoid covering checkout actions) -->
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fabPrinterSettings"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
+            android:layout_gravity="bottom|start"
             android:layout_margin="16dp"
             android:contentDescription="Pengaturan Printer"
             app:backgroundTint="@color/mataverse_surface"

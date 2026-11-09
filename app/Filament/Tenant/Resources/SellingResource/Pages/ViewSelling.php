@@ -126,6 +126,12 @@ class ViewSelling extends ViewRecord
                 ])
                 ->color(Color::Teal)
                 ->visible(can('can print selling') && feature(PrintSellingA5::class)),
+            Action::make('print_pdf_receipt')
+                ->label(__('Struk PDF'))
+                ->icon('heroicon-o-document-arrow-down')
+                ->color(Color::Blue)
+                ->url(fn (): string => route('selling.receipt.pdf', ['selling' => $this->getRecord()]))
+                ->openUrlInNewTab(),
             Action::make(__('Print receipt'))
                 ->icon('heroicon-s-printer')
                 ->extraAttributes([

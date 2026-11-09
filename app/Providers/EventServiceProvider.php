@@ -8,6 +8,7 @@ use App\Listeners\AdjustProduct;
 use App\Listeners\AssignProduct;
 use App\Listeners\CreateReceivableIfCredit;
 use App\Listeners\QueuePrintBridgeReceipt;
+use App\Listeners\SaveReceiptPdf;
 use App\Models\Tenants\Member;
 use App\Models\Tenants\Product;
 use App\Models\Tenants\Selling;
@@ -39,6 +40,7 @@ class EventServiceProvider extends ServiceProvider
             AssignProduct::class,
             CreateReceivableIfCredit::class,
             QueuePrintBridgeReceipt::class,
+            SaveReceiptPdf::class,
         ],
         RecalculateEvent::class => [
             AdjustProduct::class,

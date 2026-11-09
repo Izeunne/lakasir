@@ -142,19 +142,18 @@
     let selling = @js($record);
     let about = @js($about);
     const printerData = getPrinter();
+    const isPrinterActive = printerData && !(printerData instanceof Error) && (printerData.printerId || window.LakasirBridge);
 
     try {
-      if (!printerData) {
+      if (!isPrinterActive) {
         new FilamentNotification()
-          .title('@lang('You should choose the printer first in printer setting')')
-          .danger()
-          .actions([
-            new FilamentNotificationAction('Setting')
-              .icon('heroicon-o-cog-6-tooth')
-              .button()
-              .url('/member/printer'),
-          ])
-          .send()
+          .title('@lang('Printer belum diatur atau tidak aktif')')
+          .body('@lang('Struk dialihkan ke format PDF dan dibuka untuk dicetak.')')
+          .warning()
+          .send();
+
+        window.open('/member/sellings/' + selling.id + '/receipt-pdf', '_blank');
+        return;
       } else {
         const printer = new Printer(printerData.printerId);
         let printerAction = printer.font('a');
@@ -230,12 +229,29 @@
         printerAction.align('left')
           .text('copy');
 
-        await printerAction
+        const printSuccess = await printerAction
           .cut()
           .print();
+
+        if (!printSuccess) {
+          new FilamentNotification()
+            .title('@lang('Printer tidak terhubung atau gagal mencetak')')
+            .body('@lang('Struk dialihkan ke format PDF.')')
+            .warning()
+            .send();
+
+          window.open('/member/sellings/' + selling.id + '/receipt-pdf', '_blank');
+        }
       }
     } catch (error) {
       console.error(error);
+      new FilamentNotification()
+        .title('@lang('Terjadi kendala pada printer fisik')')
+        .body('@lang('Struk otomatis dialihkan ke format PDF.')')
+        .warning()
+        .send();
+
+      window.open('/member/sellings/' + selling.id + '/receipt-pdf', '_blank');
     }
   });
 </script>

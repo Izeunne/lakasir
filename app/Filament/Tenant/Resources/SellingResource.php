@@ -140,6 +140,12 @@ class SellingResource extends Resource
                     }),
             ])
             ->actions([
+                Action::make('print_pdf_receipt')
+                    ->label(__('Struk PDF'))
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->color('info')
+                    ->url(fn (Selling $record): string => route('selling.receipt.pdf', ['selling' => $record]))
+                    ->openUrlInNewTab(),
                 Action::make('edit_note')
                     ->label(__('Note Penjualan'))
                     ->icon('heroicon-o-pencil-square')

@@ -29,6 +29,15 @@ Route::get('/print-client.html', function (Request $request) {
     return view('print-bridge-client', compact('baseUrl', 'token', 'outletId', 'type', 'autoStart', 'fullClientUrl'));
 });
 
+if (app()->environment('local')) {
+    Route::middleware(['web'])->get('/dev-login', function () {
+        $user = \App\Models\Tenants\User::first();
+        auth('web')->login($user);
+        request()->session()->regenerate();
+        return redirect('/member/cashier');
+    });
+}
+
 Route::middleware([
     'web',
 ])

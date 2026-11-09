@@ -3,15 +3,56 @@
   use App\Features\{PaymentShortcutButton, SellingTax, Discount};
 
 @endphp
-<div class="">
-  <div class="grid grid-cols-3 gap-x-4">
-    <div class="col-span-2">
+<div class="p-2 sm:p-4 min-h-screen" x-data="{ mobileTab: 'products' }">
+  {{-- Mobile Top Navigation Switcher (< 768px) --}}
+  <div class="mb-3 flex items-center justify-between gap-2 md:hidden">
+    <div class="inline-flex rounded-lg bg-gray-200/90 p-1 dark:bg-gray-800">
+      <button type="button" @click="mobileTab = 'products'"
+        :class="mobileTab === 'products' ? 'bg-white shadow text-gray-900 font-bold dark:bg-gray-700 dark:text-white' : 'text-gray-600 dark:text-gray-400'"
+        class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs transition">
+        <x-heroicon-o-squares-2x2 class="h-4 w-4" />
+        <span>{{ __('Katalog') }}</span>
+      </button>
+      <button type="button" @click="mobileTab = 'cart'"
+        :class="mobileTab === 'cart' ? 'bg-white shadow text-lakasir-primary font-bold dark:bg-gray-700' : 'text-gray-600 dark:text-gray-400'"
+        class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs transition relative">
+        <x-heroicon-o-shopping-bag class="h-4 w-4" />
+        <span>{{ __('Pesanan') }}</span>
+        @if ($cartItems->sum('qty') > 0)
+          <span class="rounded-full bg-lakasir-primary text-[10px] text-white px-1.5 py-0.5 font-bold leading-none">
+            {{ $cartItems->sum('qty') }}
+          </span>
+        @endif
+      </button>
+    </div>
+    <a href="/member/sellings" class="flex items-center gap-1 rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300">
+      <x-heroicon-o-arrow-left class="h-3.5 w-3.5" />
+      <span>{{ __('Kembali') }}</span>
+    </a>
+  </div>
+
+  <div class="flex flex-col md:flex-row gap-3 lg:gap-4 items-start w-full">
+    {{-- Kolom Katalog Produk --}}
+    <div class="w-full md:w-[56%] lg:w-[62%] xl:w-2/3 flex-1 min-w-0"
+      :class="mobileTab === 'cart' ? 'hidden md:block' : 'block'">
       {{ $this->table }}
     </div>
-    <div class="fixed right-0 h-screen w-1/3 overflow-y-scroll pb-10">
-      <div class="mt-4 h-screen space-y-2 px-4">
+
+    {{-- Kolom Order Details / Keranjang --}}
+    <div class="w-full md:w-[44%] lg:w-[38%] xl:w-1/3 shrink-0 md:sticky md:top-2 self-start rounded-xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 md:max-h-[calc(100vh-1rem)] flex flex-col overflow-hidden"
+      :class="mobileTab === 'products' ? 'hidden md:flex' : 'flex'">
+      
+      {{-- Header Sidebar --}}
+      <div class="p-3 sm:p-4 border-b border-gray-100 dark:border-gray-800 shrink-0 space-y-2">
         <div class="flex items-center justify-between" x-data="fullscreen">
-          <p class="text-xl font-semibold">{{ __('Orders details') }}</p>
+          <div class="flex items-center gap-2">
+            <button type="button" @click="mobileTab = 'products'"
+              class="md:hidden flex items-center justify-center rounded-lg bg-gray-100 p-1.5 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+              title="{{ __('Kembali ke Menu') }}">
+              <x-heroicon-o-arrow-left class="h-4 w-4" />
+            </button>
+            <p class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">{{ __('Orders details') }}</p>
+          </div>
           <div class="flex items-center">
             <div class="hidden items-center gap-x-2 xl:flex">
               <a href="/member/sellings"
@@ -60,40 +101,39 @@
             </div>
           </div>
         </div>
-        <hr />
-        <div class="hidden justify-between lg:flex">
-          <p class="">{{ Filament::auth()->user()->cashier_name }}</p>
-        </div>
-        <div class="flex items-center justify-between">
-          <p class="mb-2 hidden text-2xl font-semibold lg:block">{{ __('Current Orders') }}</p>
+        <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+          <p>{{ Filament::auth()->user()->cashier_name }}</p>
           <div class="flex items-center gap-x-2">
             <button
               type="button"
               x-on:click="$dispatch('open-modal', {id: 'draft-list-modal'})"
-              class="flex items-center gap-1.5 rounded-lg border border-lakasir-primary/40 bg-lakasir-primary/10 px-3 py-1.5 text-xs font-semibold text-lakasir-primary transition hover:bg-lakasir-primary hover:text-white">
-              <x-heroicon-o-bookmark-square class="h-4 w-4" />
+              class="flex items-center gap-1 rounded-lg border border-lakasir-primary/40 bg-lakasir-primary/10 px-2.5 py-1 text-xs font-semibold text-lakasir-primary transition hover:bg-lakasir-primary hover:text-white">
+              <x-heroicon-o-bookmark-square class="h-3.5 w-3.5" />
               <span>{{ __('Draft Pesanan') }}</span>
               @if (isset($cartDrafts) && $cartDrafts->count() > 0)
-                <span class="rounded-full bg-lakasir-primary px-2 py-0.5 text-[10px] font-bold text-white">
+                <span class="rounded-full bg-lakasir-primary px-1.5 py-0.2 text-[10px] font-bold text-white leading-none">
                   {{ $cartDrafts->count() }}
                 </span>
               @endif
             </button>
           </div>
         </div>
+      </div>
 
+      {{-- Body Scrollable Sidebar --}}
+      <div class="p-3 sm:p-4 overflow-y-auto flex-1 min-h-0 space-y-3">
         @if ($activeDraftId)
           <div class="flex items-center justify-between rounded-lg border border-lakasir-primary/40 bg-lakasir-primary/10 px-3 py-1.5 text-xs">
-            <div class="flex items-center gap-1.5 font-semibold text-lakasir-primary">
-              <x-heroicon-m-bookmark class="h-4 w-4" />
-              <span>{{ __('Draft Aktif') }}: {{ $draftName }}</span>
+            <div class="flex items-center gap-1.5 font-semibold text-lakasir-primary truncate">
+              <x-heroicon-m-bookmark class="h-4 w-4 shrink-0" />
+              <span class="truncate">{{ __('Draft Aktif') }}: {{ $draftName }}</span>
             </div>
-            <button type="button" wire:click="clearCart" class="text-xs font-semibold text-gray-500 hover:underline dark:text-gray-300">
+            <button type="button" wire:click="clearCart" class="text-xs font-semibold text-gray-500 hover:underline dark:text-gray-300 shrink-0 ml-2">
               {{ __('Tutup Draft') }}
             </button>
           </div>
         @endif
-        <div class="max-h-[35%] min-h-40 space-y-2 overflow-auto overflow-y-scroll" wire:loading.class="opacity-20"
+        <div class="max-h-[30vh] sm:max-h-[35vh] space-y-2 overflow-y-auto pr-0.5" wire:loading.class="opacity-20"
           wire:target="addCart,addVariationItem,reduceCart,increaseCart,deleteCart,addDiscountPricePerItem,addCartUsingScanner,confirmAddVariationCart">
           @php
             $orderedCartItems = $cartItems
@@ -287,30 +327,30 @@
         {{-- Pilihan Kategori Pesanan (Wajib) --}}
         <div>
           <div class="w-full rounded-lg border px-4 py-2.5 transition-colors {{ empty($orderType) ? 'border-danger-300 bg-danger-50/40 dark:border-danger-800 dark:bg-gray-900' : 'border-gray-200 bg-white dark:border-gray-900 dark:bg-gray-900' }}">
-            <div class="mb-2 flex items-center justify-between">
+            <div class="mb-1.5 flex items-center justify-between">
               <span class="text-xs font-bold text-gray-800 dark:text-gray-200">{{ __('Kategori Pesanan') }}</span>
               <span class="text-[10px] font-bold {{ empty($orderType) ? 'text-danger-600 dark:text-danger-400' : 'text-gray-400' }}">
                 * {{ __('Wajib Dipilih') }}
               </span>
             </div>
-            <div class="grid grid-cols-3 gap-2">
+            <div class="grid grid-cols-3 gap-1.5">
               <button
                 type="button"
                 wire:click="setOrderType('dine_in')"
-                class="flex items-center justify-center gap-1 rounded-lg border px-2 py-2 text-xs font-semibold transition {{ $orderType === 'dine_in' ? 'border-lakasir-primary bg-lakasir-primary text-white shadow-sm' : 'border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200' }}">
-                <span>Dine In</span>
+                class="flex items-center justify-center gap-1 rounded-lg border px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold transition {{ $orderType === 'dine_in' ? 'border-lakasir-primary bg-lakasir-primary text-white shadow-sm' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200' }}">
+                <span class="truncate">Dine In</span>
               </button>
               <button
                 type="button"
                 wire:click="setOrderType('take_away')"
-                class="flex items-center justify-center gap-1 rounded-lg border px-2 py-2 text-xs font-semibold transition {{ $orderType === 'take_away' ? 'border-lakasir-primary bg-lakasir-primary text-white shadow-sm' : 'border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200' }}">
-                <span>Take Away</span>
+                class="flex items-center justify-center gap-1 rounded-lg border px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold transition {{ $orderType === 'take_away' ? 'border-lakasir-primary bg-lakasir-primary text-white shadow-sm' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200' }}">
+                <span class="truncate">Take Away</span>
               </button>
               <button
                 type="button"
                 wire:click="setOrderType('ojek_online')"
-                class="flex items-center justify-center gap-1 rounded-lg border px-2 py-2 text-xs font-semibold transition {{ $orderType === 'ojek_online' ? 'border-lakasir-primary bg-lakasir-primary text-white shadow-sm' : 'border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200' }}">
-                <span>Ojek Online</span>
+                class="flex items-center justify-center gap-1 rounded-lg border px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold transition {{ $orderType === 'ojek_online' ? 'border-lakasir-primary bg-lakasir-primary text-white shadow-sm' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200' }}">
+                <span class="truncate">Ojek Online</span>
               </button>
             </div>
           </div>
@@ -318,47 +358,67 @@
 
         <div>
           <div
-            class="w-full rounded-lg border bg-white px-4 py-2 text-gray-600 dark:border-gray-900 dark:bg-gray-900 dark:text-white">
+            class="w-full rounded-lg border bg-gray-50/50 px-3 py-2 text-xs text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-white">
             @include('filament.tenant.pages.cashier.detail')
           </div>
         </div>
         <div>
           <div
-            class="w-full rounded-lg border bg-white px-4 py-2 text-gray-600 dark:border-gray-900 dark:bg-gray-900 dark:text-white">
+            class="w-full rounded-lg border bg-gray-50/50 px-3 py-2 text-xs text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-white">
             @include('filament.tenant.pages.cashier.total')
           </div>
         </div>
+      </div>
+
+      {{-- Footer / Checkout Actions Sidebar --}}
+      <div class="p-3 sm:p-4 pr-16 md:pr-16 lg:pr-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 shrink-0">
         <div class="grid grid-cols-3 gap-2">
           <button
             type="button"
             wire:click="openSaveDraftModal"
-            class="col-span-1 flex items-center justify-center gap-1.5 rounded-lg border border-lakasir-primary bg-white px-2 py-4 text-sm font-semibold text-lakasir-primary transition hover:bg-lakasir-primary/10 dark:bg-gray-900">
-            <x-heroicon-o-bookmark class="h-5 w-5" />
-            <span>{{ $activeDraftId ? __('Update Draft') : __('Simpan Draft') }}</span>
+            class="col-span-1 flex items-center justify-center gap-1 rounded-lg border border-lakasir-primary bg-white px-1.5 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-lakasir-primary transition hover:bg-lakasir-primary/10 dark:bg-gray-900">
+            <x-heroicon-o-bookmark class="h-4 w-4 shrink-0" />
+            <span class="truncate">{{ $activeDraftId ? __('Update') : __('Draft') }}</span>
           </button>
 
           @if ($this->hasMissingRequiredVariations())
             <button type="button" wire:click="notifyMissingVariations"
-              class="col-span-2 flex w-full items-center justify-center gap-2 rounded-lg bg-gray-400 px-2 py-4 font-semibold text-white cursor-not-allowed">
-              <x-heroicon-m-exclamation-triangle class="h-5 w-5 text-amber-300" />
-              <span>{{ __('Pilih Variasi Wajib Dahulu') }}</span>
+              class="col-span-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-gray-400 px-2 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white cursor-not-allowed">
+              <x-heroicon-m-exclamation-triangle class="h-4 w-4 text-amber-300 shrink-0" />
+              <span class="truncate">{{ __('Pilih Variasi Wajib') }}</span>
             </button>
           @elseif ($this->hasMissingOrderType())
             <button type="button" wire:click="notifyMissingOrderType"
-              class="col-span-2 flex w-full items-center justify-center gap-2 rounded-lg bg-gray-400 px-2 py-4 font-semibold text-white cursor-not-allowed">
-              <x-heroicon-m-exclamation-triangle class="h-5 w-5 text-amber-300" />
-              <span>{{ __('Pilih Kategori Pesanan') }}</span>
+              class="col-span-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-gray-400 px-2 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white cursor-not-allowed">
+              <x-heroicon-m-exclamation-triangle class="h-4 w-4 text-amber-300 shrink-0" />
+              <span class="truncate">{{ __('Pilih Kategori Pesanan') }}</span>
             </button>
           @else
             <button type="button"
               wire:click="openProceedPaymentModal"
-              class="col-span-2 w-full rounded-lg bg-lakasir-primary px-2 py-4 font-semibold text-white transition hover:opacity-90">
-              {{ __('Proceed to payment') }}
+              class="col-span-2 w-full rounded-lg bg-lakasir-primary px-2 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white transition hover:opacity-90 flex items-center justify-center gap-1.5 shadow-sm">
+              <span class="truncate">{{ __('Proceed to payment') }}</span>
             </button>
           @endif
         </div>
       </div>
     </div>
+  </div>
+
+  {{-- Sticky Floating Mobile Cart Bar (< 768px) --}}
+  <div class="fixed bottom-3 left-3 right-3 z-30 md:hidden"
+    x-show="mobileTab === 'products' && {{ $cartItems->count() }} > 0" x-cloak>
+    <button type="button" @click="mobileTab = 'cart'"
+      class="w-full flex items-center justify-between bg-lakasir-primary text-white rounded-xl px-4 py-3 shadow-lg hover:opacity-95 transition">
+      <div class="flex items-center gap-2">
+        <x-heroicon-o-shopping-bag class="h-5 w-5" />
+        <span class="font-bold text-sm">{{ $cartItems->sum('qty') }} {{ __('item') }}</span>
+        <span class="text-xs opacity-90">({{ price_format($total_price) }})</span>
+      </div>
+      <span class="text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+        {{ __('Lihat Pesanan') }} &rarr;
+      </span>
+    </button>
   </div>
   {{-- modal --}}
   <x-filament::modal id="edit-detail" width="2xl">
@@ -490,9 +550,12 @@
       </p>
     </div>
     <x-slot name="footer">
-      <div class="grid grid-cols-2 gap-x-2">
+      <div class="grid grid-cols-3 gap-x-2">
         <x-filament::button icon="heroicon-m-printer" id="printReceiptButton">
           {{ __('Print') }}
+        </x-filament::button>
+        <x-filament::button icon="heroicon-m-document-arrow-down" color="info" id="pdfReceiptButton">
+          {{ __('Struk (PDF)') }}
         </x-filament::button>
         <x-filament::button color="gray" x-on:click="$dispatch('close-modal', {id: 'success-modal'})">
           {{ __('Close') }}
@@ -961,22 +1024,30 @@
         document.getElementById('changes').innerHTML = moneyFormat(selling.money_changes);
       }, 300);
     });
+
+    document.getElementById("pdfReceiptButton")?.addEventListener('click', () => {
+      if (selling && selling.id) {
+        window.open('/member/sellings/' + selling.id + '/receipt-pdf', '_blank');
+      }
+    });
+
     document.getElementById("printReceiptButton").addEventListener('click', async (event) => {
       let about = @js($about);
       const printerData = getPrinter();
+      const isPrinterActive = printerData && !(printerData instanceof Error) && (printerData.printerId || window.LakasirBridge);
 
       try {
-        if (!printerData) {
+        if (!isPrinterActive) {
           new FilamentNotification()
-            .title('@lang('You should choose the printer first in printer setting')')
-            .danger()
-            .actions([
-              new FilamentNotificationAction('Setting')
-              .icon('heroicon-o-cog-6-tooth')
-              .button()
-              .url('/member/printer'),
-            ])
-            .send()
+            .title('@lang('Printer belum diatur atau tidak aktif')')
+            .body('@lang('Struk otomatis disimpan dalam format PDF dan dibuka untuk dicetak.')')
+            .warning()
+            .send();
+
+          if (selling && selling.id) {
+            window.open('/member/sellings/' + selling.id + '/receipt-pdf', '_blank');
+          }
+          return;
         } else {
           const printer = new Printer(printerData.printerId);
           let printerAction = printer.font('a');
@@ -1059,12 +1130,33 @@
               .text(printerData.footer);
           }
 
-          await printerAction
+          const printSuccess = await printerAction
             .cut()
             .print();
+
+          if (!printSuccess) {
+            new FilamentNotification()
+              .title('@lang('Printer tidak terhubung atau gagal mencetak')')
+              .body('@lang('Struk dialihkan ke format PDF dan dibuka untuk dicetak.')')
+              .warning()
+              .send();
+
+            if (selling && selling.id) {
+              window.open('/member/sellings/' + selling.id + '/receipt-pdf', '_blank');
+            }
+          }
         }
       } catch (error) {
         console.error(error);
+        new FilamentNotification()
+          .title('@lang('Terjadi kendala pada printer fisik')')
+          .body('@lang('Struk otomatis dialihkan ke format PDF.')')
+          .warning()
+          .send();
+
+        if (selling && selling.id) {
+          window.open('/member/sellings/' + selling.id + '/receipt-pdf', '_blank');
+        }
       }
     });
 

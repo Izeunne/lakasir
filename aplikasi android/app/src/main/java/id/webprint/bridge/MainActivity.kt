@@ -211,8 +211,9 @@ class MainActivity : AppCompatActivity() {
         webSettings.databaseEnabled = true
         webSettings.allowFileAccess = true
         webSettings.mediaPlaybackRequiresUserGesture = false
-        webSettings.loadWithOverviewMode = true
-        webSettings.useWideViewPort = true
+        webSettings.loadWithOverviewMode = false
+        webSettings.useWideViewPort = false
+        webSettings.textZoom = 100
         webSettings.cacheMode = WebSettings.LOAD_DEFAULT
         webSettings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
 
