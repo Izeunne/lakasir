@@ -14,7 +14,7 @@ class SellingReportService
 {
     public function generate(array $data)
     {
-        $timezone = Profile::get()->timezone;
+        $timezone = Profile::get()->timezone ?? config('app.timezone', 'UTC');
         $about = About::first();
         $startDate = Carbon::parse($data['start_date'], $timezone)->setTimezone('UTC');
         $endDate = Carbon::parse($data['end_date'], $timezone)->addDay()->setTimezone('UTC');

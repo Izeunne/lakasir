@@ -25,6 +25,7 @@ class Profile extends Model
         HasUploadFileField;
 
     protected $fillable = [
+        'user_id',
         'phone',
         'address',
         'locale',

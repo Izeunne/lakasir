@@ -13,7 +13,7 @@ class PurchasingReportService
     public function generate(?array $data)
     {
         $profile = Profile::get();
-        $timezone = $profile->timezone;
+        $timezone = $profile->timezone ?? config('app.timezone', 'UTC');
         $about = About::first();
         $startDate = Carbon::parse($data['start_date']);
         $endDate = Carbon::parse($data['end_date']);

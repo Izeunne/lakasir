@@ -31,15 +31,60 @@
     </a>
   </div>
 
-  <div class="flex flex-col md:flex-row gap-3 lg:gap-4 items-start w-full">
+  <style>
+    @media (min-width: 768px) {
+      .pos-main-layout {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: flex-start !important;
+        gap: 1rem !important;
+      }
+      .pos-catalog-col {
+        display: block !important;
+        width: 58% !important;
+        flex: 1 1 58% !important;
+        min-width: 0 !important;
+      }
+      .pos-cart-col {
+        display: flex !important;
+        width: 42% !important;
+        flex: 0 0 42% !important;
+        max-height: calc(100vh - 1rem) !important;
+        position: sticky !important;
+        top: 0.5rem !important;
+      }
+    }
+    @media (min-width: 1024px) {
+      .pos-catalog-col {
+        width: 62% !important;
+        flex: 1 1 62% !important;
+      }
+      .pos-cart-col {
+        width: 38% !important;
+        flex: 0 0 38% !important;
+      }
+    }
+    @media (min-width: 1280px) {
+      .pos-catalog-col {
+        width: 66.666667% !important;
+        flex: 1 1 66.666667% !important;
+      }
+      .pos-cart-col {
+        width: 33.333333% !important;
+        flex: 0 0 33.333333% !important;
+      }
+    }
+  </style>
+
+  <div class="pos-main-layout flex flex-col md:flex-row gap-3 lg:gap-4 items-start w-full">
     {{-- Kolom Katalog Produk --}}
-    <div class="w-full md:w-[56%] lg:w-[62%] xl:w-2/3 flex-1 min-w-0"
+    <div class="pos-catalog-col w-full md:w-[56%] lg:w-[62%] xl:w-2/3 flex-1 min-w-0"
       :class="mobileTab === 'cart' ? 'hidden md:block' : 'block'">
       {{ $this->table }}
     </div>
 
     {{-- Kolom Order Details / Keranjang --}}
-    <div class="w-full md:w-[44%] lg:w-[38%] xl:w-1/3 shrink-0 md:sticky md:top-2 self-start rounded-xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 md:max-h-[calc(100vh-1rem)] flex flex-col overflow-hidden"
+    <div class="pos-cart-col w-full md:w-[44%] lg:w-[38%] xl:w-1/3 shrink-0 md:sticky md:top-2 self-start rounded-xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 md:max-h-[calc(100vh-1rem)] flex flex-col overflow-hidden"
       :class="mobileTab === 'products' ? 'hidden md:flex' : 'flex'">
       
       {{-- Header Sidebar --}}
