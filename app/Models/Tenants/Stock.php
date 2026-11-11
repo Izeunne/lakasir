@@ -64,12 +64,12 @@ class Stock extends Model
 
     public function totalSellingPrice(): Attribute
     {
-        return Attribute::make(get: fn() => $this->selling_price * $this->init_stock);
+        return Attribute::make(get: fn () => (float) $this->selling_price * (float) $this->init_stock);
     }
 
     public function totalInitialPrice(): Attribute
     {
-        return Attribute::make(get: fn() => $this->initial_price * $this->init_stock);
+        return Attribute::make(get: fn () => (float) $this->initial_price * (float) $this->init_stock);
     }
 
     public static function form(): array
@@ -77,9 +77,12 @@ class Stock extends Model
         return [
             TextInput::make('stock')
                 ->translateLabel()
+                ->numeric()
+                ->required()
                 ->afterStateUpdated(function (Set $set, Get $get, ?string $state) {
-                    $set('total_initial_price', Str::of($get('initial_price'))->replace(',', '')->toInteger() * (float) $state);
-                    $set('total_selling_price', Str::of($get('selling_price'))->replace(',', '')->toInteger() * (float) $state);
+                    $stock = (float) Str::of((string) $state)->replace(',', '')->value();
+                    $set('total_initial_price', Str::of((string) $get('initial_price'))->replace(',', '')->toInteger() * $stock);
+                    $set('total_selling_price', Str::of((string) $get('selling_price'))->replace(',', '')->toInteger() * $stock);
                 })
                 ->live(onBlur: true),
             DatePicker::make('expired')
@@ -96,7 +99,8 @@ class Stock extends Model
                 ->numeric()
                 ->required()
                 ->afterStateUpdated(function (Set $set, Get $get, ?string $state) {
-                    $set('total_initial_price', Str::of($state)->replace(',', '')->toInteger() * $get('stock'));
+                    $stock = (float) Str::of((string) $get('stock'))->replace(',', '')->value();
+                    $set('total_initial_price', Str::of((string) $state)->replace(',', '')->toInteger() * $stock);
                 })
                 ->live(onBlur: true),
             TextInput::make('selling_price')
@@ -107,7 +111,8 @@ class Stock extends Model
                 ->numeric()
                 ->required()
                 ->afterStateUpdated(function (Set $set, Get $get, ?string $state) {
-                    $set('total_selling_price', Str::of($state)->replace(',', '')->toInteger() * $get('stock'));
+                    $stock = (float) Str::of((string) $get('stock'))->replace(',', '')->value();
+                    $set('total_selling_price', Str::of((string) $state)->replace(',', '')->toInteger() * $stock);
                 })
                 ->live(onBlur: true),
         ];
