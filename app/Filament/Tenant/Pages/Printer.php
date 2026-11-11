@@ -2,22 +2,29 @@
 
 namespace App\Filament\Tenant\Pages;
 
+use App\Models\Tenants\Category;
+use App\Models\Tenants\MobilePrinter;
+use App\Models\Tenants\Printer as PrinterModel;
 use App\Models\Tenants\Setting;
+use App\Services\PrintBridgeService;
 use App\Traits\HasTranslatableResource;
 use Filament\Actions\Action;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components;
-use Filament\Forms\Components\Actions\Action as ActionsAction;
-use Filament\Forms\Components\Grid;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
-use Filament\Pages\Concerns\InteractsWithFormActions;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Tables;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
 
-class Printer extends Page implements HasActions, HasForms
+class Printer extends Page implements HasActions, HasForms, HasTable
 {
     use HasTranslatableResource;
-    use InteractsWithFormActions;
+    use InteractsWithTable;
 
     protected static ?string $navigationIcon = 'heroicon-o-printer';
 
@@ -28,112 +35,486 @@ class Printer extends Page implements HasActions, HasForms
         return can('access printer');
     }
 
-    public ?array $data = [];
-
-    public function mount()
+    public function getTitle(): string
     {
-        $this->form->fill([
-            'driver' => Setting::get('printer_driver', 'usb'),
-            'paper_width' => Setting::get('printer_paper_width', '58mm'),
-        ]);
+        return __('Manajemen Multi-Printer & Routing Kategori');
     }
 
-    public function form(Form $form): Form
+    /**
+     * Get options of printers that are connected to the Mobile App.
+     *
+     * @return array<string, string>
+     */
+    public static function getConnectedMobilePrinterOptions(): array
     {
-        return $form->schema([
-            Components\Textarea::make('header')
-                ->rows(5)
-                ->translateLabel(),
-            Components\TextInput::make('name')
-                ->required()
-                ->translateLabel(),
-            Components\Select::make('driver')
-                ->default('usb')
-                ->options([
-                    'usb' => 'USB (Printer Fisik)',
-                    'virtual' => 'Virtual / Simulator (Preview Layar - Tanpa Printer Fisik)',
-                ])
-                ->live()
-                ->afterStateUpdated(function ($state, callable $set) {
-                    if ($state === 'virtual') {
-                        $set('name', 'Virtual Thermal Simulator');
-                        $set('printer', 'Virtual Printer (Preview Layar)');
-                        $set('printerId', 'virtual_simulator');
-                    }
-                })
-                ->translateLabel(),
-            Components\Select::make('paper_width')
-                ->label(__('Ukuran Kertas'))
-                ->helperText(__('Pilih ukuran lebar kertas thermal printer'))
-                ->default('58mm')
-                ->options([
-                    '58mm' => '58 mm (Standar)',
-                    '80mm' => '80 mm (Lebar)',
-                ])
-                ->required(),
-            Grid::make(columns: 3)
-                ->schema([
-                    Components\TextInput::make('printer')
-                        ->required()
-                        ->helperText(fn (callable $get) => $get('driver') === 'virtual'
-                            ? __('Mode simulator aktif: hasil cetak struk akan ditampilkan langsung di layar.')
-                            : __('Please click the select printer button to choose the connected printer'))
-                        ->readOnly()
-                        ->translateLabel()
-                        ->columnSpan(2),
-                    Components\TextInput::make('printerId')
-                        ->required()
-                        ->hintActions([
-                            ActionsAction::make('select_printer')
-                                ->icon('heroicon-o-printer')
-                                ->translateLabel()
-                                ->visible(fn (callable $get) => $get('driver') !== 'virtual')
-                                ->extraAttributes([
-                                    'x-on:click' => 'fetchDeviceByDriver',
-                                ]),
-                        ])
-                        ->readOnly(),
-                ]),
-            Components\Textarea::make('footer')
-                ->rows(5)
-                ->translateLabel(),
-        ])->statePath('data');
+        $connected = MobilePrinter::query()
+            ->where('is_connected', true)
+            ->orderBy('device_name')
+            ->get()
+            ->mapWithKeys(function (MobilePrinter $mp) {
+                return [$mp->device_id => '📱 ' . $mp->display_label];
+            })
+            ->toArray();
+
+        $connected['virtual_simulator'] = '🖥️ Virtual Thermal Simulator (Preview Layar Tanpa Printer Fisik)';
+
+        return $connected;
     }
 
-    public function getFormActions(): array
+    /**
+     * Shared form schema for creating/editing a printer station.
+     */
+    protected function getPrinterFormSchema(): array
     {
         return [
-            Action::make('save')
-                ->translateLabel()
-                ->extraAttributes([
-                    'x-on:click' => 'save',
+            Components\Section::make(__('Identitas & Perangkat Printer'))
+                ->description(__('Pilih perangkat printer yang sudah terhubung di Aplikasi Mobile Lakasir.'))
+                ->columns(2)
+                ->schema([
+                    Components\TextInput::make('name')
+                        ->label(__('Nama Station Printer'))
+                        ->placeholder(__('Contoh: Printer Kasir, Printer Bar, Printer Dapur'))
+                        ->required()
+                        ->maxLength(100),
+
+                    Components\Select::make('device_id')
+                        ->label(__('Perangkat Printer (Terkoneksi di Mobile)'))
+                        ->options(fn () => self::getConnectedMobilePrinterOptions())
+                        ->searchable()
+                        ->preload()
+                        ->native(false)
+                        ->required()
+                        ->live()
+                        ->helperText(__('Hanya menampilkan printer yang berstatus Terhubung (Connected) di Aplikasi Mobile.'))
+                        ->afterStateUpdated(function (?string $state, Set $set) {
+                            if ($state === 'virtual_simulator') {
+                                $set('device_name', 'Virtual Printer (Preview Layar)');
+                                $set('connection_type', 'virtual');
+                                $set('driver', 'virtual');
+                                return;
+                            }
+
+                            $mobile = MobilePrinter::where('device_id', $state)->first();
+                            if ($mobile) {
+                                $set('device_name', $mobile->device_name);
+                                $set('connection_type', $mobile->connection_type);
+                                $set('driver', $mobile->connection_type);
+                                if ($mobile->paper_width) {
+                                    $set('paper_width', $mobile->paper_width);
+                                }
+                            }
+                        }),
+
+                    Components\Hidden::make('device_name')
+                        ->default('Virtual Printer (Preview Layar)'),
+
+                    Components\Hidden::make('connection_type')
+                        ->default('bluetooth'),
+
+                    Components\Hidden::make('driver')
+                        ->default('bluetooth'),
+
+                    Components\Select::make('paper_width')
+                        ->label(__('Ukuran Lebar Kertas'))
+                        ->options([
+                            '58mm' => '58 mm (Standar)',
+                            '80mm' => '80 mm (Lebar)',
+                        ])
+                        ->default('58mm')
+                        ->native(false)
+                        ->required(),
+
+                    Components\TextInput::make('copies')
+                        ->label(__('Jumlah Rangkap Cetak (Copy)'))
+                        ->numeric()
+                        ->minValue(1)
+                        ->maxValue(5)
+                        ->default(1)
+                        ->required(),
                 ]),
-            Action::make('test')
-                ->translateLabel()
-                ->color('warning')
-                ->icon('heroicon-o-printer')
-                ->extraAttributes([
-                    'x-on:click' => 'test',
+
+            Components\Section::make(__('Routing Kategori & Format Nota'))
+                ->description(__('Tentukan kategori menu apa saja yang dicetak oleh printer ini dan apakah harga ditampilkan.'))
+                ->columns(2)
+                ->schema([
+                    Components\Toggle::make('print_all_categories')
+                        ->label(__('Cetak Semua Kategori Menu'))
+                        ->helperText(__('Aktifkan untuk Printer Kasir agar semua pesanan tercetak. Matikan untuk memilih kategori spesifik (misal khusus Bar atau Dapur).'))
+                        ->default(true)
+                        ->live()
+                        ->columnSpan(1),
+
+                    Components\Toggle::make('show_price')
+                        ->label(__('Tampilkan Harga di Nota'))
+                        ->helperText(__('Aktifkan untuk Struk Tagihan Kasir. Matikan untuk Nota Checker (Dapur/Bar) agar hanya mencetak Nama Menu, Qty, Variasi & Catatan tanpa harga.'))
+                        ->default(true)
+                        ->columnSpan(1),
+
+                    Components\CheckboxList::make('category_ids')
+                        ->label(__('Pilih Kategori Menu yang Dicetak oleh Printer Ini'))
+                        ->options(fn () => Category::orderBy('name')->pluck('name', 'id')->toArray())
+                        ->columns(2)
+                        ->gridDirection('row')
+                        ->bulkToggleable()
+                        ->visible(fn (Get $get): bool => ! (bool) $get('print_all_categories'))
+                        ->required(fn (Get $get): bool => ! (bool) $get('print_all_categories'))
+                        ->helperText(__('Jika transaksi tidak memiliki item dari kategori yang dicentang di atas, printer ini otomatis tidak akan mencetak.'))
+                        ->columnSpanFull(),
+                ]),
+
+            Components\Section::make(__('Header, Footer & Status'))
+                ->collapsible()
+                ->collapsed()
+                ->columns(2)
+                ->schema([
+                    Components\Textarea::make('header')
+                        ->label(__('Teks Header Tambahan'))
+                        ->placeholder(__('Contoh: *** NOTA PESANAN DAPUR *** atau alamat cabang'))
+                        ->rows(2),
+
+                    Components\Textarea::make('footer')
+                        ->label(__('Teks Footer Tambahan'))
+                        ->placeholder(__('Contoh: Terima kasih atas kunjungan Anda'))
+                        ->rows(2),
+
+                    Components\Toggle::make('is_active')
+                        ->label(__('Printer Aktif'))
+                        ->default(true)
+                        ->columnSpanFull(),
                 ]),
         ];
     }
 
-    public function saveSettings(array $data): void
+    public function table(Table $table): Table
     {
-        if (isset($data['paper_width'])) {
-            Setting::set('printer_paper_width', $data['paper_width']);
-        }
-        if (isset($data['driver'])) {
-            Setting::set('printer_driver', $data['driver']);
-        }
+        return $table
+            ->query(PrinterModel::query()->orderBy('id'))
+            ->columns([
+                Tables\Columns\TextColumn::make('name')
+                    ->label(__('Nama Station'))
+                    ->weight('bold')
+                    ->searchable()
+                    ->description(fn (PrinterModel $record): string => $record->header ?: ($record->show_price ? __('Struk Kasir / Tagihan') : __('Nota Checker Pesanan'))),
+
+                Tables\Columns\TextColumn::make('device_name')
+                    ->label(__('Perangkat Mobile'))
+                    ->formatStateUsing(function (PrinterModel $record): string {
+                        if ($record->device_id === 'virtual_simulator' || $record->connection_type === 'virtual') {
+                            return '🖥️ Virtual Simulator (Layar)';
+                        }
+                        $type = strtoupper($record->connection_type ?: 'BT');
+                        $name = $record->device_name ?: $record->device_id;
+
+                        return "[{$type}] {$name}";
+                    })
+                    ->description(function (PrinterModel $record): string {
+                        if ($record->device_id === 'virtual_simulator' || $record->connection_type === 'virtual') {
+                            return __('Mode Preview Layar Browser');
+                        }
+                        $mobile = $record->mobilePrinter;
+                        if ($mobile && $mobile->is_connected) {
+                            $seen = $mobile->last_seen_at ? $mobile->last_seen_at->diffForHumans() : __('Baru saja');
+
+                            return "🟢 Terhubung di Mobile ({$seen})";
+                        }
+
+                        return '🔴 Belum Terhubung di Mobile (' . ($record->device_id ?: '-') . ')';
+                    }),
+
+                Tables\Columns\TextColumn::make('categories_display')
+                    ->label(__('Kategori yang Dicetak'))
+                    ->badge()
+                    ->state(fn (PrinterModel $record): array => $record->category_names)
+                    ->color(fn (PrinterModel $record): string => $record->print_all_categories ? 'primary' : 'info'),
+
+                Tables\Columns\TextColumn::make('show_price')
+                    ->label(__('Format Harga'))
+                    ->badge()
+                    ->formatStateUsing(fn (bool $state): string => $state ? __('Dengan Harga') : __('Tanpa Harga (Checker)'))
+                    ->color(fn (bool $state): string => $state ? 'success' : 'warning')
+                    ->icon(fn (bool $state): string => $state ? 'heroicon-m-banknotes' : 'heroicon-m-clipboard-document-list'),
+
+                Tables\Columns\TextColumn::make('paper_width')
+                    ->label(__('Kertas'))
+                    ->badge()
+                    ->color('gray')
+                    ->formatStateUsing(fn (PrinterModel $record): string => "{$record->paper_width} ({$record->copies}x)"),
+
+                Tables\Columns\ToggleColumn::make('is_active')
+                    ->label(__('Aktif')),
+            ])
+            ->headerActions([
+                Tables\Actions\CreateAction::make('create_printer')
+                    ->label(__('Tambah Printer'))
+                    ->icon('heroicon-o-plus')
+                    ->model(PrinterModel::class)
+                    ->modalHeading(__('Tambah Station Printer Baru'))
+                    ->modalWidth('3xl')
+                    ->form($this->getPrinterFormSchema())
+                    ->mutateFormDataUsing(function (array $data): array {
+                        return $this->SyncDeviceMeta($data);
+                    })
+                    ->after(function () {
+                        $this->syncFrontendPrinters();
+                    }),
+
+                Tables\Actions\Action::make('setup_restaurant_presets')
+                    ->label(__('Buat Preset: Kasir + Bar + Dapur'))
+                    ->icon('heroicon-o-sparkles')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading(__('Buat Konfigurasi Otomatis 3 Printer (Kasir, Bar, Dapur)?'))
+                    ->modalDescription(__('Sistem akan otomatis menyiapkan 3 station printer: (1) Printer Kasir [Semua Kategori + Harga], (2) Printer Bar [Khusus Minuman + Tanpa Harga], dan (3) Printer Dapur [Khusus Makanan & Camilan + Tanpa Harga].'))
+                    ->action(function () {
+                        $this->createDefaultRestaurantPrinters();
+                    }),
+            ])
+            ->actions([
+                Tables\Actions\Action::make('test_print')
+                    ->label(__('Test Cetak'))
+                    ->icon('heroicon-o-printer')
+                    ->color('warning')
+                    ->button()
+                    ->size('xs')
+                    ->action(function (PrinterModel $record) {
+                        $job = PrintBridgeService::queuePrinterTest($record);
+
+                        $this->dispatch('trigger-station-test-print', [
+                            'printer' => [
+                                'id' => $record->id,
+                                'name' => $record->name,
+                                'device_id' => $record->device_id,
+                                'device_name' => $record->device_name,
+                                'connection_type' => $record->connection_type,
+                                'paper_width' => $record->paper_width,
+                                'show_price' => $record->show_price,
+                                'categories' => implode(', ', $record->category_names),
+                                'header' => $record->header,
+                                'footer' => $record->footer,
+                            ],
+                            'job_id' => $job->id,
+                        ]);
+
+                        Notification::make()
+                            ->title(__('Test Cetak Dikirim ke :name', ['name' => $record->name]))
+                            ->body(__('Format: :format | Kategori: :cat', [
+                                'format' => $record->show_price ? __('Dengan Harga') : __('Tanpa Harga (Checker)'),
+                                'cat' => implode(', ', $record->category_names),
+                            ]))
+                            ->success()
+                            ->send();
+                    }),
+
+                Tables\Actions\EditAction::make()
+                    ->modalHeading(__('Edit Konfigurasi Printer'))
+                    ->modalWidth('3xl')
+                    ->form($this->getPrinterFormSchema())
+                    ->mutateFormDataUsing(function (array $data): array {
+                        return $this->SyncDeviceMeta($data);
+                    })
+                    ->after(function () {
+                        $this->syncFrontendPrinters();
+                    }),
+
+                Tables\Actions\DeleteAction::make()
+                    ->after(function () {
+                        $this->syncFrontendPrinters();
+                    }),
+            ])
+            ->emptyStateHeading(__('Belum Ada Station Printer'))
+            ->emptyStateDescription(__('Tambahkan printer untuk Kasir, Bar, atau Dapur dan atur kategori menu yang akan dicetak oleh masing-masing printer.'));
     }
 
-    public function validateInput()
+    protected function SyncDeviceMeta(array $data): array
     {
-        $this->validate([
-            'data.printer' => 'required',
-            'data.name' => 'required',
-            'data.paper_width' => 'required',
-        ]);
+        $deviceId = $data['device_id'] ?? null;
+        if ($deviceId === 'virtual_simulator') {
+            $data['device_name'] = 'Virtual Printer (Preview Layar)';
+            $data['connection_type'] = 'virtual';
+            $data['driver'] = 'virtual';
+        } elseif ($deviceId) {
+            $mobile = MobilePrinter::where('device_id', $deviceId)->first();
+            if ($mobile) {
+                $data['device_name'] = $mobile->device_name;
+                $data['connection_type'] = $mobile->connection_type;
+                $data['driver'] = $mobile->connection_type;
+            }
+        }
+
+        if (!empty($data['print_all_categories'])) {
+            $data['category_ids'] = [];
+        } else {
+            $data['category_ids'] = array_values(array_map('intval', $data['category_ids'] ?? []));
+        }
+
+        if (!empty($data['paper_width'])) {
+            Setting::set('printer_paper_width', $data['paper_width']);
+        }
+
+        return $data;
+    }
+
+    /**
+     * Called from JS when Android WebView LakasirBridge reports connected printers.
+     */
+    public function syncFromMobileBridge(array $printers, ?string $deviceModel = 'Lakasir Android App'): void
+    {
+        $synced = PrintBridgeService::syncMobilePrinters($printers, 1, $deviceModel, true);
+
+        Notification::make()
+            ->title(__('Sinkronisasi Mobile Berhasil'))
+            ->body(__(':count printer terhubung dari Aplikasi Mobile berhasil dideteksi.', ['count' => $synced->count()]))
+            ->success()
+            ->send();
+    }
+
+    /**
+     * Simulate / Register mobile connected printers for testing or manual bridge pairing.
+     */
+    public function simulateMobilePrinters(): void
+    {
+        $samplePrinters = [
+            [
+                'device_id' => 'BT-KASIR-001',
+                'device_name' => 'RPP02N Thermal Kasir',
+                'connection_type' => 'bluetooth',
+                'address' => 'DC:0D:30:A1:10:01',
+                'paper_width' => '58mm',
+                'is_connected' => true,
+            ],
+            [
+                'device_id' => 'LAN-BAR-002',
+                'device_name' => 'Epson TM-T82 Bar',
+                'connection_type' => 'lan',
+                'address' => '192.168.1.201:9100',
+                'paper_width' => '58mm',
+                'is_connected' => true,
+            ],
+            [
+                'device_id' => 'LAN-DAPUR-003',
+                'device_name' => 'Epson TM-U220 Dapur',
+                'connection_type' => 'lan',
+                'address' => '192.168.1.202:9100',
+                'paper_width' => '80mm',
+                'is_connected' => true,
+            ],
+        ];
+
+        PrintBridgeService::syncMobilePrinters($samplePrinters, 1, 'Android POS Tablet', false);
+
+        Notification::make()
+            ->title(__('Printer Mobile Terdeteksi'))
+            ->body(__('3 perangkat printer dari Aplikasi Mobile (Kasir BT, Bar LAN, Dapur LAN) aktif dan siap dipilih.'))
+            ->success()
+            ->send();
+    }
+
+    /**
+     * One-click helper to create the 3 standard restaurant stations: Kasir, Bar, and Dapur.
+     */
+    public function createDefaultRestaurantPrinters(): void
+    {
+        // Ensure mobile printers exist so they are linked properly
+        if (MobilePrinter::where('is_connected', true)->count() === 0) {
+            $this->simulateMobilePrinters();
+        }
+
+        $minumanCatIds = Category::where('name', 'like', '%Minum%')
+            ->orWhere('name', 'like', '%Drink%')
+            ->orWhere('name', 'like', '%Bar%')
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->toArray();
+
+        $makananCatIds = Category::whereNotIn('id', $minumanCatIds)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->toArray();
+
+        // 1. Printer Kasir (Cetak Semua Kategori + Tampilkan Harga)
+        PrinterModel::updateOrCreate(
+            ['name' => 'Printer Kasir'],
+            [
+                'driver' => 'bluetooth',
+                'device_id' => 'BT-KASIR-001',
+                'device_name' => 'RPP02N Thermal Kasir',
+                'connection_type' => 'bluetooth',
+                'paper_width' => '58mm',
+                'print_all_categories' => true,
+                'category_ids' => [],
+                'show_price' => true,
+                'header' => 'Struk Pembayaran Resmi',
+                'footer' => 'Terima Kasih Atas Kunjungan Anda',
+                'copies' => 1,
+                'is_active' => true,
+            ]
+        );
+
+        // 2. Printer Bar (Hanya Kategori Minuman + Tanpa Harga)
+        PrinterModel::updateOrCreate(
+            ['name' => 'Printer Bar'],
+            [
+                'driver' => 'lan',
+                'device_id' => 'LAN-BAR-002',
+                'device_name' => 'Epson TM-T82 Bar',
+                'connection_type' => 'lan',
+                'paper_width' => '58mm',
+                'print_all_categories' => false,
+                'category_ids' => $minumanCatIds,
+                'show_price' => false,
+                'header' => '*** PESANAN BAR / MINUMAN ***',
+                'footer' => '--- Segera Siapkan Minuman ---',
+                'copies' => 1,
+                'is_active' => true,
+            ]
+        );
+
+        // 3. Printer Dapur (Hanya Kategori Makanan/Camilan/Penutup + Tanpa Harga)
+        PrinterModel::updateOrCreate(
+            ['name' => 'Printer Dapur'],
+            [
+                'driver' => 'lan',
+                'device_id' => 'LAN-DAPUR-003',
+                'device_name' => 'Epson TM-U220 Dapur',
+                'connection_type' => 'lan',
+                'paper_width' => '80mm',
+                'print_all_categories' => false,
+                'category_ids' => $makananCatIds,
+                'show_price' => false,
+                'header' => '*** PESANAN DAPUR (MAKANAN) ***',
+                'footer' => '--- Cek Kembali Catatan Pesanan ---',
+                'copies' => 1,
+                'is_active' => true,
+            ]
+        );
+
+        $this->syncFrontendPrinters();
+
+        Notification::make()
+            ->title(__('3 Station Printer Berhasil Disiapkan'))
+            ->body(__('Printer Kasir (Semua Menu + Harga), Printer Bar (Minuman + Tanpa Harga), dan Printer Dapur (Makanan + Tanpa Harga) telah aktif.'))
+            ->success()
+            ->send();
+    }
+
+    protected function syncFrontendPrinters(): void
+    {
+        $printers = PrinterModel::active()->orderBy('id')->get()->map(fn (PrinterModel $p) => [
+            'id' => $p->id,
+            'name' => $p->name,
+            'printerId' => $p->device_id,
+            'device_id' => $p->device_id,
+            'device_name' => $p->device_name,
+            'driver' => $p->connection_type,
+            'paper_width' => $p->paper_width,
+            'print_all_categories' => $p->print_all_categories,
+            'category_ids' => array_map('intval', $p->category_ids ?? []),
+            'show_price' => $p->show_price,
+            'header' => $p->header,
+            'footer' => $p->footer,
+            'copies' => $p->copies,
+        ])->values()->toArray();
+
+        $this->dispatch('printers-config-updated', printers: $printers);
     }
 }

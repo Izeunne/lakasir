@@ -1067,13 +1067,43 @@
 
     document.getElementById("printReceiptButton").addEventListener('click', async (event) => {
       let about = @js($about);
-      const printerData = getPrinter();
-      const isPrinterActive = printerData && !(printerData instanceof Error) && (printerData.printerId || window.LakasirBridge);
-      const paperWidth = (printerData && !(printerData instanceof Error) && printerData.paper_width) ? printerData.paper_width : '58mm';
-      const dividerLine = paperWidth === '80mm' ? '------------------------------------------------' : '-------------------------------';
+      const dbPrinters = @js(\App\Models\Tenants\Printer::active()->orderBy('id')->get()->map(fn ($p) => [
+        'id' => $p->id,
+        'name' => $p->name,
+        'printerId' => $p->device_id,
+        'device_id' => $p->device_id,
+        'device_name' => $p->device_name,
+        'driver' => $p->connection_type,
+        'paper_width' => $p->paper_width ?: '58mm',
+        'print_all_categories' => (bool) $p->print_all_categories,
+        'category_ids' => array_map('intval', $p->category_ids ?? []),
+        'show_price' => (bool) $p->show_price,
+        'header' => $p->header,
+        'footer' => $p->footer,
+        'copies' => (int) ($p->copies ?: 1),
+      ])->values());
+
+      const legacyPrinter = getPrinter();
+      const printersList = (Array.isArray(dbPrinters) && dbPrinters.length > 0)
+        ? dbPrinters
+        : ((legacyPrinter && !(legacyPrinter instanceof Error) && (legacyPrinter.printerId || window.LakasirBridge)) ? [{
+            name: legacyPrinter.name || 'Printer Kasir',
+            printerId: legacyPrinter.printerId || 'kasir',
+            device_id: legacyPrinter.printerId || 'kasir',
+            driver: legacyPrinter.driver || 'usb',
+            paper_width: legacyPrinter.paper_width || '58mm',
+            print_all_categories: true,
+            category_ids: [],
+            show_price: true,
+            header: legacyPrinter.header,
+            footer: legacyPrinter.footer,
+            copies: 1,
+          }] : []);
+
+      const defaultPaperWidth = (printersList[0] && printersList[0].paper_width) ? printersList[0].paper_width : '58mm';
 
       try {
-        if (!isPrinterActive) {
+        if (printersList.length === 0) {
           new FilamentNotification()
             .title('@lang('Printer belum diatur atau tidak aktif')')
             .body('@lang('Struk otomatis disimpan dalam format PDF dan dibuka untuk dicetak.')')
@@ -1081,105 +1111,171 @@
             .send();
 
           if (selling && selling.id) {
-            window.open('/member/sellings/' + selling.id + '/receipt-pdf?width=' + paperWidth, '_blank');
+            window.open('/member/sellings/' + selling.id + '/receipt-pdf?width=' + defaultPaperWidth, '_blank');
           }
           return;
-        } else {
-          const printer = new Printer(printerData.printerId, paperWidth);
+        }
+
+        let anyPrinted = false;
+
+        for (const printerData of printersList) {
+          const allDetails = (selling && Array.isArray(selling.selling_details)) ? selling.selling_details : [];
+          const filteredDetails = printerData.print_all_categories
+            ? allDetails
+            : allDetails.filter(d => {
+                const catId = d.product && d.product.category_id ? parseInt(d.product.category_id, 10) : null;
+                return catId !== null && Array.isArray(printerData.category_ids) && printerData.category_ids.includes(catId);
+              });
+
+          // Lewati printer ini jika pesanan tidak mengandung menu dari kategori printer tersebut
+          if (filteredDetails.length === 0) {
+            continue;
+          }
+
+          const paperWidth = printerData.paper_width || '58mm';
+          const dividerLine = paperWidth === '80mm'
+            ? '------------------------------------------------'
+            : '-------------------------------';
+
+          const targetDeviceId = (printerData.driver === 'virtual' || (!window.LakasirBridge && printerData.driver !== 'usb'))
+            ? 'virtual_simulator'
+            : (printerData.device_id || printerData.printerId || 'kasir');
+
+          const printer = new Printer(targetDeviceId, paperWidth);
           let printerAction = printer.font('a');
-          if (about != undefined || about != null) {
+
+          if (printerData.show_price) {
+            // FORMAT STRUK DENGAN HARGA (KASIR)
+            if (about != undefined && about != null) {
+              printerAction.size(1)
+                .align('center')
+                .text(about.shop_name)
+                .size(0)
+                .text(about.shop_location);
+              if (printerData.header) {
+                printerAction.text(printerData.header);
+              }
+              printerAction.align('left').text(dividerLine);
+            }
+            printerAction.table(['Station', printerData.name || 'Kasir']);
+            printerAction.table(['@lang('Cashier')', selling.user.name]);
+            if (selling.order_type_label && selling.order_type_label !== '-') {
+              printerAction.table(['@lang('Kategori')', selling.order_type_label]);
+            }
+            if (selling.table && selling.table.number) {
+              printerAction.table(['@lang('Table')', selling.table.number]);
+            }
+            if (selling.payment_method && selling.payment_method.name) {
+              printerAction.table(['@lang('Payment method')', selling.payment_method.name]);
+            }
+            if (selling.member && selling.member.name) {
+              printerAction.table(['Member', selling.member.name]);
+            }
+            printerAction.text(dividerLine);
+
+            filteredDetails.forEach(sellingDetail => {
+              let price = sellingDetail.price;
+              printerAction.table([
+                sellingDetail.product.name,
+                moneyFormat(sellingDetail.price / sellingDetail.qty) + ' x ' + sellingDetail.qty.toString()
+              ]);
+              if (sellingDetail.selected_variations && sellingDetail.selected_variations.length > 0) {
+                sellingDetail.selected_variations.forEach(v => {
+                  let extra = v.price > 0 ? ` (+${moneyFormat(v.price)})` : '';
+                  printerAction.text(`  - ${v.variation_name}: ${v.option_name}${extra}`);
+                });
+              }
+              if (sellingDetail.note) {
+                printerAction.text(`  * ${sellingDetail.note}`);
+              }
+              if (sellingDetail.discount_price > 0) {
+                price = price - sellingDetail.discount_price;
+                printerAction.align('right').text(`(${moneyFormat(sellingDetail.discount_price)})`);
+              }
+              printerAction.align('right').text(moneyFormat(price)).align('left');
+            });
+
+            printerAction.text(dividerLine);
+            if ("@js(feature(SellingTax::class))" == 'true') {
+              printerAction.table(['@lang('Tax')', `${selling.tax}%`])
+                .table(['@lang('Tax price')', moneyFormat(selling.tax_price)]);
+            }
+            printerAction.table(['@lang('Subtotal')', moneyFormat(selling.total_price)]);
+            if ("@js(feature(Discount::class))" == 'true') {
+              printerAction.table([
+                '@lang('Discount')',
+                `(${moneyFormat(selling.total_discount_per_item + selling.discount_price)})`
+              ]);
+            }
+            printerAction
+              .table(['@lang('Total price')', moneyFormat(selling.grand_total_price)])
+              .text(dividerLine)
+              .table(['@lang('Payed money')', moneyFormat(selling.payed_money)])
+              .table(['@lang('Change')', moneyFormat(selling.money_changes)])
+              .align('center');
+
+            if (printerData.footer) {
+              printerAction.text(printerData.footer);
+            }
+          } else {
+            // FORMAT NOTA CHECKER TANPA HARGA (DAPUR / BAR)
             printerAction.size(1)
               .align('center')
-              .text(about.shop_name)
-              .size(0)
-              .text(about.shop_location);
-            if (printerData.header != undefined) {
-              printerAction
-                .text(printerData.header);
+              .text('*** ' + (printerData.name || 'CHECKER').toUpperCase() + ' ***')
+              .size(0);
+            if (printerData.header) {
+              printerAction.text(printerData.header);
             }
             printerAction.align('left')
-              .text(dividerLine);
-          }
-          printerAction.table(['@lang('Cashier')', selling.user.name])
-          if (selling.order_type_label != undefined && selling.order_type_label != null && selling.order_type_label != '-') {
-            printerAction.table(['@lang('Kategori')', selling.order_type_label])
-          }
-          if (selling.table != undefined && selling.table != null) {
-            printerAction.table(['@lang('Table')', selling.table.number])
-          }
-          printerAction.table(['@lang('Payment method')', selling.payment_method.name]);
-          if (selling.member != undefined && selling.member != null) {
-            printerAction
-              .table(['Member', selling.member.name]);
-          }
-          printerAction
-            .text(dividerLine);
-          selling.selling_details.forEach(sellingDetail => {
-            let price = sellingDetail.price;
-            let text = moneyFormat(sellingDetail.price / sellingDetail.qty) + ' x ' + sellingDetail.qty
-              .toString();
-            printerAction.table([sellingDetail.product.name, moneyFormat(sellingDetail.price / sellingDetail
-              .qty) + ' x ' + sellingDetail.qty.toString()])
-            if (sellingDetail.selected_variations && sellingDetail.selected_variations.length > 0) {
-              sellingDetail.selected_variations.forEach(v => {
-                let extra = v.price > 0 ? ` (+${moneyFormat(v.price)})` : '';
-                printerAction.text(`  - ${v.variation_name}: ${v.option_name}${extra}`);
-              });
+              .text(dividerLine)
+              .table(['No. Pesanan', selling.code || ('#' + selling.id)])
+              .table(['@lang('Cashier')', selling.user.name]);
+            if (selling.order_type_label && selling.order_type_label !== '-') {
+              printerAction.table(['@lang('Kategori')', selling.order_type_label]);
             }
-            if (sellingDetail.note) {
-              printerAction.text(`  * ${sellingDetail.note}`);
+            if (selling.table && selling.table.number) {
+              printerAction.table(['@lang('Table')', selling.table.number]);
             }
-            if (sellingDetail.discount_price > 0) {
-              price = price - sellingDetail.discount_price;
-              printerAction
-                .align('right')
-                .text(`(${moneyFormat(sellingDetail.discount_price)})`)
-            }
-            printerAction
-              .align('right')
-              .text(moneyFormat(price))
-              .align('left')
-          });
-          printerAction
-            .text(dividerLine);
-          if ("@js(feature(SellingTax::class))" == 'true') {
-            printerAction.table(['@lang('Tax')', `${selling.tax}%`])
-              .table(['@lang('Tax price')', moneyFormat(selling.tax_price)]);
-          }
-          printerAction
-            .table(['@lang('Subtotal')', moneyFormat(selling.total_price)])
-          if ("@js(feature(Discount::class))" == 'true') {
-            printerAction
-              .table(['@lang('Discount')',
-                `(${moneyFormat(selling.total_discount_per_item + selling.discount_price)})`
-              ])
-          }
-          printerAction
-            .table(['@lang('Total price')', moneyFormat(selling.grand_total_price)])
-            .text(dividerLine)
-            .table(['@lang('Payed money')', moneyFormat(selling.payed_money)])
-            .table(['@lang('Change')', moneyFormat(selling.money_changes)])
-            .align('center');
+            printerAction.text(dividerLine);
 
-          if (printerData.footer != undefined) {
-            printerAction
-              .text(printerData.footer);
+            let totalQty = 0;
+            filteredDetails.forEach(sellingDetail => {
+              totalQty += Number(sellingDetail.qty || 1);
+              printerAction.text(`${sellingDetail.qty}x  ${sellingDetail.product.name}`);
+              if (sellingDetail.selected_variations && sellingDetail.selected_variations.length > 0) {
+                sellingDetail.selected_variations.forEach(v => {
+                  printerAction.text(`    - ${v.variation_name}: ${v.option_name}`);
+                });
+              }
+              if (sellingDetail.note) {
+                printerAction.text(`    * ${sellingDetail.note}`);
+              }
+            });
+
+            printerAction.text(dividerLine)
+              .table(['TOTAL ITEM', `${totalQty} Porsi/Item`])
+              .align('center');
+
+            if (printerData.footer) {
+              printerAction.text(printerData.footer);
+            }
           }
 
-          const printSuccess = await printerAction
-            .cut()
-            .print();
+          const printSuccess = await printerAction.cut().print(printerData.device_id || printerData.printerId || 'kasir');
+          if (printSuccess) {
+            anyPrinted = true;
+          }
+        }
 
-          if (!printSuccess) {
-            new FilamentNotification()
-              .title('@lang('Printer tidak terhubung atau gagal mencetak')')
-              .body('@lang('Struk dialihkan ke format PDF dan dibuka untuk dicetak.')')
-              .warning()
-              .send();
+        if (!anyPrinted) {
+          new FilamentNotification()
+            .title('@lang('Printer tidak terhubung atau gagal mencetak')')
+            .body('@lang('Struk dialihkan ke format PDF dan dibuka untuk dicetak.')')
+            .warning()
+            .send();
 
-            if (selling && selling.id) {
-              window.open('/member/sellings/' + selling.id + '/receipt-pdf?width=' + paperWidth, '_blank');
-            }
+          if (selling && selling.id) {
+            window.open('/member/sellings/' + selling.id + '/receipt-pdf?width=' + defaultPaperWidth, '_blank');
           }
         }
       } catch (error) {
@@ -1191,7 +1287,7 @@
           .send();
 
         if (selling && selling.id) {
-          window.open('/member/sellings/' + selling.id + '/receipt-pdf?width=' + paperWidth, '_blank');
+          window.open('/member/sellings/' + selling.id + '/receipt-pdf?width=' + defaultPaperWidth, '_blank');
         }
       }
     });
