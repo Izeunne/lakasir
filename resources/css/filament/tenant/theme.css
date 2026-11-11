@@ -42,7 +42,18 @@
   @apply mx-0;
 }
 
-/* Card Menu Kasir Compact & Rapi */
+/* Card Menu Kasir Compact & Rapi (5 Kolom per Row) */
+.fi-ta-content-grid {
+  gap: 0.65rem !important;
+  padding: 0.75rem !important;
+}
+
+@media (min-width: 1024px) {
+  .fi-ta-content-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+}
+
 .fi-ta-content-grid .fi-ta-record {
   border-radius: 0.75rem !important;
   border: 1px solid rgba(229, 231, 235, 0.8) !important;
@@ -67,7 +78,7 @@
   margin-left: -1rem !important;
   margin-right: -1rem !important;
   margin-top: -1rem !important;
-  margin-bottom: 0.5rem !important;
+  margin-bottom: 0.35rem !important;
   padding: 0 !important;
   width: calc(100% + 2rem) !important;
   overflow: hidden !important;
@@ -80,8 +91,8 @@
 
 .fi-ta-content-grid .fi-ta-record .fi-ta-image img {
   width: 100% !important;
-  height: 110px !important;
-  max-height: 110px !important;
+  height: 96px !important;
+  max-height: 96px !important;
   object-fit: cover !important;
   border-top-left-radius: 0.75rem !important;
   border-top-right-radius: 0.75rem !important;

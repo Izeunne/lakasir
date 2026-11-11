@@ -39,8 +39,8 @@ trait TableProduct
                     })
                     ->where('show', true)
             )
-            ->defaultPaginationPageOption(24)
-            ->paginationPageOptions([12, 24, 48])
+            ->defaultPaginationPageOption(25)
+            ->paginationPageOptions([15, 25, 50])
             ->columns([
                 Stack::make([
                     ImageColumn::make('hero_image')
@@ -50,20 +50,20 @@ trait TableProduct
                             'class' => 'py-0 w-full',
                         ])
                         ->extraImgAttributes([
-                            'class' => 'object-cover w-full h-28 rounded-t-lg',
+                            'class' => 'object-cover w-full h-24 rounded-t-lg',
                         ])
-                        ->height(110)
+                        ->height(96)
                         ->width('100%'),
                     TextColumn::make('selling_price')
                         ->color('primary')
                         ->money(Setting::get('currency', 'IDR'))
-                        ->size('sm')
+                        ->size('xs')
                         ->weight('extrabold')
                         ->extraAttributes([
-                            'class' => 'font-extrabold text-primary-600 dark:text-primary-400 mt-1',
+                            'class' => 'font-extrabold text-primary-600 dark:text-primary-400 mt-0.5 text-xs',
                         ]),
                     TextColumn::make('name')
-                        ->size('sm')
+                        ->size('xs')
                         ->weight('bold')
                         ->searchable(query: function ($query, string $search): void {
                             $query->where('sku', 'like', "%{$search}%")
@@ -74,7 +74,7 @@ trait TableProduct
                                 });
                         })
                         ->extraAttributes([
-                            'class' => 'font-bold line-clamp-2 min-h-[2.5rem] text-gray-900 dark:text-white leading-snug',
+                            'class' => 'font-bold line-clamp-2 min-h-[2rem] text-gray-900 dark:text-white leading-tight text-xs sm:text-sm',
                         ]),
                     TextColumn::make('stock')
                         ->hidden(function (Product $product) {
@@ -95,9 +95,9 @@ trait TableProduct
             ->contentGrid([
                 'sm' => 2,
                 'md' => 3,
-                'lg' => 3,
-                'xl' => 4,
-                '2xl' => 4,
+                'lg' => 5,
+                'xl' => 5,
+                '2xl' => 5,
             ])
             ->headerActionsPosition(HeaderActionsPosition::Bottom)
             ->searchPlaceholder(__('Search (SKU, name, barcode)'))
