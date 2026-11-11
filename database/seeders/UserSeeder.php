@@ -18,17 +18,25 @@ class UserSeeder extends Seeder
      */
     public function run()
     {
+        $name = 'Super Admin';
         $email = 'superadmin@admin.com';
         $password = bcrypt('password');
-        if (Schema::hasTable('tenant')) {
+        if (Schema::hasTable('tenants') || Schema::hasTable('tenant')) {
             $dbName = DB::connection()->getDatabaseName();
             $tenant = Tenant::find(Str::after($dbName, 'lakasir_')) ?? tenant();
-            $email = $tenant->user->email;
-            $password = $tenant->user->password;
+            if ($tenant && $tenant->user) {
+                $name = $tenant->user->full_name ?? $name;
+                $email = $tenant->user->email;
+                $password = $tenant->user->password;
+            }
         }
-        User::create([
-            'email' => $email,
-            'password' => $password,
-        ]);
+        User::firstOrCreate(
+            ['email' => $email],
+            [
+                'name' => $name,
+                'password' => $password,
+                'is_owner' => 1,
+            ]
+        );
     }
 }

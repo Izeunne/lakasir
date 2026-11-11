@@ -33,8 +33,40 @@
 
   <div class="flex flex-col md:flex-row gap-3 lg:gap-4 items-start w-full">
     {{-- Kolom Katalog Produk --}}
-    <div class="w-full md:w-[56%] lg:w-[62%] xl:w-2/3 flex-1 min-w-0"
+    <div class="w-full md:w-[56%] lg:w-[62%] xl:w-2/3 flex-1 min-w-0 space-y-3"
       :class="mobileTab === 'cart' ? 'hidden md:block' : 'block'">
+
+      {{-- Category Filter Bar --}}
+      <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <button type="button"
+          wire:click="setCategory(null)"
+          class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3.5 py-2 text-xs sm:text-sm font-semibold transition-all duration-150 {{ $selectedCategoryId === null ? 'bg-primary-600 text-white shadow-md shadow-primary-500/25 ring-2 ring-primary-500/30' : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 border border-gray-200/80 dark:border-gray-700/80 shadow-sm' }}">
+          <span>🌟 {{ __('Semua Menu') }}</span>
+          <span class="rounded-full px-1.5 py-0.5 text-xs font-bold {{ $selectedCategoryId === null ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' }}">
+            {{ \App\Models\Tenants\Product::where('show', true)->count() }}
+          </span>
+        </button>
+
+        @foreach(\App\Models\Tenants\Category::withCount(['products' => fn($q) => $q->where('show', true)])->having('products_count', '>', 0)->get() as $cat)
+          <button type="button"
+            wire:click="setCategory({{ $cat->id }})"
+            class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3.5 py-2 text-xs sm:text-sm font-semibold transition-all duration-150 {{ $selectedCategoryId === $cat->id ? 'bg-primary-600 text-white shadow-md shadow-primary-500/25 ring-2 ring-primary-500/30' : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 border border-gray-200/80 dark:border-gray-700/80 shadow-sm' }}">
+            <span>
+              @if(str_contains(strtolower($cat->name), 'makan')) 🍲
+              @elseif(str_contains(strtolower($cat->name), 'camil') || str_contains(strtolower($cat->name), 'snack')) 🍟
+              @elseif(str_contains(strtolower($cat->name), 'minum') || str_contains(strtolower($cat->name), 'drink')) 🥤
+              @elseif(str_contains(strtolower($cat->name), 'tutup') || str_contains(strtolower($cat->name), 'dessert')) 🍧
+              @else 🍽️
+              @endif
+              {{ $cat->name }}
+            </span>
+            <span class="rounded-full px-1.5 py-0.5 text-xs font-bold {{ $selectedCategoryId === $cat->id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' }}">
+              {{ $cat->products_count }}
+            </span>
+          </button>
+        @endforeach
+      </div>
+
       {{ $this->table }}
     </div>
 

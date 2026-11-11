@@ -231,13 +231,43 @@ class ProductResource extends Resource
                 ->money(Setting::get('currency', 'IDR'))
                 ->size(TextEntry\TextEntrySize::Large)
                 ->translateLabel(),
+            Infolists\Components\RepeatableEntry::make('variations')
+                ->label(__('Variasi / Modifiers Menu'))
+                ->schema([
+                    Infolists\Components\TextEntry::make('name')
+                        ->label(__('Nama Variasi'))
+                        ->weight('bold'),
+                    Infolists\Components\TextEntry::make('type')
+                        ->label(__('Tipe Pilihan'))
+                        ->badge()
+                        ->formatStateUsing(fn ($state) => $state === 'multiple' ? __('Bisa Pilih Banyak') : __('Pilih Satu')),
+                    Infolists\Components\IconEntry::make('is_required')
+                        ->label(__('Wajib'))
+                        ->boolean(),
+                    Infolists\Components\TextEntry::make('options_summary')
+                        ->label(__('Opsi & Tambahan Harga'))
+                        ->state(function ($record) {
+                            return $record->options->map(function ($opt) {
+                                $priceText = $opt->price > 0 ? ' (+' . price_format((float) $opt->price) . ')' : '';
+                                $defaultText = $opt->is_default ? ' [Default]' : '';
+                                return $opt->name . $priceText . $defaultText;
+                            })->implode(' • ');
+                        })
+                        ->columnSpan(2),
+                ])
+                ->columns(5)
+                ->columnSpanFull()
+                ->visible(fn (Product $record) => $record->variations()->exists()),
         ]);
     }
 
     public static function getRelations(): array
     {
         return [
-            //
+            ProductResource\RelationManagers\VariationsRelationManager::class,
+            ProductResource\RelationManagers\StocksRelationManager::class,
+            ProductResource\RelationManagers\SellingDetailsRelationManager::class,
+            ProductResource\RelationManagers\PriceUnitsRelationManager::class,
         ];
     }
 

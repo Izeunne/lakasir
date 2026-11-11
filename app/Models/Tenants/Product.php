@@ -132,7 +132,16 @@ class Product extends Model
     {
         return Attribute::make(
             get: fn($value) => $value ? Str::of($value)->explode(',')->toArray() : [],
-            set: fn($value) => $value ? Arr::join(is_array($value) ? $value : $value->toArray(), ',') : null
+            set: function ($value) {
+                if (! $value) {
+                    return null;
+                }
+                if (is_string($value)) {
+                    return $value;
+                }
+                $array = is_object($value) && method_exists($value, 'toArray') ? $value->toArray() : (array) $value;
+                return Arr::join($array, ',');
+            }
         );
     }
 

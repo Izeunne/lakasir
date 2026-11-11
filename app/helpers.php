@@ -10,13 +10,13 @@ if (! function_exists('hasFeatureAndPermission')) {
     function hasFeatureAndPermission(string $feature, ?string $permission = null): bool
     {
         /** @var User $user */
-        $user = Filament::auth()->user();
+        $user = Filament::getCurrentPanel() ? Filament::auth()->user() : auth()->user();
 
         if (! $permission) {
             return feature($feature);
         }
 
-        return feature($feature) && $user->can($permission);
+        return feature($feature) && ($user?->can($permission) ?? false);
     }
 }
 
@@ -24,9 +24,9 @@ if (! function_exists('can')) {
     function can(string $permission): bool
     {
         /** @var User $user */
-        $user = Filament::auth()->user();
+        $user = Filament::getCurrentPanel() ? Filament::auth()->user() : auth()->user();
 
-        return $user->can($permission);
+        return $user?->can($permission) ?? false;
     }
 }
 
