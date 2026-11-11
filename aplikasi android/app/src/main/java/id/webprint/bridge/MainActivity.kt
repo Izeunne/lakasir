@@ -130,7 +130,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         val settings = settingsRepository.load()
-        if (settings.backgroundServerEnabled && !isServiceActive()) {
+        if ((settings.backgroundServerEnabled || settings.autoStart) && !isServiceActive()) {
             serviceController.start()
         }
 

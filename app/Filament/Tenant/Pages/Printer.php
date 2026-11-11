@@ -33,6 +33,7 @@ class Printer extends Page implements HasActions, HasForms
     public function mount()
     {
         $this->form->fill([
+            'driver' => Setting::get('printer_driver', 'usb'),
             'paper_width' => Setting::get('printer_paper_width', '58mm'),
         ]);
     }
@@ -49,9 +50,17 @@ class Printer extends Page implements HasActions, HasForms
             Components\Select::make('driver')
                 ->default('usb')
                 ->options([
-                    // 'bluetooth' => 'Bluetooh',
-                    'usb' => 'USB',
+                    'usb' => 'USB (Printer Fisik)',
+                    'virtual' => 'Virtual / Simulator (Preview Layar - Tanpa Printer Fisik)',
                 ])
+                ->live()
+                ->afterStateUpdated(function ($state, callable $set) {
+                    if ($state === 'virtual') {
+                        $set('name', 'Virtual Thermal Simulator');
+                        $set('printer', 'Virtual Printer (Preview Layar)');
+                        $set('printerId', 'virtual_simulator');
+                    }
+                })
                 ->translateLabel(),
             Components\Select::make('paper_width')
                 ->label(__('Ukuran Kertas'))
@@ -66,7 +75,9 @@ class Printer extends Page implements HasActions, HasForms
                 ->schema([
                     Components\TextInput::make('printer')
                         ->required()
-                        ->helperText(__('Please click the select printer button to choose the connected printer'))
+                        ->helperText(fn (callable $get) => $get('driver') === 'virtual'
+                            ? __('Mode simulator aktif: hasil cetak struk akan ditampilkan langsung di layar.')
+                            : __('Please click the select printer button to choose the connected printer'))
                         ->readOnly()
                         ->translateLabel()
                         ->columnSpan(2),
@@ -76,6 +87,7 @@ class Printer extends Page implements HasActions, HasForms
                             ActionsAction::make('select_printer')
                                 ->icon('heroicon-o-printer')
                                 ->translateLabel()
+                                ->visible(fn (callable $get) => $get('driver') !== 'virtual')
                                 ->extraAttributes([
                                     'x-on:click' => 'fetchDeviceByDriver',
                                 ]),
@@ -110,6 +122,9 @@ class Printer extends Page implements HasActions, HasForms
     {
         if (isset($data['paper_width'])) {
             Setting::set('printer_paper_width', $data['paper_width']);
+        }
+        if (isset($data['driver'])) {
+            Setting::set('printer_driver', $data['driver']);
         }
     }
 

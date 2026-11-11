@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\PosNotificationController;
 use App\Http\Controllers\Api\PrintQueueController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
@@ -14,6 +15,14 @@ Route::get('/test', function () {
         'message' => 'Lakasir API Online!',
         'time' => now()->toIso8601String(),
     ]);
+});
+
+// POS Realtime Notifications
+Route::prefix('pos-notifications')->group(function () {
+    Route::get('/', [PosNotificationController::class, 'index']);
+    Route::post('/send', [PosNotificationController::class, 'send']);
+    Route::post('/test', [PosNotificationController::class, 'sendTest']);
+    Route::post('/{id}/read', [PosNotificationController::class, 'markRead']);
 });
 
 // POS Mataverse Print Bridge Routes

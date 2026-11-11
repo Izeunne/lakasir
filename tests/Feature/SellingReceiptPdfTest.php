@@ -111,9 +111,13 @@ test('receipt pdf service supports 80mm paper width and respects printer_paper_w
     $response->assertOk()->assertHeader('content-type', 'application/pdf');
 });
 
-test('printer page saves paper_width setting properly', function () {
+test('printer page saves paper_width and virtual driver setting properly', function () {
     $printerPage = new \App\Filament\Tenant\Pages\Printer();
-    $printerPage->saveSettings(['paper_width' => '80mm']);
+    $printerPage->saveSettings([
+        'driver' => 'virtual',
+        'paper_width' => '80mm',
+    ]);
 
-    expect(\App\Models\Tenants\Setting::get('printer_paper_width'))->toBe('80mm');
+    expect(\App\Models\Tenants\Setting::get('printer_paper_width'))->toBe('80mm')
+        ->and(\App\Models\Tenants\Setting::get('printer_driver'))->toBe('virtual');
 });

@@ -53,6 +53,14 @@
   <script>
     Alpine.data('printer', () => ({
       init() {
+        this.$watch('$wire.data.driver', (value) => {
+          if (value === 'virtual') {
+            $wire.data.name = $wire.data.name || 'Virtual Thermal Simulator';
+            $wire.data.printer = 'Virtual Printer (Preview Layar)';
+            $wire.data.printerId = 'virtual_simulator';
+          }
+        });
+
         if (window.LakasirBridge) {
           const lakasirBanner = document.getElementById('lakasirBridgeBanner');
           const stdBanner = document.getElementById('standardBridgeBanner');
@@ -79,6 +87,14 @@
         }
       },
       fetchDeviceByDriver() {
+        if ($wire.data.driver === 'virtual') {
+          new FilamentNotification()
+            .title('Mode Simulator')
+            .body('Mode Simulator tidak memerlukan perangkat printer fisik.')
+            .info()
+            .send();
+          return;
+        }
         if (window.LakasirBridge) {
           window.LakasirBridge.openSettings();
           return;
@@ -110,7 +126,13 @@
         }
       },
       save() {
-        if (!window.LakasirBridge) {
+        if ($wire.data.driver === 'virtual') {
+          $wire.data.name = $wire.data.name || 'Virtual Thermal Simulator';
+          $wire.data.printer = 'Virtual Printer (Preview Layar)';
+          $wire.data.printerId = 'virtual_simulator';
+        }
+
+        if (!window.LakasirBridge && $wire.data.driver !== 'virtual') {
           $wire.validateInput();
           if(!$wire.data.printer || !$wire.data.name) {
             return;
@@ -124,11 +146,18 @@
 
         new FilamentNotification()
           .title('@lang('Save success')')
+          .body($wire.data.driver === 'virtual' ? 'Mode Simulator Virtual berhasil disimpan.' : undefined)
           .success()
           .send();
       },
       async test() {
-        if (!window.LakasirBridge) {
+        if ($wire.data.driver === 'virtual') {
+          $wire.data.name = $wire.data.name || 'Virtual Thermal Simulator';
+          $wire.data.printer = 'Virtual Printer (Preview Layar)';
+          $wire.data.printerId = 'virtual_simulator';
+        }
+
+        if (!window.LakasirBridge && $wire.data.driver !== 'virtual') {
           $wire.validateInput();
           if(!$wire.data.printer || !$wire.data.name) {
             return;
@@ -136,7 +165,7 @@
         }
         try {
           const paperWidth = $wire.data.paper_width || '58mm';
-          const printer = new Printer($wire.data.printerId || 'android_bridge_default', paperWidth);
+          const printer = new Printer($wire.data.printerId || 'virtual_simulator', paperWidth);
           const divider = paperWidth === '80mm' ? '------------------------------------------------' : '-------------------------------';
           printerAction = printer.font('a')
             .size(1)
@@ -152,8 +181,8 @@
 
           printerAction.align('left')
             .text(divider)
-            .table(['Status Bridge', 'TERHUBUNG'])
-            .table(['Metode Cetak', window.LakasirBridge ? 'Direct Native' : 'WebUSB'])
+            .table(['Status Printer', $wire.data.driver === 'virtual' ? 'SIMULATOR AKTIF' : 'TERHUBUNG'])
+            .table(['Metode Cetak', $wire.data.driver === 'virtual' ? 'Virtual Screen' : (window.LakasirBridge ? 'Direct Native' : 'WebUSB')])
             .table(['Ukuran Kertas', paperWidth])
             .table(['Waktu', new Date().toLocaleTimeString()])
             .text(divider)

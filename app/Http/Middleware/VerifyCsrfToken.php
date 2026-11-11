@@ -15,5 +15,6 @@ class VerifyCsrfToken extends Middleware
         // 'localhost:3000/*',
         'livewire/*',
         'api/print-queue/*',
+        'api/pos-notifications/*',
     ];
 }

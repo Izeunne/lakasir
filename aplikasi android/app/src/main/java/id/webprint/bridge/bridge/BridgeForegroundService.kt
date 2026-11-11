@@ -12,9 +12,11 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import id.webprint.bridge.MainActivity
 import id.webprint.bridge.R
+import id.webprint.bridge.data.PosNotificationApiClient
 import id.webprint.bridge.data.PrintJobRepository
 import id.webprint.bridge.data.RuntimeStateRepository
 import id.webprint.bridge.data.SettingsRepository
+import id.webprint.bridge.notification.PosNotificationHelper
 import id.webprint.bridge.printer.EscPosPrinter
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -33,7 +35,10 @@ class BridgeForegroundService : Service() {
     private lateinit var runtimeStateRepository: RuntimeStateRepository
     private lateinit var printJobRepository: PrintJobRepository
     private lateinit var printer: EscPosPrinter
+    private lateinit var notificationHelper: PosNotificationHelper
+    private val notificationClient = PosNotificationApiClient()
     private var loopJob: Job? = null
+    private var notificationJob: Job? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -42,12 +47,15 @@ class BridgeForegroundService : Service() {
         runtimeStateRepository = RuntimeStateRepository(this)
         printJobRepository = PrintJobRepository(settingsRepository)
         printer = EscPosPrinter(this)
+        notificationHelper = PosNotificationHelper(this)
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, buildNotification(getString(R.string.notification_idle)))
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         isRunning = true
+        startNotificationLoop()
+
         if (loopJob?.isActive == true) {
             runtimeStateRepository.updateStatus("Polling sudah aktif.")
             return START_STICKY
@@ -128,9 +136,33 @@ class BridgeForegroundService : Service() {
         return START_STICKY
     }
 
+    private fun startNotificationLoop() {
+        if (notificationJob?.isActive == true) return
+        notificationJob = serviceScope.launch {
+            while (isActive) {
+                val settings = settingsRepository.load()
+                if (settings.baseUrl.isNotBlank() && settings.token.isNotBlank() && settings.outletId > 0) {
+                    try {
+                        val notifs = notificationClient.fetchNotifications(settings)
+                        for (notif in notifs) {
+                            if (!isActive) break
+                            notificationHelper.showNotification(notif)
+                            runtimeStateRepository.appendLog("🔔 [Notifikasi] ${notif.title}: ${notif.message}")
+                            notificationClient.markRead(settings, notif.id)
+                        }
+                    } catch (e: Exception) {
+                        if (e is CancellationException) throw e
+                    }
+                }
+                delay(settings.pollingSeconds.coerceAtLeast(2L) * 1_000L)
+            }
+        }
+    }
+
     override fun onDestroy() {
         isRunning = false
         loopJob?.cancel()
+        notificationJob?.cancel()
         runtimeStateRepository.setPolling(false, "Polling dihentikan.")
         serviceScope.cancel()
         super.onDestroy()
