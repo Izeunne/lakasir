@@ -27,7 +27,9 @@ Route::prefix('pos-notifications')->group(function () {
 
 // POS Mataverse Print Bridge Routes
 Route::prefix('print-queue')->group(function () {
-    Route::get('/{queueType}', [PrintQueueController::class, 'index'])->where('queueType', 'cashier|kitchen');
+    Route::get('/printers', [PrintQueueController::class, 'printers']);
+    Route::post('/printers/sync', [PrintQueueController::class, 'syncPrinters']);
+    Route::get('/{queueType}', [PrintQueueController::class, 'index'])->where('queueType', 'cashier|kitchen|all');
     Route::post('/{id}/done', [PrintQueueController::class, 'markDone']);
     Route::post('/{id}/fail', [PrintQueueController::class, 'markFailed']);
     Route::post('/test', [PrintQueueController::class, 'test']);

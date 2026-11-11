@@ -8,6 +8,7 @@ use App\Filament\Tenant\Resources\ProductResource;
 use App\Filament\Tenant\Resources\ProductResource\RelationManagers\PriceUnitsRelationManager;
 use App\Filament\Tenant\Resources\ProductResource\RelationManagers\SellingDetailsRelationManager;
 use App\Filament\Tenant\Resources\ProductResource\RelationManagers\StocksRelationManager;
+use App\Filament\Tenant\Resources\ProductResource\RelationManagers\VariationsRelationManager;
 use App\Filament\Tenant\Resources\ProductResource\Widgets\StatsProduct;
 use App\Filament\Tenant\Resources\Traits\RefreshThePage;
 use Filament\Actions;
@@ -80,6 +81,7 @@ class ViewProduct extends ViewRecord
     public function getRelationManagers(): array
     {
         $relations = [
+            VariationsRelationManager::make(),
             SellingDetailsRelationManager::make(),
             PriceUnitsRelationManager::make(),
         ];

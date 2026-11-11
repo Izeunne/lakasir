@@ -26,7 +26,7 @@
     <env name="DB_CONNECTION" value="mysql"/>
     <env name="DB_USERNAME" value="root"/>
     <env name="DB_PASSWORD" value="root"/>
-    <env name="DB_DATABASE" value="lakasir"/>
+    <env name="DB_DATABASE" value="lakasir_test"/>
     <!-- <env name="APP_CENTRAL_DOMAIN" value="localhost.com"/> -->
     <!-- <env name="DB_DATABASE" value="testing" /> -->
     <!-- <env name="DB_FOREIGN_KEYS" value="true" /> -->

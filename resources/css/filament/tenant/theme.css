@@ -42,11 +42,74 @@
   @apply mx-0;
 }
 
+/* Card Menu Kasir Compact & Rapi (5 Kolom per Row) */
+.fi-ta-content-grid {
+  gap: 0.65rem !important;
+  padding: 0.75rem !important;
+}
+
+@media (min-width: 1024px) {
+  .fi-ta-content-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+}
+
+.fi-ta-content-grid .fi-ta-record {
+  border-radius: 0.75rem !important;
+  border: 1px solid rgba(229, 231, 235, 0.8) !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+  overflow: hidden !important;
+  transition: all 0.15s ease-in-out !important;
+  background-color: #ffffff !important;
+}
+
+.fi-ta-content-grid .fi-ta-record:hover {
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08) !important;
+  transform: translateY(-2px) !important;
+}
+
+.dark .fi-ta-content-grid .fi-ta-record {
+  border-color: rgba(55, 65, 81, 0.8) !important;
+  background-color: #111827 !important;
+}
+
+/* Pastikan gambar di dalam card memenuhi lebar kartu dengan tinggi kompak yang seragam (edge-to-edge) */
+.fi-ta-content-grid .fi-ta-record .fi-ta-image {
+  margin-left: -1rem !important;
+  margin-right: -1rem !important;
+  margin-top: -1rem !important;
+  margin-bottom: 0.35rem !important;
+  padding: 0 !important;
+  width: calc(100% + 2rem) !important;
+  overflow: hidden !important;
+}
+
+.fi-ta-content-grid .fi-ta-record .fi-ta-image > div,
+.fi-ta-content-grid .fi-ta-record .fi-ta-image .flex {
+  width: 100% !important;
+}
+
+.fi-ta-content-grid .fi-ta-record .fi-ta-image img {
+  width: 100% !important;
+  height: 96px !important;
+  max-height: 96px !important;
+  object-fit: cover !important;
+  border-top-left-radius: 0.75rem !important;
+  border-top-right-radius: 0.75rem !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  display: block !important;
+}
+
 .fi-ta-record.product-ordered {
   outline: 2.5px solid var(--primary-500, #FF6600) !important;
   border-color: var(--primary-500, #FF6600) !important;
-  background-color: rgba(255, 102, 0, 0.08) !important;
-  box-shadow: 0 4px 14px -2px rgba(255, 102, 0, 0.25) !important;
+  background-color: rgba(255, 102, 0, 0.06) !important;
+  box-shadow: 0 2px 8px -1px rgba(255, 102, 0, 0.25) !important;
+}
+
+.dark .fi-ta-record.product-ordered {
+  background-color: rgba(255, 102, 0, 0.14) !important;
 }
 
 /* Responsif compact untuk layar landscape HP/POS dengan tinggi terbatas */
@@ -67,13 +130,4 @@
   .fi-simple-header {
     margin-bottom: 0.5rem !important;
   }
-}
-
-.fi-ta-record.product-ordered img {
-  border-radius: 0.5rem;
-  box-shadow: 0 0 0 2px rgba(255, 102, 0, 0.5);
-}
-
-.dark .fi-ta-record.product-ordered {
-  background-color: rgba(255, 102, 0, 0.16) !important;
 }

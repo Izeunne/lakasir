@@ -4,8 +4,8 @@
 
 @endphp
 <div class="p-2 sm:p-4 min-h-screen" x-data="{ mobileTab: 'products' }">
-  {{-- Mobile Top Navigation Switcher (< 768px) --}}
-  <div class="mb-3 flex items-center justify-between gap-2 md:hidden">
+  {{-- Mobile Top Navigation Switcher (< 768px) --}} <div
+    class="mb-3 flex items-center justify-between gap-2 md:hidden">
     <div class="inline-flex rounded-lg bg-gray-200/90 p-1 dark:bg-gray-800">
       <button type="button" @click="mobileTab = 'products'"
         :class="mobileTab === 'products' ? 'bg-white shadow text-gray-900 font-bold dark:bg-gray-700 dark:text-white' : 'text-gray-600 dark:text-gray-400'"
@@ -25,445 +25,470 @@
         @endif
       </button>
     </div>
-    <a href="/member/sellings" class="flex items-center gap-1 rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300">
+    <a href="/member/sellings"
+      class="flex items-center gap-1 rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300">
       <x-heroicon-o-arrow-left class="h-3.5 w-3.5" />
       <span>{{ __('Kembali') }}</span>
     </a>
-  </div>
+</div>
 
-  <style>
-    @media (min-width: 768px) {
-      .pos-main-layout {
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: flex-start !important;
-        gap: 1rem !important;
-      }
-      .pos-catalog-col {
-        display: block !important;
-        width: 58% !important;
-        flex: 1 1 58% !important;
-        min-width: 0 !important;
-      }
-      .pos-cart-col {
-        display: flex !important;
-        width: 42% !important;
-        flex: 0 0 42% !important;
-        max-height: calc(100vh - 1rem) !important;
-        position: sticky !important;
-        top: 0.5rem !important;
-      }
+<style>
+  @media (min-width: 768px) {
+    .pos-main-layout {
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: flex-start !important;
+      gap: 1rem !important;
     }
-    @media (min-width: 1024px) {
-      .pos-catalog-col {
-        width: 62% !important;
-        flex: 1 1 62% !important;
-      }
-      .pos-cart-col {
-        width: 38% !important;
-        flex: 0 0 38% !important;
-      }
-    }
-    @media (min-width: 1280px) {
-      .pos-catalog-col {
-        width: 66.666667% !important;
-        flex: 1 1 66.666667% !important;
-      }
-      .pos-cart-col {
-        width: 33.333333% !important;
-        flex: 0 0 33.333333% !important;
-      }
-    }
-  </style>
 
-  <div class="pos-main-layout flex flex-col md:flex-row gap-3 lg:gap-4 items-start w-full">
-    {{-- Kolom Katalog Produk --}}
-    <div class="pos-catalog-col w-full md:w-[56%] lg:w-[62%] xl:w-2/3 flex-1 min-w-0"
-      :class="mobileTab === 'cart' ? 'hidden md:block' : 'block'">
-      {{ $this->table }}
+    .pos-catalog-col {
+      display: block !important;
+      width: 58% !important;
+      flex: 1 1 58% !important;
+      min-width: 0 !important;
+    }
+
+    .pos-cart-col {
+      display: flex !important;
+      width: 42% !important;
+      flex: 0 0 42% !important;
+      max-height: calc(100vh - 1rem) !important;
+      position: sticky !important;
+      top: 0.5rem !important;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .pos-catalog-col {
+      width: 62% !important;
+      flex: 1 1 62% !important;
+    }
+
+    .pos-cart-col {
+      width: 38% !important;
+      flex: 0 0 38% !important;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .pos-catalog-col {
+      width: 66.666667% !important;
+      flex: 1 1 66.666667% !important;
+    }
+
+    .pos-cart-col {
+      width: 33.333333% !important;
+      flex: 0 0 33.333333% !important;
+    }
+  }
+</style>
+
+<div class="pos-main-layout flex flex-col md:flex-row gap-3 lg:gap-4 items-start w-full">
+  {{-- Kolom Katalog Produk --}}
+  <div class="pos-catalog-col w-full md:w-[56%] lg:w-[62%] xl:w-2/3 flex-1 min-w-0 space-y-3"
+    :class="mobileTab === 'cart' ? 'hidden md:block' : 'block'">
+
+    {{-- Category Filter Bar --}}
+    <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+      <button type="button" wire:click="setCategory(null)"
+        class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3.5 py-2 text-xs sm:text-sm font-semibold transition-all duration-150 {{ $selectedCategoryId === null ? 'bg-primary-600 text-white shadow-md shadow-primary-500/25 ring-2 ring-primary-500/30' : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 border border-gray-200/80 dark:border-gray-700/80 shadow-sm' }}">
+        <span>🌟 {{ __('Semua Menu') }}</span>
+        <span
+          class="rounded-full px-1.5 py-0.5 text-xs font-bold {{ $selectedCategoryId === null ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' }}">
+          {{ \App\Models\Tenants\Product::where('show', true)->count() }}
+        </span>
+      </button>
+
+      @foreach(\App\Models\Tenants\Category::withCount(['products' => fn($q) => $q->where('show', true)])->having('products_count', '>', 0)->get() as $cat)
+        <button type="button" wire:click="setCategory({{ $cat->id }})"
+          class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3.5 py-2 text-xs sm:text-sm font-semibold transition-all duration-150 {{ $selectedCategoryId === $cat->id ? 'bg-primary-600 text-white shadow-md shadow-primary-500/25 ring-2 ring-primary-500/30' : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 border border-gray-200/80 dark:border-gray-700/80 shadow-sm' }}">
+          <span>
+            @if(str_contains(strtolower($cat->name), 'makan')) 🍲
+            @elseif(str_contains(strtolower($cat->name), 'camil') || str_contains(strtolower($cat->name), 'snack')) 🍟
+            @elseif(str_contains(strtolower($cat->name), 'minum') || str_contains(strtolower($cat->name), 'drink')) 🥤
+            @elseif(str_contains(strtolower($cat->name), 'tutup') || str_contains(strtolower($cat->name), 'dessert')) 🍧
+            @else 🍽️
+            @endif
+            {{ $cat->name }}
+          </span>
+          <span
+            class="rounded-full px-1.5 py-0.5 text-xs font-bold {{ $selectedCategoryId === $cat->id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' }}">
+            {{ $cat->products_count }}
+          </span>
+        </button>
+      @endforeach
     </div>
 
-    {{-- Kolom Order Details / Keranjang --}}
-    <div class="pos-cart-col w-full md:w-[44%] lg:w-[38%] xl:w-1/3 shrink-0 md:sticky md:top-2 self-start rounded-xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 md:max-h-[calc(100vh-1rem)] flex flex-col overflow-hidden"
-      :class="mobileTab === 'products' ? 'hidden md:flex' : 'flex'">
-      
-      {{-- Header Sidebar --}}
-      <div class="p-3 sm:p-4 border-b border-gray-100 dark:border-gray-800 shrink-0 space-y-2">
-        <div class="flex items-center justify-between" x-data="fullscreen">
-          <div class="flex items-center gap-2">
-            <button type="button" @click="mobileTab = 'products'"
-              class="md:hidden flex items-center justify-center rounded-lg bg-gray-100 p-1.5 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
-              title="{{ __('Kembali ke Menu') }}">
-              <x-heroicon-o-arrow-left class="h-4 w-4" />
-            </button>
-            <p class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">{{ __('Orders details') }}</p>
-          </div>
-          <div class="flex items-center">
-            <div class="hidden items-center gap-x-2 xl:flex">
-              <a href="/member/sellings"
-                class="flex items-center justify-center gap-x-1 rounded-lg bg-gray-100 px-4 py-1 text-gray-500">
-                <x-heroicon-o-arrow-left class="h-4 w-4 text-gray-500" />
-                <p class="hidden lg:block">{{ __('Back') }} </p>
-              </a>
+    {{ $this->table }}
+  </div>
 
-              <button x-on:click="$dispatch('open-modal', {id: 'qr-scanner-modal'})" type="button"
-                class="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Scan with camera">
-                <x-heroicon-o-qr-code class="h-8 w-8 text-gray-900 dark:text-gray-300" />
-              </button>
+  {{-- Kolom Order Details / Keranjang --}}
+  <div
+    class="pos-cart-col w-full md:w-[44%] lg:w-[38%] xl:w-1/3 shrink-0 md:sticky md:top-2 self-start rounded-xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 md:max-h-[calc(100vh-1rem)] flex flex-col overflow-hidden"
+    :class="mobileTab === 'products' ? 'hidden md:flex' : 'flex'">
 
-            </div>
-            <div class="gap-x-2">
-              <x-filament::dropdown placement="top-start">
-                <x-slot name="trigger">
-                  <x-heroicon-o-ellipsis-vertical class="h-8 w-8 cursor-pointer text-gray-900 dark:text-gray-300" />
-                </x-slot>
-
-                <x-filament::dropdown.list>
-                  <x-filament::dropdown.list.item x-on:mousedown="document.location.reload()">
-                    <div class="flex gap-x-2">
-                      <x-heroicon-m-arrow-path class="h-5 w-5 cursor-pointer text-gray-900 dark:text-gray-300" />
-                      <p>{{ __('Reload') }} </p>
-                    </div>
-                  </x-filament::dropdown.list.item>
-
-                  <x-filament::dropdown.list.item x-on:mousedown="requestFullscreen">
-                    <div class="flex gap-x-2">
-                      <x-heroicon-o-arrows-pointing-out
-                        class="h-5 w-5 cursor-pointer text-gray-900 dark:text-gray-300" />
-                      <p>{{ __('Fullscreen') }} </p>
-                    </div>
-                  </x-filament::dropdown.list.item>
-                  <x-filament::dropdown.list.item>
-                    <p class="flex gap-x-2" wire:confirm="Are you sure you want to clear all of the items?"
-                      wire:click.prevent="clearCart">
-                      <x-heroicon-o-trash class="h-5 w-5 cursor-pointer text-gray-900 dark:text-gray-300" />
-                      <span>{{ __('Clear') }} </span>
-                    </p>
-                  </x-filament::dropdown.list.item>
-
-                </x-filament::dropdown.list>
-              </x-filament::dropdown>
-            </div>
-          </div>
+    {{-- Header Sidebar --}}
+    <div class="p-3 sm:p-4 border-b border-gray-100 dark:border-gray-800 shrink-0 space-y-2">
+      <div class="flex items-center justify-between" x-data="fullscreen">
+        <div class="flex items-center gap-2">
+          <button type="button" @click="mobileTab = 'products'"
+            class="md:hidden flex items-center justify-center rounded-lg bg-gray-100 p-1.5 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+            title="{{ __('Kembali ke Menu') }}">
+            <x-heroicon-o-arrow-left class="h-4 w-4" />
+          </button>
+          <p class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">{{ __('Orders details') }}</p>
         </div>
-        <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-          <p>{{ Filament::auth()->user()->cashier_name }}</p>
-          <div class="flex items-center gap-x-2">
-            <button
-              type="button"
-              x-on:click="$dispatch('open-modal', {id: 'draft-list-modal'})"
-              class="flex items-center gap-1 rounded-lg border border-lakasir-primary/40 bg-lakasir-primary/10 px-2.5 py-1 text-xs font-semibold text-lakasir-primary transition hover:bg-lakasir-primary hover:text-white">
-              <x-heroicon-o-bookmark-square class="h-3.5 w-3.5" />
-              <span>{{ __('Draft Pesanan') }}</span>
-              @if (isset($cartDrafts) && $cartDrafts->count() > 0)
-                <span class="rounded-full bg-lakasir-primary px-1.5 py-0.2 text-[10px] font-bold text-white leading-none">
-                  {{ $cartDrafts->count() }}
-                </span>
-              @endif
+        <div class="flex items-center">
+          <div class="hidden items-center gap-x-2 xl:flex">
+            <a href="/member/sellings"
+              class="flex items-center justify-center gap-x-1 rounded-lg bg-gray-100 px-4 py-1 text-gray-500">
+              <x-heroicon-o-arrow-left class="h-4 w-4 text-gray-500" />
+              <p class="hidden lg:block">{{ __('Back') }} </p>
+            </a>
+
+            <button x-on:click="$dispatch('open-modal', {id: 'qr-scanner-modal'})" type="button"
+              class="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Scan with camera">
+              <x-heroicon-o-qr-code class="h-8 w-8 text-gray-900 dark:text-gray-300" />
             </button>
+
+          </div>
+          <div class="gap-x-2">
+            <x-filament::dropdown placement="top-start">
+              <x-slot name="trigger">
+                <x-heroicon-o-ellipsis-vertical class="h-8 w-8 cursor-pointer text-gray-900 dark:text-gray-300" />
+              </x-slot>
+
+              <x-filament::dropdown.list>
+                <x-filament::dropdown.list.item x-on:mousedown="document.location.reload()">
+                  <div class="flex gap-x-2">
+                    <x-heroicon-m-arrow-path class="h-5 w-5 cursor-pointer text-gray-900 dark:text-gray-300" />
+                    <p>{{ __('Reload') }} </p>
+                  </div>
+                </x-filament::dropdown.list.item>
+
+                <x-filament::dropdown.list.item x-on:mousedown="requestFullscreen">
+                  <div class="flex gap-x-2">
+                    <x-heroicon-o-arrows-pointing-out class="h-5 w-5 cursor-pointer text-gray-900 dark:text-gray-300" />
+                    <p>{{ __('Fullscreen') }} </p>
+                  </div>
+                </x-filament::dropdown.list.item>
+                <x-filament::dropdown.list.item>
+                  <p class="flex gap-x-2" wire:confirm="Are you sure you want to clear all of the items?"
+                    wire:click.prevent="clearCart">
+                    <x-heroicon-o-trash class="h-5 w-5 cursor-pointer text-gray-900 dark:text-gray-300" />
+                    <span>{{ __('Clear') }} </span>
+                  </p>
+                </x-filament::dropdown.list.item>
+
+              </x-filament::dropdown.list>
+            </x-filament::dropdown>
           </div>
         </div>
       </div>
+      <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+        <p>{{ Filament::auth()->user()->cashier_name }}</p>
+        <div class="flex items-center gap-x-2">
+          <button type="button" x-on:click="$dispatch('open-modal', {id: 'draft-list-modal'})"
+            class="flex items-center gap-1 rounded-lg border border-lakasir-primary/40 bg-lakasir-primary/10 px-2.5 py-1 text-xs font-semibold text-lakasir-primary transition hover:bg-lakasir-primary hover:text-white">
+            <x-heroicon-o-bookmark-square class="h-3.5 w-3.5" />
+            <span>{{ __('Draft Pesanan') }}</span>
+            @if (isset($cartDrafts) && $cartDrafts->count() > 0)
+              <span class="rounded-full bg-lakasir-primary px-1.5 py-0.2 text-[10px] font-bold text-white leading-none">
+                {{ $cartDrafts->count() }}
+              </span>
+            @endif
+          </button>
+        </div>
+      </div>
+    </div>
 
-      {{-- Body Scrollable Sidebar --}}
-      <div class="p-3 sm:p-4 overflow-y-auto flex-1 min-h-0 space-y-3">
-        @if ($activeDraftId)
-          <div class="flex items-center justify-between rounded-lg border border-lakasir-primary/40 bg-lakasir-primary/10 px-3 py-1.5 text-xs">
-            <div class="flex items-center gap-1.5 font-semibold text-lakasir-primary truncate">
-              <x-heroicon-m-bookmark class="h-4 w-4 shrink-0" />
-              <span class="truncate">{{ __('Draft Aktif') }}: {{ $draftName }}</span>
-            </div>
-            <button type="button" wire:click="clearCart" class="text-xs font-semibold text-gray-500 hover:underline dark:text-gray-300 shrink-0 ml-2">
-              {{ __('Tutup Draft') }}
-            </button>
+    {{-- Body Scrollable Sidebar --}}
+    <div class="p-3 sm:p-4 overflow-y-auto flex-1 min-h-0 space-y-3">
+      @if ($activeDraftId)
+        <div
+          class="flex items-center justify-between rounded-lg border border-lakasir-primary/40 bg-lakasir-primary/10 px-3 py-1.5 text-xs">
+          <div class="flex items-center gap-1.5 font-semibold text-lakasir-primary truncate">
+            <x-heroicon-m-bookmark class="h-4 w-4 shrink-0" />
+            <span class="truncate">{{ __('Draft Aktif') }}: {{ $draftName }}</span>
           </div>
-        @endif
-        <div class="max-h-[30vh] sm:max-h-[35vh] space-y-2 overflow-y-auto pr-0.5" wire:loading.class="opacity-20"
-          wire:target="addCart,addVariationItem,reduceCart,increaseCart,deleteCart,addDiscountPricePerItem,addCartUsingScanner,confirmAddVariationCart">
-          @php
-            $orderedCartItems = $cartItems
-              ->groupBy('product_id')
-              ->map(fn ($group) => $group->sortBy('id'))
-              ->flatten(1);
-          @endphp
-          @forelse($orderedCartItems as $item)
-            <div class="mb-4 rounded-lg border bg-white px-4 py-2 dark:border-gray-900 dark:bg-gray-900"
-              style="margin-bottom: 14px;"
-              id="cart-item-{{ $item->id }}" wire:key="cart-item-{{ $item->id }}">
-              <div class="grid items-center space-x-3">
-                <div class="flex items-start justify-between gap-2">
-                  <div>
-                    <p class="font-semibold text-gray-900 dark:text-white">{{ $item->product->name }}</p>
-                    @if (!empty($item->selected_variations))
-                      <div class="mt-1 space-y-0.5 text-xs text-gray-500 dark:text-gray-400">
-                        @foreach ($item->selected_variations as $var)
-                          <div class="flex items-center gap-x-1">
-                            <span class="font-medium text-gray-700 dark:text-gray-300">{{ $var['variation_name'] }}:</span>
-                            <span>{{ $var['option_name'] }}</span>
-                            @if (!empty($var['price']) && $var['price'] > 0)
-                              <span class="font-semibold text-lakasir-primary">(+{{ price_format($var['price']) }})</span>
-                            @endif
-                          </div>
-                        @endforeach
-                      </div>
-                    @endif
-                  </div>
-                  <p class="whitespace-nowrap font-semibold text-lakasir-primary">{{ $item->price_format_money }}</p>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-2 items-center space-y-2 py-2 text-right">
-                <div class="col-span-2">
-                  @feature(Discount::class)
-                    <div class="mb-1 flex justify-end">
-                      <x-filament::input.wrapper class="w-1/2">
-                        <x-filament::input type="text" id="{{ $item->product->name }}-{{ $item->id }}"
-                          value="{{ $item->discount_price == 0 ? '' : $item->discount_price }}"
-                          wire:keyup.debounce.500ms="addDiscountPricePerItem({{ $item }}, parseFloat($event.target.value.replace(/,/g, '')))"
-                          placeholder="{{ __('Discount') }}" class="w-1/2 text-right" inputMode="numeric"
-                          x-mask:dynamic="$money($input)" />
-                      </x-filament::input.wrapper>
-                    </div>
-                  @endfeature
-                  @if ($item->discount_price && $item->discount_price > 0)
-                    <p class="font-semibold text-lakasir-primary">{{ $item->final_price_format }}</p>
-                  @endif
-                </div>
-              </div>
-
-              <div class="flex h-8 items-center space-x-3">
-                <button class="rounded-lg !bg-gray-100 px-2 py-1"
-                  x-on:click="$wire.reduceCart({{ $item->id }});" wire:loading.attr="disabled">
-                  <x-heroicon-o-minus-small class="h-4 w-4 !text-green-900" />
-                </button>
-                <x-filament::input.wrapper class="w-20" x-data="cart">
-                  <x-filament::input type="text"
-                    id="{{ $item->product->name }}-{{ $item->id }}-qty"
-                    data-value="{{ $item->qty }}" value="{{ $item->qty }}"
-                    x-on:keyup.debounce.500ms="(e) => add('{{ $item->id }}', e.target.value)"
-                    placeholder="{{ __('Qty') }}" class="w-1/2 text-right" inputMode="numeric" />
-                </x-filament::input.wrapper>
-                <button class="rounded-lg !bg-lakasir-primary px-2 py-1"
-                  wire:click.stop="increaseCart({{ $item->id }})" wire:loading.attr="disabled">
-                  <x-heroicon-o-plus-small class="h-4 w-4 !text-white" />
-                </button>
-                <livewire:price-setting :cart-item="$item" key="{{ $item->id }}" />
-                <button class="ml-auto rounded-lg !bg-danger-100 px-2 py-1" wire:click="deleteCart({{ $item->id }})"
-                  wire:loading.attr="disabled">
-                  <x-heroicon-o-trash class="h-4 w-4 !text-danger-900" />
-                </button>
-              </div>
-
-              {{-- Catatan Per Item --}}
-              <div class="mt-2" style="margin-top: 10px;">
-                <x-filament::input.wrapper>
-                  <x-slot name="prefix">
-                    <x-heroicon-o-pencil-square class="h-4 w-4 text-gray-400" />
-                  </x-slot>
-                  <x-filament::input
-                    type="text"
-                    id="note-{{ $item->id }}"
-                    value="{{ $item->note }}"
-                    wire:keyup.debounce.500ms="updateCartItemNote({{ $item->id }}, $event.target.value)"
-                    placeholder="{{ __('Catatan item (opsional)...') }}"
-                    class="text-xs" />
-                </x-filament::input.wrapper>
-              </div>
-
-              {{-- Tombol Buka Tutup & Opsi Variasi --}}
-              @if ($item->product && $item->product->variations->isNotEmpty())
-                @php
-                  $hasMissing = $item->hasMissingRequiredVariations();
-                  $shouldExpand = $hasMissing || ($expandedVariationCartItemId === $item->id);
-                @endphp
-                <div x-data="{ expanded: {{ $shouldExpand ? 'true' : 'false' }} }" class="mt-3 border-t pt-2 dark:border-gray-800">
-                  <div class="flex items-center justify-between">
-                    <button type="button" @click="expanded = !expanded"
-                      class="flex items-center gap-1.5 text-xs font-semibold text-lakasir-primary hover:opacity-80">
-                      <span x-text="expanded ? '{{ __('Tutup Variasi') }}' : '{{ __('Atur / Ubah Variasi') }}'"></span>
-                      <x-heroicon-m-chevron-down class="h-3.5 w-3.5 transition-transform duration-200" ::class="expanded ? 'rotate-180' : ''" />
-                    </button>
-
-                    @if ($hasMissing)
-                      <span class="rounded-full bg-danger-100 px-2 py-0.5 text-[10px] font-bold text-danger-700 dark:bg-danger-900/40 dark:text-danger-400">
-                        {{ __('Wajib Dipilih') }}
-                      </span>
-                    @elseif (!empty($item->selected_variations))
-                      <span class="text-[11px] text-gray-500 dark:text-gray-400">
-                        {{ count($item->selected_variations) }} {{ __('terpilih') }}
-                      </span>
-                    @endif
-                  </div>
-
-                  {{-- Kontainer Pilihan Variasi yang bisa dibuka-tutup --}}
-                  <div x-show="expanded" x-collapse class="mt-2 space-y-2.5 rounded-lg bg-gray-50 p-2.5 dark:bg-gray-800/60">
-                    @foreach ($item->product->variations as $variation)
-                      @php
-                        $selectedOptionIds = collect($item->selected_variations ?? [])
-                            ->where('variation_id', $variation->id)
-                            ->pluck('option_id')
-                            ->all();
-                        $isVarMissing = $variation->is_required && empty($selectedOptionIds);
-                      @endphp
-
-                      <div class="space-y-1.5 rounded-md border p-2 transition-colors {{ $isVarMissing ? 'border-danger-300 bg-danger-50/40 dark:border-danger-800 dark:bg-danger-950/20' : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800' }}">
-                        <div class="flex items-center justify-between">
-                          <span class="text-xs font-bold text-gray-800 dark:text-gray-200">{{ $variation->name }}</span>
-                          @if ($variation->is_required)
-                            <span class="text-[10px] font-bold {{ $isVarMissing ? 'text-danger-600 dark:text-danger-400' : 'text-gray-400' }}">
-                              * {{ __('Wajib') }}
-                            </span>
-                          @else
-                            <span class="text-[10px] text-gray-400">{{ __('Opsional') }}</span>
-                          @endif
-                        </div>
-
-                        <div class="flex flex-wrap gap-1.5">
-                          @foreach ($variation->options as $option)
-                            @php
-                              $isSelected = in_array($option->id, $selectedOptionIds);
-                            @endphp
-
-                            <button
-                              type="button"
-                              wire:click="toggleCartItemVariationOption({{ $item->id }}, {{ $variation->id }}, {{ $option->id }}, '{{ $variation->type }}')"
-                              class="flex items-center gap-1 rounded-md px-2.5 py-1 text-xs transition-all {{ $isSelected ? 'bg-lakasir-primary text-white font-semibold shadow-sm' : 'bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200' }}">
-                              <span>{{ $option->name }}</span>
-                              @if ($option->price > 0)
-                                <span class="text-[10px] opacity-80">(+{{ price_format($option->price) }})</span>
-                              @endif
-                            </button>
-                          @endforeach
-
-                          @if (!$variation->is_required && $variation->type === 'single' && !empty($selectedOptionIds))
-                            <button
-                              type="button"
-                              wire:click="clearCartItemVariation({{ $item->id }}, {{ $variation->id }})"
-                              class="rounded-md border border-gray-300 px-2 py-1 text-[11px] text-gray-500 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-400">
-                              {{ __('Kosongkan') }}
-                            </button>
-                          @endif
-                        </div>
+          <button type="button" wire:click="clearCart"
+            class="text-xs font-semibold text-gray-500 hover:underline dark:text-gray-300 shrink-0 ml-2">
+            {{ __('Tutup Draft') }}
+          </button>
+        </div>
+      @endif
+      <div class="max-h-[30vh] sm:max-h-[35vh] space-y-2 overflow-y-auto pr-0.5" wire:loading.class="opacity-20"
+        wire:target="addCart,addVariationItem,reduceCart,increaseCart,deleteCart,addDiscountPricePerItem,addCartUsingScanner,confirmAddVariationCart">
+        @php
+          $orderedCartItems = $cartItems
+            ->groupBy('product_id')
+            ->map(fn($group) => $group->sortBy('id'))
+            ->flatten(1);
+        @endphp
+        @forelse($orderedCartItems as $item)
+        <div class="mb-4 rounded-lg border bg-white px-4 py-2 dark:border-gray-900 dark:bg-gray-900"
+          style="margin-bottom: 14px;" id="cart-item-{{ $item->id }}" wire:key="cart-item-{{ $item->id }}">
+          <div class="grid items-center space-x-3">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <p class="font-semibold text-gray-900 dark:text-white">{{ $item->product->name }}</p>
+                @if (!empty($item->selected_variations))
+                  <div class="mt-1 space-y-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    @foreach ($item->selected_variations as $var)
+                      <div class="flex items-center gap-x-1">
+                        <span class="font-medium text-gray-700 dark:text-gray-300">{{ $var['variation_name'] }}:</span>
+                        <span>{{ $var['option_name'] }}</span>
+                        @if (!empty($var['price']) && $var['price'] > 0)
+                          <span class="font-semibold text-lakasir-primary">(+{{ price_format($var['price']) }})</span>
+                        @endif
                       </div>
                     @endforeach
                   </div>
-                </div>
+                @endif
+              </div>
+              <p class="whitespace-nowrap font-semibold text-lakasir-primary">{{ $item->price_format_money }}</p>
+            </div>
+          </div>
 
-                <div class="mt-2 pt-1" style="margin-top: 10px;">
-                  <button
-                    type="button"
-                    wire:click="addVariationItem({{ $item->product_id }})"
-                    wire:loading.attr="disabled"
-                    class="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-lakasir-primary/50 bg-lakasir-primary/5 px-4 py-2 text-xs font-semibold text-lakasir-primary transition hover:bg-lakasir-primary/15">
-                    <x-heroicon-m-plus-circle class="h-4 w-4" />
-                    <span>{{ __('Tambah Item Terpisah') }}</span>
-                  </button>
-                </div>
+          <div class="grid grid-cols-2 items-center space-y-2 py-2 text-right">
+            <div class="col-span-2">
+              @feature(Discount::class)
+              <div class="mb-1 flex justify-end">
+                <x-filament::input.wrapper class="w-1/2">
+                  <x-filament::input type="text" id="{{ $item->product->name }}-{{ $item->id }}"
+                    value="{{ $item->discount_price == 0 ? '' : $item->discount_price }}"
+                    wire:keyup.debounce.500ms="addDiscountPricePerItem({{ $item }}, parseFloat($event.target.value.replace(/,/g, '')))"
+                    placeholder="{{ __('Discount') }}" class="w-1/2 text-right" inputMode="numeric"
+                    x-mask:dynamic="$money($input)" />
+                </x-filament::input.wrapper>
+              </div>
+              @endfeature
+              @if ($item->discount_price && $item->discount_price > 0)
+                <p class="font-semibold text-lakasir-primary">{{ $item->final_price_format }}</p>
               @endif
             </div>
-          @empty
-            <div
-              class="flex h-40 items-center justify-center rounded-lg border bg-white dark:border-gray-900 dark:bg-gray-900">
-              <x-heroicon-o-x-mark class="hidden h-10 w-10 text-gray-900 dark:text-white lg:block" />
-              <p class="text-xl text-gray-600 dark:text-white lg:text-3xl">{{ __('No item') }}</p>
-            </div>
-          @endforelse
-        </div>
-        {{-- Pilihan Kategori Pesanan (Wajib) --}}
-        <div>
-          <div class="w-full rounded-lg border px-4 py-2.5 transition-colors {{ empty($orderType) ? 'border-danger-300 bg-danger-50/40 dark:border-danger-800 dark:bg-gray-900' : 'border-gray-200 bg-white dark:border-gray-900 dark:bg-gray-900' }}">
-            <div class="mb-1.5 flex items-center justify-between">
-              <span class="text-xs font-bold text-gray-800 dark:text-gray-200">{{ __('Kategori Pesanan') }}</span>
-              <span class="text-[10px] font-bold {{ empty($orderType) ? 'text-danger-600 dark:text-danger-400' : 'text-gray-400' }}">
-                * {{ __('Wajib Dipilih') }}
-              </span>
-            </div>
-            <div class="grid grid-cols-3 gap-1.5">
-              <button
-                type="button"
-                wire:click="setOrderType('dine_in')"
-                class="flex items-center justify-center gap-1 rounded-lg border px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold transition {{ $orderType === 'dine_in' ? 'border-lakasir-primary bg-lakasir-primary text-white shadow-sm' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200' }}">
-                <span class="truncate">Dine In</span>
-              </button>
-              <button
-                type="button"
-                wire:click="setOrderType('take_away')"
-                class="flex items-center justify-center gap-1 rounded-lg border px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold transition {{ $orderType === 'take_away' ? 'border-lakasir-primary bg-lakasir-primary text-white shadow-sm' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200' }}">
-                <span class="truncate">Take Away</span>
-              </button>
-              <button
-                type="button"
-                wire:click="setOrderType('ojek_online')"
-                class="flex items-center justify-center gap-1 rounded-lg border px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold transition {{ $orderType === 'ojek_online' ? 'border-lakasir-primary bg-lakasir-primary text-white shadow-sm' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200' }}">
-                <span class="truncate">Ojek Online</span>
-              </button>
-            </div>
           </div>
-        </div>
 
-        <div>
-          <div
-            class="w-full rounded-lg border bg-gray-50/50 px-3 py-2 text-xs text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-white">
-            @include('filament.tenant.pages.cashier.detail')
+          <div class="flex h-8 items-center space-x-3">
+            <button class="rounded-lg !bg-gray-100 px-2 py-1" x-on:click="$wire.reduceCart({{ $item->id }});"
+              wire:loading.attr="disabled">
+              <x-heroicon-o-minus-small class="h-4 w-4 !text-green-900" />
+            </button>
+            <x-filament::input.wrapper class="w-20" x-data="cart">
+              <x-filament::input type="text" id="{{ $item->product->name }}-{{ $item->id }}-qty"
+                data-value="{{ $item->qty }}" value="{{ $item->qty }}"
+                x-on:keyup.debounce.500ms="(e) => add('{{ $item->id }}', e.target.value)" placeholder="{{ __('Qty') }}"
+                class="w-1/2 text-right" inputMode="numeric" />
+            </x-filament::input.wrapper>
+            <button class="rounded-lg !bg-lakasir-primary px-2 py-1" wire:click.stop="increaseCart({{ $item->id }})"
+              wire:loading.attr="disabled">
+              <x-heroicon-o-plus-small class="h-4 w-4 !text-white" />
+            </button>
+            <livewire:price-setting :cart-item="$item" key="{{ $item->id }}" />
+            <button class="ml-auto rounded-lg !bg-danger-100 px-2 py-1" wire:click="deleteCart({{ $item->id }})"
+              wire:loading.attr="disabled">
+              <x-heroicon-o-trash class="h-4 w-4 !text-danger-900" />
+            </button>
           </div>
+
+          {{-- Catatan Per Item --}}
+          <div class="mt-2" style="margin-top: 10px;">
+            <x-filament::input.wrapper>
+              <x-slot name="prefix">
+                <x-heroicon-o-pencil-square class="h-4 w-4 text-gray-400" />
+              </x-slot>
+              <x-filament::input type="text" id="note-{{ $item->id }}" value="{{ $item->note }}"
+                wire:keyup.debounce.500ms="updateCartItemNote({{ $item->id }}, $event.target.value)"
+                placeholder="{{ __('Catatan item (opsional)...') }}" class="text-xs" />
+            </x-filament::input.wrapper>
+          </div>
+
+          {{-- Tombol Buka Tutup & Opsi Variasi --}}
+          @if ($item->product && $item->product->variations->isNotEmpty())
+            @php
+              $hasMissing = $item->hasMissingRequiredVariations();
+              $shouldExpand = $hasMissing || ($expandedVariationCartItemId === $item->id);
+            @endphp
+            <div x-data="{ expanded: {{ $shouldExpand ? 'true' : 'false' }} }"
+              class="mt-3 border-t pt-2 dark:border-gray-800">
+              <div class="flex items-center justify-between">
+                <button type="button" @click="expanded = !expanded"
+                  class="flex items-center gap-1.5 text-xs font-semibold text-lakasir-primary hover:opacity-80">
+                  <span x-text="expanded ? '{{ __('Tutup Variasi') }}' : '{{ __('Atur / Ubah Variasi') }}'"></span>
+                  <x-heroicon-m-chevron-down class="h-3.5 w-3.5 transition-transform duration-200"
+                    ::class="expanded ? 'rotate-180' : ''" />
+                </button>
+
+                @if ($hasMissing)
+                  <span
+                    class="rounded-full bg-danger-100 px-2 py-0.5 text-[10px] font-bold text-danger-700 dark:bg-danger-900/40 dark:text-danger-400">
+                    {{ __('Wajib Dipilih') }}
+                  </span>
+                @elseif (!empty($item->selected_variations))
+                  <span class="text-[11px] text-gray-500 dark:text-gray-400">
+                    {{ count($item->selected_variations) }} {{ __('terpilih') }}
+                  </span>
+                @endif
+              </div>
+
+              {{-- Kontainer Pilihan Variasi yang bisa dibuka-tutup --}}
+              <div x-show="expanded" x-collapse class="mt-2 space-y-2.5 rounded-lg bg-gray-50 p-2.5 dark:bg-gray-800/60">
+                @foreach ($item->product->variations as $variation)
+                  @php
+                    $selectedOptionIds = collect($item->selected_variations ?? [])
+                      ->where('variation_id', $variation->id)
+                      ->pluck('option_id')
+                      ->all();
+                    $isVarMissing = $variation->is_required && empty($selectedOptionIds);
+                  @endphp
+
+                  <div
+                    class="space-y-1.5 rounded-md border p-2 transition-colors {{ $isVarMissing ? 'border-danger-300 bg-danger-50/40 dark:border-danger-800 dark:bg-danger-950/20' : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800' }}">
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs font-bold text-gray-800 dark:text-gray-200">{{ $variation->name }}</span>
+                      @if ($variation->is_required)
+                        <span
+                          class="text-[10px] font-bold {{ $isVarMissing ? 'text-danger-600 dark:text-danger-400' : 'text-gray-400' }}">
+                          * {{ __('Wajib') }}
+                        </span>
+                      @else
+                        <span class="text-[10px] text-gray-400">{{ __('Opsional') }}</span>
+                      @endif
+                    </div>
+
+                    <div class="flex flex-wrap gap-1.5">
+                      @foreach ($variation->options as $option)
+                        @php
+                          $isSelected = in_array($option->id, $selectedOptionIds);
+                        @endphp
+
+                        <button type="button"
+                          wire:click="toggleCartItemVariationOption({{ $item->id }}, {{ $variation->id }}, {{ $option->id }}, '{{ $variation->type }}')"
+                          class="flex items-center gap-1 rounded-md px-2.5 py-1 text-xs transition-all {{ $isSelected ? 'bg-lakasir-primary text-white font-semibold shadow-sm' : 'bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200' }}">
+                          <span>{{ $option->name }}</span>
+                          @if ($option->price > 0)
+                            <span class="text-[10px] opacity-80">(+{{ price_format($option->price) }})</span>
+                          @endif
+                        </button>
+                      @endforeach
+
+                      @if (!$variation->is_required && $variation->type === 'single' && !empty($selectedOptionIds))
+                        <button type="button" wire:click="clearCartItemVariation({{ $item->id }}, {{ $variation->id }})"
+                          class="rounded-md border border-gray-300 px-2 py-1 text-[11px] text-gray-500 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-400">
+                          {{ __('Kosongkan') }}
+                        </button>
+                      @endif
+                    </div>
+                  </div>
+                @endforeach
+              </div>
+            </div>
+
+            <div class="mt-2 pt-1" style="margin-top: 10px;">
+              <button type="button" wire:click="addVariationItem({{ $item->product_id }})" wire:loading.attr="disabled"
+                class="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-lakasir-primary/50 bg-lakasir-primary/5 px-4 py-2 text-xs font-semibold text-lakasir-primary transition hover:bg-lakasir-primary/15">
+                <x-heroicon-m-plus-circle class="h-4 w-4" />
+                <span>{{ __('Tambah Item Terpisah') }}</span>
+              </button>
+            </div>
+          @endif
         </div>
-        <div>
-          <div
-            class="w-full rounded-lg border bg-gray-50/50 px-3 py-2 text-xs text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-white">
-            @include('filament.tenant.pages.cashier.total')
+        @empty
+        <div
+          class="flex h-40 items-center justify-center rounded-lg border bg-white dark:border-gray-900 dark:bg-gray-900">
+          <x-heroicon-o-x-mark class="hidden h-10 w-10 text-gray-900 dark:text-white lg:block" />
+          <p class="text-xl text-gray-600 dark:text-white lg:text-3xl">{{ __('No item') }}</p>
+        </div>
+        @endforelse
+      </div>
+      {{-- Pilihan Kategori Pesanan (Wajib) --}}
+      <div>
+        <div
+          class="w-full rounded-lg border px-4 py-2.5 transition-colors {{ empty($orderType) ? 'border-danger-300 bg-danger-50/40 dark:border-danger-800 dark:bg-gray-900' : 'border-gray-200 bg-white dark:border-gray-900 dark:bg-gray-900' }}">
+          <div class="mb-1.5 flex items-center justify-between">
+            <span class="text-xs font-bold text-gray-800 dark:text-gray-200">{{ __('Kategori Pesanan') }}</span>
+            <span
+              class="text-[10px] font-bold {{ empty($orderType) ? 'text-danger-600 dark:text-danger-400' : 'text-gray-400' }}">
+              * {{ __('Wajib Dipilih') }}
+            </span>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button type="button" wire:click="setOrderType('dine_in')"
+              class="flex items-center justify-center gap-1 rounded-lg border px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold transition {{ $orderType === 'dine_in' ? 'border-lakasir-primary bg-lakasir-primary text-white shadow-sm' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200' }}">
+              <span class="truncate">Dine In</span>
+            </button>
+            <button type="button" wire:click="setOrderType('take_away')"
+              class="flex items-center justify-center gap-1 rounded-lg border px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold transition {{ $orderType === 'take_away' ? 'border-lakasir-primary bg-lakasir-primary text-white shadow-sm' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200' }}">
+              <span class="truncate">Take Away</span>
+            </button>
+            <button type="button" wire:click="setOrderType('ojek_online')"
+              class="flex items-center justify-center gap-1 rounded-lg border px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold transition {{ $orderType === 'ojek_online' ? 'border-lakasir-primary bg-lakasir-primary text-white shadow-sm' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200' }}">
+              <span class="truncate">Ojek Online</span>
+            </button>
           </div>
         </div>
       </div>
 
-      {{-- Footer / Checkout Actions Sidebar --}}
-      <div class="p-3 sm:p-4 pr-16 md:pr-16 lg:pr-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 shrink-0">
-        <div class="grid grid-cols-3 gap-2">
-          <button
-            type="button"
-            wire:click="openSaveDraftModal"
-            class="col-span-1 flex items-center justify-center gap-1 rounded-lg border border-lakasir-primary bg-white px-1.5 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-lakasir-primary transition hover:bg-lakasir-primary/10 dark:bg-gray-900">
-            <x-heroicon-o-bookmark class="h-4 w-4 shrink-0" />
-            <span class="truncate">{{ $activeDraftId ? __('Update') : __('Draft') }}</span>
-          </button>
-
-          @if ($this->hasMissingRequiredVariations())
-            <button type="button" wire:click="notifyMissingVariations"
-              class="col-span-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-gray-400 px-2 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white cursor-not-allowed">
-              <x-heroicon-m-exclamation-triangle class="h-4 w-4 text-amber-300 shrink-0" />
-              <span class="truncate">{{ __('Pilih Variasi Wajib') }}</span>
-            </button>
-          @elseif ($this->hasMissingOrderType())
-            <button type="button" wire:click="notifyMissingOrderType"
-              class="col-span-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-gray-400 px-2 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white cursor-not-allowed">
-              <x-heroicon-m-exclamation-triangle class="h-4 w-4 text-amber-300 shrink-0" />
-              <span class="truncate">{{ __('Pilih Kategori Pesanan') }}</span>
-            </button>
-          @else
-            <button type="button"
-              wire:click="openProceedPaymentModal"
-              class="col-span-2 w-full rounded-lg bg-lakasir-primary px-2 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white transition hover:opacity-90 flex items-center justify-center gap-1.5 shadow-sm">
-              <span class="truncate">{{ __('Proceed to payment') }}</span>
-            </button>
-          @endif
+      <div>
+        <div
+          class="w-full rounded-lg border bg-gray-50/50 px-3 py-2 text-xs text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-white">
+          @include('filament.tenant.pages.cashier.detail')
+        </div>
+      </div>
+      <div>
+        <div
+          class="w-full rounded-lg border bg-gray-50/50 px-3 py-2 text-xs text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-white">
+          @include('filament.tenant.pages.cashier.total')
         </div>
       </div>
     </div>
-  </div>
 
-  {{-- Sticky Floating Mobile Cart Bar (< 768px) --}}
-  <div class="fixed bottom-3 left-3 right-3 z-30 md:hidden"
-    x-show="mobileTab === 'products' && {{ $cartItems->count() }} > 0" x-cloak>
-    <button type="button" @click="mobileTab = 'cart'"
-      class="w-full flex items-center justify-between bg-lakasir-primary text-white rounded-xl px-4 py-3 shadow-lg hover:opacity-95 transition">
-      <div class="flex items-center gap-2">
-        <x-heroicon-o-shopping-bag class="h-5 w-5" />
-        <span class="font-bold text-sm">{{ $cartItems->sum('qty') }} {{ __('item') }}</span>
-        <span class="text-xs opacity-90">({{ price_format($total_price) }})</span>
+    {{-- Footer / Checkout Actions Sidebar --}}
+    <div
+      class="p-3 sm:p-4 pr-16 md:pr-16 lg:pr-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 shrink-0">
+      <div class="grid grid-cols-3 gap-2">
+        <button type="button" wire:click="openSaveDraftModal"
+          class="col-span-1 flex items-center justify-center gap-1 rounded-lg border border-lakasir-primary bg-white px-1.5 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-lakasir-primary transition hover:bg-lakasir-primary/10 dark:bg-gray-900">
+          <x-heroicon-o-bookmark class="h-4 w-4 shrink-0" />
+          <span class="truncate">{{ $activeDraftId ? __('Update') : __('Draft') }}</span>
+        </button>
+
+        @if ($this->hasMissingRequiredVariations())
+          <button type="button" wire:click="notifyMissingVariations"
+            class="col-span-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-gray-400 px-2 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white cursor-not-allowed">
+            <x-heroicon-m-exclamation-triangle class="h-4 w-4 text-amber-300 shrink-0" />
+            <span class="truncate">{{ __('Pilih Variasi Wajib') }}</span>
+          </button>
+        @elseif ($this->hasMissingOrderType())
+          <button type="button" wire:click="notifyMissingOrderType"
+            class="col-span-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-gray-400 px-2 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white cursor-not-allowed">
+            <x-heroicon-m-exclamation-triangle class="h-4 w-4 text-amber-300 shrink-0" />
+            <span class="truncate">{{ __('Pilih Kategori Pesanan') }}</span>
+          </button>
+        @else
+          <button type="button" wire:click="openProceedPaymentModal"
+            class="col-span-2 w-full rounded-lg bg-lakasir-primary px-2 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white transition hover:opacity-90 flex items-center justify-center gap-1.5 shadow-sm">
+            <span class="truncate">{{ __('Proceed to payment') }}</span>
+          </button>
+        @endif
       </div>
-      <span class="text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-        {{ __('Lihat Pesanan') }} &rarr;
-      </span>
-    </button>
+    </div>
+  </div>
+</div>
+
+{{-- Sticky Floating Mobile Cart Bar (< 768px) --}} <div class="fixed bottom-3 left-3 right-3 z-30 md:hidden"
+  x-show="mobileTab === 'products' && {{ $cartItems->count() }} > 0" x-cloak>
+  <button type="button" @click="mobileTab = 'cart'"
+    class="w-full flex items-center justify-between bg-lakasir-primary text-white rounded-xl px-4 py-3 shadow-lg hover:opacity-95 transition">
+    <div class="flex items-center gap-2">
+      <x-heroicon-o-shopping-bag class="h-5 w-5" />
+      <span class="font-bold text-sm">{{ $cartItems->sum('qty') }} {{ __('item') }}</span>
+      <span class="text-xs opacity-90">({{ price_format($total_price) }})</span>
+    </div>
+    <span class="text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+      {{ __('Lihat Pesanan') }} &rarr;
+    </span>
+  </button>
   </div>
   {{-- modal --}}
   <x-filament::modal id="edit-detail" width="2xl">
@@ -488,8 +513,7 @@
                   x-on:click="cartDetail['payment_method_id'] = paymentMethod.id; $wire.cartDetail['payment_method_id'] = paymentMethod.id;"
                   class="flex cursor-pointer justify-center rounded-md border-none px-4 py-2 text-sm hover:scale-105 dark:text-white"
                   :class="cartDetail['payment_method_id'] == paymentMethod.id ? 'bg-lakasir-primary text-white' :
-                      'dark:bg-gray-900 bg-gray-300 '"
-                  x-text="paymentMethod.name.substring(0, 8)">
+                      'dark:bg-gray-900 bg-gray-300 '" x-text="paymentMethod.name.substring(0, 8)">
                 </div>
               </template>
             </div>
@@ -512,11 +536,8 @@
                 <x-slot name="prefix">
                   <x-heroicon-o-document-text class="h-4 w-4 text-gray-400" />
                 </x-slot>
-                <x-filament::input
-                  type="text"
-                  wire:model="cartDetail.note"
-                  placeholder="{{ __('Isi catatan transaksi / penjualan...') }}"
-                  class="text-sm" />
+                <x-filament::input type="text" wire:model="cartDetail.note"
+                  placeholder="{{ __('Isi catatan transaksi / penjualan...') }}" class="text-sm" />
               </x-filament::input.wrapper>
             </div>
             @error('payed_money')
@@ -648,7 +669,9 @@
             </p>
           </div>
           @if ($selectedProductForVariation->hero_image)
-            <img src="{{ $selectedProductForVariation->hero_image }}" class="h-14 w-14 rounded-lg border object-cover dark:border-gray-700" alt="{{ $selectedProductForVariation->name }}">
+            <img src="{{ $selectedProductForVariation->hero_image }}"
+              class="h-14 w-14 rounded-lg border object-cover dark:border-gray-700"
+              alt="{{ $selectedProductForVariation->name }}">
           @endif
         </div>
       @else
@@ -659,16 +682,19 @@
     @if ($selectedProductForVariation)
       <div class="max-h-[60vh] space-y-5 overflow-y-auto px-1 py-2">
         @foreach ($selectedProductForVariation->variations as $variation)
-          <div class="space-y-3 rounded-xl border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-800 dark:bg-gray-900/40">
+          <div
+            class="space-y-3 rounded-xl border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-800 dark:bg-gray-900/40">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <span class="text-base font-bold text-gray-900 dark:text-white">{{ $variation->name }}</span>
                 @if ($variation->is_required)
-                  <span class="rounded-full bg-danger-100 px-2 py-0.5 text-xs font-semibold text-danger-700 dark:bg-danger-900/40 dark:text-danger-400">
+                  <span
+                    class="rounded-full bg-danger-100 px-2 py-0.5 text-xs font-semibold text-danger-700 dark:bg-danger-900/40 dark:text-danger-400">
                     {{ __('Wajib') }}
                   </span>
                 @else
-                  <span class="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-normal text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                  <span
+                    class="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-normal text-gray-600 dark:bg-gray-800 dark:text-gray-400">
                     {{ __('Opsional') }}
                   </span>
                 @endif
@@ -683,18 +709,18 @@
                 @php
                   $isSelected = false;
                   if ($variation->type === 'single') {
-                      $isSelected = ($selectedVariationOptions[$variation->id] ?? null) == $option->id;
+                    $isSelected = ($selectedVariationOptions[$variation->id] ?? null) == $option->id;
                   } else {
-                      $isSelected = in_array($option->id, $selectedVariationOptions[$variation->id] ?? []);
+                    $isSelected = in_array($option->id, $selectedVariationOptions[$variation->id] ?? []);
                   }
                 @endphp
 
-                <button
-                  type="button"
+                <button type="button"
                   wire:click="selectVariationOption({{ $variation->id }}, {{ $option->id }}, '{{ $variation->type }}')"
                   class="flex items-center justify-between rounded-lg border p-3 text-left transition-all duration-150 {{ $isSelected ? 'border-lakasir-primary bg-lakasir-primary/10 font-semibold text-lakasir-primary ring-1 ring-lakasir-primary' : 'border-gray-200 bg-white text-gray-800 hover:border-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200' }}">
                   <div class="flex items-center gap-2">
-                    <div class="flex h-4 w-4 items-center justify-center border rounded-{{ $variation->type === 'single' ? 'full' : 'md' }} {{ $isSelected ? 'border-lakasir-primary bg-lakasir-primary text-white' : 'border-gray-400 bg-white dark:bg-gray-700' }}">
+                    <div
+                      class="flex h-4 w-4 items-center justify-center border rounded-{{ $variation->type === 'single' ? 'full' : 'md' }} {{ $isSelected ? 'border-lakasir-primary bg-lakasir-primary text-white' : 'border-gray-400 bg-white dark:bg-gray-700' }}">
                       @if ($isSelected)
                         @if ($variation->type === 'single')
                           <div class="h-1.5 w-1.5 rounded-full bg-white"></div>
@@ -715,22 +741,19 @@
         @endforeach
 
         {{-- Jumlah Pesanan --}}
-        <div class="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900">
+        <div
+          class="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900">
           <div>
             <span class="text-sm font-bold text-gray-800 dark:text-gray-200">{{ __('Jumlah') }}</span>
             <p class="text-xs text-gray-500">{{ __('Tentukan jumlah porsi/item') }}</p>
           </div>
           <div class="flex items-center gap-3">
-            <button
-              type="button"
-              wire:click="decrementVariationQty"
+            <button type="button" wire:click="decrementVariationQty"
               class="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-200 font-bold text-gray-700 hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">
               <x-heroicon-o-minus class="h-4 w-4" />
             </button>
             <span class="w-8 text-center text-lg font-bold text-gray-900 dark:text-white">{{ $variationQty }}</span>
-            <button
-              type="button"
-              wire:click="incrementVariationQty"
+            <button type="button" wire:click="incrementVariationQty"
               class="flex h-8 w-8 items-center justify-center rounded-lg bg-lakasir-primary font-bold text-white hover:opacity-90">
               <x-heroicon-o-plus class="h-4 w-4" />
             </button>
@@ -751,9 +774,7 @@
           <x-filament::button color="gray" x-on:click="$dispatch('close-modal', {id: 'variation-modal'})">
             {{ __('Batal') }}
           </x-filament::button>
-          <x-filament::button
-            wire:click="confirmAddVariationCart"
-            :disabled="!$this->canSubmitVariations"
+          <x-filament::button wire:click="confirmAddVariationCart" :disabled="!$this->canSubmitVariations"
             icon="heroicon-o-shopping-bag">
             {{ __('Tambah ke Keranjang') }}
           </x-filament::button>
@@ -812,9 +833,7 @@
           {{ __('Nama Pelanggan / Keterangan Draft') }}
         </label>
         <x-filament::input.wrapper>
-          <x-filament::input
-            type="text"
-            wire:model="draftName"
+          <x-filament::input type="text" wire:model="draftName"
             placeholder="{{ __('Contoh: Budi - Meja 4 / Pesanan GoFood') }}" />
         </x-filament::input.wrapper>
       </div>
@@ -823,7 +842,7 @@
         <div class="flex justify-between">
           <span class="text-gray-500">{{ __('Kategori Pesanan') }}:</span>
           <span class="font-bold text-lakasir-primary">
-            {{ match($orderType) { 'dine_in' => 'Dine In', 'take_away' => 'Take Away', 'ojek_online' => 'Ojek Online', default => '-' } }}
+            {{ match ($orderType) { 'dine_in' => 'Dine In', 'take_away' => 'Take Away', 'ojek_online' => 'Ojek Online', default => '-'} }}
           </span>
         </div>
         <div class="flex justify-between">
@@ -865,7 +884,8 @@
                     {{ $draft->order_type_label }}
                   </span>
                   @if ($draft->table)
-                    <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                    <span
+                      class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
                       {{ __('Meja') }}: {{ $draft->table->number }}
                     </span>
                   @endif
@@ -891,7 +911,8 @@
                     <span class="font-medium">{{ $dProd?->name ?? 'Item' }}</span> (x{{ $dItem['qty'] ?? 1 }})
                     @if (!empty($dItem['selected_variations']))
                       <span class="text-gray-400">
-                        — {{ collect($dItem['selected_variations'])->map(fn ($v) => ($v['variation_name'] ?? '') . ': ' . ($v['option_name'] ?? ''))->implode(', ') }}
+                        —
+                        {{ collect($dItem['selected_variations'])->map(fn($v) => ($v['variation_name'] ?? '') . ': ' . ($v['option_name'] ?? ''))->implode(', ') }}
                       </span>
                     @endif
                     @if (!empty($dItem['note']))
@@ -904,25 +925,19 @@
             </div>
 
             <div class="mt-3 flex items-center justify-end gap-2">
-              <x-filament::button
-                color="danger"
-                size="sm"
-                outlined
-                icon="heroicon-o-trash"
+              <x-filament::button color="danger" size="sm" outlined icon="heroicon-o-trash"
                 wire:click="deleteDraft({{ $draft->id }})">
                 {{ __('Hapus') }}
               </x-filament::button>
-              <x-filament::button
-                size="sm"
-                icon="heroicon-o-arrow-down-tray"
-                wire:click="loadDraft({{ $draft->id }})">
+              <x-filament::button size="sm" icon="heroicon-o-arrow-down-tray" wire:click="loadDraft({{ $draft->id }})">
                 {{ __('Muat & Bayar / Edit') }}
               </x-filament::button>
             </div>
           </div>
         @endforeach
       @else
-        <div class="flex h-36 flex-col items-center justify-center rounded-lg border border-dashed text-gray-400 dark:border-gray-800">
+        <div
+          class="flex h-36 flex-col items-center justify-center rounded-lg border border-dashed text-gray-400 dark:border-gray-800">
           <x-heroicon-o-bookmark-slash class="h-8 w-8 mb-1" />
           <p class="text-sm">{{ __('Belum ada draft pesanan yang disimpan.') }}</p>
         </div>
@@ -1048,9 +1063,9 @@
 
 
 
-</div>
+  </div>
 
-@script()
+  @script()
   <script>
     window.lakasirCurrency = @js($currency);
     window.lakasirLocale = @js($locale);
@@ -1080,13 +1095,43 @@
 
     document.getElementById("printReceiptButton").addEventListener('click', async (event) => {
       let about = @js($about);
-      const printerData = getPrinter();
-      const isPrinterActive = printerData && !(printerData instanceof Error) && (printerData.printerId || window.LakasirBridge);
-      const paperWidth = (printerData && !(printerData instanceof Error) && printerData.paper_width) ? printerData.paper_width : '58mm';
-      const dividerLine = paperWidth === '80mm' ? '------------------------------------------------' : '-------------------------------';
+      const dbPrinters = @js(\App\Models\Tenants\Printer::active()->orderBy('id')->get()->map(fn($p) => [
+        'id' => $p->id,
+        'name' => $p->name,
+        'printerId' => $p->device_id,
+        'device_id' => $p->device_id,
+        'device_name' => $p->device_name,
+        'driver' => $p->connection_type,
+        'paper_width' => $p->paper_width ?: '58mm',
+        'print_all_categories' => (bool) $p->print_all_categories,
+        'category_ids' => array_map('intval', $p->category_ids ?? []),
+        'show_price' => (bool) $p->show_price,
+        'header' => $p->header,
+        'footer' => $p->footer,
+        'copies' => (int) ($p->copies ?: 1),
+      ])->values());
+
+      const legacyPrinter = getPrinter();
+      const printersList = (Array.isArray(dbPrinters) && dbPrinters.length > 0)
+        ? dbPrinters
+        : ((legacyPrinter && !(legacyPrinter instanceof Error) && (legacyPrinter.printerId || window.LakasirBridge)) ? [{
+          name: legacyPrinter.name || 'Printer Kasir',
+          printerId: legacyPrinter.printerId || 'kasir',
+          device_id: legacyPrinter.printerId || 'kasir',
+          driver: legacyPrinter.driver || 'usb',
+          paper_width: legacyPrinter.paper_width || '58mm',
+          print_all_categories: true,
+          category_ids: [],
+          show_price: true,
+          header: legacyPrinter.header,
+          footer: legacyPrinter.footer,
+          copies: 1,
+        }] : []);
+
+      const defaultPaperWidth = (printersList[0] && printersList[0].paper_width) ? printersList[0].paper_width : '58mm';
 
       try {
-        if (!isPrinterActive) {
+        if (printersList.length === 0) {
           new FilamentNotification()
             .title('@lang('Printer belum diatur atau tidak aktif')')
             .body('@lang('Struk otomatis disimpan dalam format PDF dan dibuka untuk dicetak.')')
@@ -1094,105 +1139,171 @@
             .send();
 
           if (selling && selling.id) {
-            window.open('/member/sellings/' + selling.id + '/receipt-pdf?width=' + paperWidth, '_blank');
+            window.open('/member/sellings/' + selling.id + '/receipt-pdf?width=' + defaultPaperWidth, '_blank');
           }
           return;
-        } else {
-          const printer = new Printer(printerData.printerId, paperWidth);
+        }
+
+        let anyPrinted = false;
+
+        for (const printerData of printersList) {
+          const allDetails = (selling && Array.isArray(selling.selling_details)) ? selling.selling_details : [];
+          const filteredDetails = printerData.print_all_categories
+            ? allDetails
+            : allDetails.filter(d => {
+              const catId = d.product && d.product.category_id ? parseInt(d.product.category_id, 10) : null;
+              return catId !== null && Array.isArray(printerData.category_ids) && printerData.category_ids.includes(catId);
+            });
+
+          // Lewati printer ini jika pesanan tidak mengandung menu dari kategori printer tersebut
+          if (filteredDetails.length === 0) {
+            continue;
+          }
+
+          const paperWidth = printerData.paper_width || '58mm';
+          const dividerLine = paperWidth === '80mm'
+            ? '------------------------------------------------'
+            : '-------------------------------';
+
+          const targetDeviceId = (printerData.driver === 'virtual' || (!window.LakasirBridge && printerData.driver !== 'usb'))
+            ? 'virtual_simulator'
+            : (printerData.device_id || printerData.printerId || 'kasir');
+
+          const printer = new Printer(targetDeviceId, paperWidth);
           let printerAction = printer.font('a');
-          if (about != undefined || about != null) {
+
+          if (printerData.show_price) {
+            // FORMAT STRUK DENGAN HARGA (KASIR)
+            if (about != undefined && about != null) {
+              printerAction.size(1)
+                .align('center')
+                .text(about.shop_name)
+                .size(0)
+                .text(about.shop_location);
+              if (printerData.header) {
+                printerAction.text(printerData.header);
+              }
+              printerAction.align('left').text(dividerLine);
+            }
+            printerAction.table(['Station', printerData.name || 'Kasir']);
+            printerAction.table(['@lang('Cashier')', selling.user.name]);
+            if (selling.order_type_label && selling.order_type_label !== '-') {
+              printerAction.table(['@lang('Kategori')', selling.order_type_label]);
+            }
+            if (selling.table && selling.table.number) {
+              printerAction.table(['@lang('Table')', selling.table.number]);
+            }
+            if (selling.payment_method && selling.payment_method.name) {
+              printerAction.table(['@lang('Payment method')', selling.payment_method.name]);
+            }
+            if (selling.member && selling.member.name) {
+              printerAction.table(['Member', selling.member.name]);
+            }
+            printerAction.text(dividerLine);
+
+            filteredDetails.forEach(sellingDetail => {
+              let price = sellingDetail.price;
+              printerAction.table([
+                sellingDetail.product.name,
+                moneyFormat(sellingDetail.price / sellingDetail.qty) + ' x ' + sellingDetail.qty.toString()
+              ]);
+              if (sellingDetail.selected_variations && sellingDetail.selected_variations.length > 0) {
+                sellingDetail.selected_variations.forEach(v => {
+                  let extra = v.price > 0 ? ` (+${moneyFormat(v.price)})` : '';
+                  printerAction.text(`  - ${v.variation_name}: ${v.option_name}${extra}`);
+                });
+              }
+              if (sellingDetail.note) {
+                printerAction.text(`  * ${sellingDetail.note}`);
+              }
+              if (sellingDetail.discount_price > 0) {
+                price = price - sellingDetail.discount_price;
+                printerAction.align('right').text(`(${moneyFormat(sellingDetail.discount_price)})`);
+              }
+              printerAction.align('right').text(moneyFormat(price)).align('left');
+            });
+
+            printerAction.text(dividerLine);
+            if ("@js(feature(SellingTax::class))" == 'true') {
+              printerAction.table(['@lang('Tax')', `${selling.tax}%`])
+                .table(['@lang('Tax price')', moneyFormat(selling.tax_price)]);
+            }
+            printerAction.table(['@lang('Subtotal')', moneyFormat(selling.total_price)]);
+            if ("@js(feature(Discount::class))" == 'true') {
+              printerAction.table([
+                '@lang('Discount')',
+                `(${moneyFormat(selling.total_discount_per_item + selling.discount_price)})`
+              ]);
+            }
+            printerAction
+              .table(['@lang('Total price')', moneyFormat(selling.grand_total_price)])
+              .text(dividerLine)
+              .table(['@lang('Payed money')', moneyFormat(selling.payed_money)])
+              .table(['@lang('Change')', moneyFormat(selling.money_changes)])
+              .align('center');
+
+            if (printerData.footer) {
+              printerAction.text(printerData.footer);
+            }
+          } else {
+            // FORMAT NOTA CHECKER TANPA HARGA (DAPUR / BAR)
             printerAction.size(1)
               .align('center')
-              .text(about.shop_name)
-              .size(0)
-              .text(about.shop_location);
-            if (printerData.header != undefined) {
-              printerAction
-                .text(printerData.header);
+              .text('*** ' + (printerData.name || 'CHECKER').toUpperCase() + ' ***')
+              .size(0);
+            if (printerData.header) {
+              printerAction.text(printerData.header);
             }
             printerAction.align('left')
-              .text(dividerLine);
-          }
-          printerAction.table(['@lang('Cashier')', selling.user.name])
-          if (selling.order_type_label != undefined && selling.order_type_label != null && selling.order_type_label != '-') {
-            printerAction.table(['@lang('Kategori')', selling.order_type_label])
-          }
-          if (selling.table != undefined && selling.table != null) {
-            printerAction.table(['@lang('Table')', selling.table.number])
-          }
-          printerAction.table(['@lang('Payment method')', selling.payment_method.name]);
-          if (selling.member != undefined && selling.member != null) {
-            printerAction
-              .table(['Member', selling.member.name]);
-          }
-          printerAction
-            .text(dividerLine);
-          selling.selling_details.forEach(sellingDetail => {
-            let price = sellingDetail.price;
-            let text = moneyFormat(sellingDetail.price / sellingDetail.qty) + ' x ' + sellingDetail.qty
-              .toString();
-            printerAction.table([sellingDetail.product.name, moneyFormat(sellingDetail.price / sellingDetail
-              .qty) + ' x ' + sellingDetail.qty.toString()])
-            if (sellingDetail.selected_variations && sellingDetail.selected_variations.length > 0) {
-              sellingDetail.selected_variations.forEach(v => {
-                let extra = v.price > 0 ? ` (+${moneyFormat(v.price)})` : '';
-                printerAction.text(`  - ${v.variation_name}: ${v.option_name}${extra}`);
-              });
+              .text(dividerLine)
+              .table(['No. Pesanan', selling.code || ('#' + selling.id)])
+              .table(['@lang('Cashier')', selling.user.name]);
+            if (selling.order_type_label && selling.order_type_label !== '-') {
+              printerAction.table(['@lang('Kategori')', selling.order_type_label]);
             }
-            if (sellingDetail.note) {
-              printerAction.text(`  * ${sellingDetail.note}`);
+            if (selling.table && selling.table.number) {
+              printerAction.table(['@lang('Table')', selling.table.number]);
             }
-            if (sellingDetail.discount_price > 0) {
-              price = price - sellingDetail.discount_price;
-              printerAction
-                .align('right')
-                .text(`(${moneyFormat(sellingDetail.discount_price)})`)
-            }
-            printerAction
-              .align('right')
-              .text(moneyFormat(price))
-              .align('left')
-          });
-          printerAction
-            .text(dividerLine);
-          if ("@js(feature(SellingTax::class))" == 'true') {
-            printerAction.table(['@lang('Tax')', `${selling.tax}%`])
-              .table(['@lang('Tax price')', moneyFormat(selling.tax_price)]);
-          }
-          printerAction
-            .table(['@lang('Subtotal')', moneyFormat(selling.total_price)])
-          if ("@js(feature(Discount::class))" == 'true') {
-            printerAction
-              .table(['@lang('Discount')',
-                `(${moneyFormat(selling.total_discount_per_item + selling.discount_price)})`
-              ])
-          }
-          printerAction
-            .table(['@lang('Total price')', moneyFormat(selling.grand_total_price)])
-            .text(dividerLine)
-            .table(['@lang('Payed money')', moneyFormat(selling.payed_money)])
-            .table(['@lang('Change')', moneyFormat(selling.money_changes)])
-            .align('center');
+            printerAction.text(dividerLine);
 
-          if (printerData.footer != undefined) {
-            printerAction
-              .text(printerData.footer);
+            let totalQty = 0;
+            filteredDetails.forEach(sellingDetail => {
+              totalQty += Number(sellingDetail.qty || 1);
+              printerAction.text(`${sellingDetail.qty}x  ${sellingDetail.product.name}`);
+              if (sellingDetail.selected_variations && sellingDetail.selected_variations.length > 0) {
+                sellingDetail.selected_variations.forEach(v => {
+                  printerAction.text(`    - ${v.variation_name}: ${v.option_name}`);
+                });
+              }
+              if (sellingDetail.note) {
+                printerAction.text(`    * ${sellingDetail.note}`);
+              }
+            });
+
+            printerAction.text(dividerLine)
+              .table(['TOTAL ITEM', `${totalQty} Porsi/Item`])
+              .align('center');
+
+            if (printerData.footer) {
+              printerAction.text(printerData.footer);
+            }
           }
 
-          const printSuccess = await printerAction
-            .cut()
-            .print();
+          const printSuccess = await printerAction.cut().print(printerData.device_id || printerData.printerId || 'kasir');
+          if (printSuccess) {
+            anyPrinted = true;
+          }
+        }
 
-          if (!printSuccess) {
-            new FilamentNotification()
-              .title('@lang('Printer tidak terhubung atau gagal mencetak')')
-              .body('@lang('Struk dialihkan ke format PDF dan dibuka untuk dicetak.')')
-              .warning()
-              .send();
+        if (!anyPrinted) {
+          new FilamentNotification()
+            .title('@lang('Printer tidak terhubung atau gagal mencetak')')
+            .body('@lang('Struk dialihkan ke format PDF dan dibuka untuk dicetak.')')
+            .warning()
+            .send();
 
-            if (selling && selling.id) {
-              window.open('/member/sellings/' + selling.id + '/receipt-pdf?width=' + paperWidth, '_blank');
-            }
+          if (selling && selling.id) {
+            window.open('/member/sellings/' + selling.id + '/receipt-pdf?width=' + defaultPaperWidth, '_blank');
           }
         }
       } catch (error) {
@@ -1204,7 +1315,7 @@
           .send();
 
         if (selling && selling.id) {
-          window.open('/member/sellings/' + selling.id + '/receipt-pdf?width=' + paperWidth, '_blank');
+          window.open('/member/sellings/' + selling.id + '/receipt-pdf?width=' + defaultPaperWidth, '_blank');
         }
       }
     });
@@ -1477,4 +1588,4 @@
       }, 500);
     });
   </script>
-@endscript
+  @endscript

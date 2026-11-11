@@ -20,12 +20,11 @@ trait TableProduct
     {
         return $table
             ->query(
-                // TODO: fix the query for product with this condition
-                // * hide the prodcut when the type is product but that has a 0 stock
-                // * show the product when the type is service but that has a 0 stock
-                // * show the product when the type is procut but that has a 0 stock and then has a is_non_stock true
                 Product::query()
-                    ->with(['variations.options'])
+                    ->with(['variations.options', 'category', 'stocks'])
+                    ->when($this->selectedCategoryId, function ($query) {
+                        $query->where('category_id', $this->selectedCategoryId);
+                    })
                     ->where(function ($query) {
                         $query->where('type', 'product')
                             ->where(function ($query) {
@@ -39,10 +38,9 @@ trait TableProduct
                         ->orWhere('type', 'service');
                     })
                     ->where('show', true)
-                    // ->orWhere('type', 'service')
             )
-            ->defaultPaginationPageOption(12)
-            ->paginationPageOptions([12])
+            ->defaultPaginationPageOption(25)
+            ->paginationPageOptions([15, 25, 50])
             ->columns([
                 Stack::make([
                     ImageColumn::make('hero_image')
@@ -52,16 +50,21 @@ trait TableProduct
                             'class' => 'py-0 w-full',
                         ])
                         ->extraImgAttributes([
-                            'class' => 'mb-3 object-cover -mt-4 w-full h-24 sm:h-28 rounded-t-lg',
+                            'class' => 'object-cover w-full h-24 rounded-t-lg',
                         ])
-                        ->height('auto')
+                        ->height(96)
                         ->width('100%'),
                     TextColumn::make('selling_price')
                         ->color('primary')
                         ->money(Setting::get('currency', 'IDR'))
-                        ->columnStart(0),
+                        ->size('xs')
+                        ->weight('extrabold')
+                        ->extraAttributes([
+                            'class' => 'font-extrabold text-primary-600 dark:text-primary-400 mt-0.5 text-xs',
+                        ]),
                     TextColumn::make('name')
-                        ->size('lg')
+                        ->size('xs')
+                        ->weight('bold')
                         ->searchable(query: function ($query, string $search): void {
                             $query->where('sku', 'like', "%{$search}%")
                                 ->orWhere('name', 'like', "%{$search}%")
@@ -71,33 +74,30 @@ trait TableProduct
                                 });
                         })
                         ->extraAttributes([
-                            'class' => 'font-bold',
+                            'class' => 'font-bold line-clamp-2 min-h-[2rem] text-gray-900 dark:text-white leading-tight text-xs sm:text-sm',
                         ]),
                     TextColumn::make('stock')
                         ->hidden(function (Product $product) {
                             return $product->is_non_stock;
                         })
-                        ->icon(function (Product $product) {
+                        ->size('xs')
+                        ->color(function (Product $product) {
                             if ($product->is_non_stock) {
-                                return '';
+                                return 'gray';
                             }
-
                             return $product->stock < Setting::get('minimum_stock_nofication', 10)
-                                    ? 'heroicon-s-information-circle'
-                                : '';
+                                ? 'danger'
+                                : 'success';
                         })
-                        ->iconColor('danger')
-                        ->extraAttributes([
-                            'class' => 'font-bold',
-                        ])
                         ->formatStateUsing(fn (Product $product) => __('Stock').': '.$product->stock_calculate),
-                ]),
+                ])->space(1),
             ])
             ->contentGrid([
                 'sm' => 2,
-                'md' => 2,
-                'lg' => 3,
-                'xl' => 4,
+                'md' => 3,
+                'lg' => 5,
+                'xl' => 5,
+                '2xl' => 5,
             ])
             ->headerActionsPosition(HeaderActionsPosition::Bottom)
             ->searchPlaceholder(__('Search (SKU, name, barcode)'))

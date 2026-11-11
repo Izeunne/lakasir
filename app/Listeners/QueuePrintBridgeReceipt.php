@@ -14,10 +14,9 @@ class QueuePrintBridgeReceipt
     public function handle(SellingCreated $event): void
     {
         try {
-            PrintBridgeService::queueReceipt($event->selling);
+            PrintBridgeService::queueSellingPrints($event->selling);
         } catch (\Throwable $e) {
-            Log::warning('Failed to queue print bridge receipt: ' . $e->getMessage());
+            Log::warning('Failed to queue print bridge receipts: ' . $e->getMessage());
         }
     }
 }
-

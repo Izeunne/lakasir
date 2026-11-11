@@ -64,6 +64,15 @@ class Cashier extends Page implements HasForms, HasTable
 
     public ?string $orderType = null;
 
+    public ?int $selectedCategoryId = null;
+
+    public function setCategory(?int $categoryId = null): void
+    {
+        $this->selectedCategoryId = $categoryId;
+        $this->resetPage();
+        $this->resetTable();
+    }
+
     public ?int $activeDraftId = null;
 
     public string $draftName = '';
