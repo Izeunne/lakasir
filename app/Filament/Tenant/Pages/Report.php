@@ -24,4 +24,17 @@ class Report extends Page
     {
         return can('access report');
     }
+
+    public function mount(): void
+    {
+        if (can('generate selling report')) {
+            $this->redirect(SellingReport::getUrl());
+        } elseif (can('generate product report')) {
+            $this->redirect(ProductReport::getUrl());
+        } elseif (can('generate cashier report')) {
+            $this->redirect(CashierReport::getUrl());
+        } elseif (can('generate purchasing report')) {
+            $this->redirect(PurchasingReport::getUrl());
+        }
+    }
 }

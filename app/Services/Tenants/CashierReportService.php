@@ -15,20 +15,20 @@ class CashierReportService
     {
         $timezone = Profile::get()->timezone ?? config('app.timezone', 'UTC');
         $about = About::first();
-        $tzName = Carbon::parse($data['start_date'])->getTimezone()->getName();
-        $startDate = Carbon::parse($data['start_date'], $timezone)->setTimezone('UTC');
-        $endDate = Carbon::parse($data['end_date'], $timezone)->addDay()->setTimezone('UTC');
+        $startDateLocal = Carbon::parse($data['start_date'] ?? now(), $timezone)->startOfDay();
+        $endDateLocal = Carbon::parse($data['end_date'] ?? now(), $timezone)->endOfDay();
+        $startDateUtc = $startDateLocal->copy()->setTimezone('UTC');
+        $endDateUtc = $endDateLocal->copy()->setTimezone('UTC');
+
         $sellings = Selling::query()
-            ->select('id', 'code', 'user_id', 'created_at', 'total_price', 'total_cost', 'discount_price')
+            ->select('id', 'code', 'user_id', 'created_at', 'date', 'total_price', 'total_cost', 'discount_price')
             ->with(
                 'sellingDetails:id,selling_id,product_id,qty,price,cost,discount_price',
                 'sellingDetails.product:id,name,initial_price,selling_price',
                 'user:id,name,email'
             )
-            ->when($data['start_date'] && $data['end_date'], function (Builder $query) use ($startDate, $endDate) {
-                $query->whereBetween('date', [$startDate, $endDate]);
-            })
-            ->orderBy('created_at', 'desc')
+            ->whereBetween('date', [$startDateUtc, $endDateUtc])
+            ->orderBy('date', 'desc')
             ->get();
 
         $header = [
@@ -36,8 +36,8 @@ class CashierReportService
             'shop_location' => $about?->shop_location,
             'business_type' => $about?->business_type,
             'owner_name' => $about?->owner_name,
-            'start_date' => $startDate->setTimezone($timezone)->format('d F Y'),
-            'end_date' => $endDate->subDay()->setTimezone($timezone)->format('d F Y'),
+            'start_date' => $startDateLocal->format('d F Y'),
+            'end_date' => $endDateLocal->format('d F Y'),
         ];
         $reports = [];
 
@@ -60,29 +60,38 @@ class CashierReportService
 
             $reports[] = [
                 'id' => $selling->id,
-                'created_at' => Carbon::parse($selling->created_at)->setTimezone($tzName)->format('d F Y h:i'),
+                'created_at' => Carbon::parse($selling->date ?: $selling->created_at)->setTimezone($timezone)->format('d F Y H:i'),
                 'number' => $selling->code,
-                'user' => $selling->user?->name ?? $selling->user?->email,
+                'user' => $selling->user?->name ?? $selling->user?->email ?? '-',
                 'transaction' => [
                     'items' => $selling->sellingDetails->map(function ($item) use (&$totalDiscountPerItemTemp, &$totalBeforeDiscountPerSelling, &$totalAfterDiscountPerSelling, &$totalNetProfitPerSelling, &$totalGrossProfitPerSelling, &$totalCostPerSelling) {
-                        $totalDiscountPerItemTemp += ($item->discount_price ?? 0);
-                        $totalBeforeDiscountPerSelling += $item->price;
-                        $totalAfterDiscountPerSelling += ($item->price - ($item->discount_price ?? 0));
-                        $totalNetProfitPerSelling += (($item->price - $item->cost) - ($item->discount_price ?? 0));
-                        $totalGrossProfitPerSelling += ($item->price - $item->cost);
-                        $totalCostPerSelling += $item->cost;
+                        $qty = (float) $item->qty;
+                        $linePrice = (float) $item->price;
+                        $lineCost = (float) $item->cost;
+                        $lineDiscount = (float) ($item->discount_price ?? 0);
+                        $lineNet = $linePrice - $lineDiscount;
+
+                        $totalDiscountPerItemTemp += $lineDiscount;
+                        $totalBeforeDiscountPerSelling += $linePrice;
+                        $totalAfterDiscountPerSelling += $lineNet;
+                        $totalNetProfitPerSelling += ($lineNet - $lineCost);
+                        $totalGrossProfitPerSelling += ($linePrice - $lineCost);
+                        $totalCostPerSelling += $lineCost;
+
+                        $unitPrice = $qty > 0 ? $linePrice / $qty : 0;
+                        $unitCost = $qty > 0 ? $lineCost / $qty : 0;
 
                         return [
-                            'product' => $item->product?->name,
-                            'quantity' => $item->qty,
-                            'product_price' => $this->formatCurrency($item->price / $item->qty),
-                            'product_cost' => $this->formatCurrency($item->cost / $item->qty),
-                            'price' => $this->formatCurrency($item->price),
-                            'cost' => $this->formatCurrency($item->cost),
-                            'discount_price' => $this->formatCurrency($item->discount_price ?? 0),
-                            'total_after_discount' => $this->formatCurrency($item->price - ($item->discount_price ?? 0)),
-                            'net_profit' => $this->formatCurrency(($item->price - ($item->discount_price ?? 0)) - $item->cost),
-                            'gross_profit' => $this->formatCurrency($item->price - $item->cost),
+                            'product' => $item->product?->name ?? __('Produk Dihapus'),
+                            'quantity' => $qty,
+                            'product_price' => $this->formatCurrency($unitPrice),
+                            'product_cost' => $this->formatCurrency($unitCost),
+                            'price' => $this->formatCurrency($linePrice),
+                            'cost' => $this->formatCurrency($lineCost),
+                            'discount_price' => $this->formatCurrency($lineDiscount),
+                            'total_after_discount' => $this->formatCurrency($lineNet),
+                            'net_profit' => $this->formatCurrency($lineNet - $lineCost),
+                            'gross_profit' => $this->formatCurrency($linePrice - $lineCost),
                         ];
                     }),
                 ],
@@ -91,21 +100,21 @@ class CashierReportService
                     'discount' => $this->formatCurrency($totalDiscountPerItemTemp),
                     'gross_selling' => $this->formatCurrency($totalBeforeDiscountPerSelling),
                     'net_selling' => $this->formatCurrency($totalAfterDiscountPerSelling),
-                    'discount_selling' => $this->formatCurrency($selling->discount_price ?? 0),
+                    'discount_selling' => $this->formatCurrency((float) ($selling->discount_price ?? 0)),
                     'total_net_profit' => $this->formatCurrency($totalNetProfitPerSelling),
                     'total_gross_profit' => $this->formatCurrency($totalGrossProfitPerSelling),
-                    'grand_total' => $this->formatCurrency($totalAfterDiscountPerSelling - ($selling->discount_price ?? 0)),
+                    'grand_total' => $this->formatCurrency($totalAfterDiscountPerSelling - (float) ($selling->discount_price ?? 0)),
                 ],
             ];
 
             $totalCost += $totalCostPerSelling;
-            $totalDiscount += ($selling->discount_price ?? 0);
+            $totalDiscount += (float) ($selling->discount_price ?? 0);
             $totalGross += $totalBeforeDiscountPerSelling;
             $totalNet += $totalAfterDiscountPerSelling;
             $totalGrossProfit += $totalGrossProfitPerSelling;
             $totalDiscountPerItem += $totalDiscountPerItemTemp;
             $totalNetProfitBeforeDiscountSelling += $totalNetProfitPerSelling;
-            $totalNetProfitAfterDiscountSelling += ($totalNetProfitPerSelling - ($selling->discount_price ?? 0));
+            $totalNetProfitAfterDiscountSelling += ($totalNetProfitPerSelling - (float) ($selling->discount_price ?? 0));
         }
 
         $footer = [

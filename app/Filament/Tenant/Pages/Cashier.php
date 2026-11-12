@@ -282,7 +282,7 @@ class Cashier extends Page implements HasForms, HasTable
         ]);
 
         $request = array_merge($this->cartDetail, [
-            'discount_price' => floatval(str_replace(',', '', $this->cartDetail['discount_price'])),
+            'discount_price' => floatval(str_replace(',', '', (string) ($this->cartDetail['discount_price'] ?? 0))),
             'products' => $this->cartItems->map(function (CartItem $cartItem) {
                 return [
                     'product_id' => $cartItem->product_id,

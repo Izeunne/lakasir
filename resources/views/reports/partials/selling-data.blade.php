@@ -82,7 +82,7 @@
         <x-table-cell class="number" style="text-align: right;"><b>{{ $footer['total_gross'] }}</b></x-table-cell>
         <x-table-cell class="number" style="text-align: right;"><b>{{ $footer['total_discount'] }}</b></x-table-cell>
         <x-table-cell class="number" style="text-align: right;"><b>{{ $footer['total_discount_per_item'] }}</b></x-table-cell>
-        <x-table-cell class="number" style="text-align: right;"><b>{{ $footer['total_net_price_after_discount_per_item'] }}</b></x-table-cell>
+        <x-table-cell class="number" style="text-align: right;"><b>{{ $footer['total_net'] }}</b></x-table-cell>
         <x-table-cell class="number" style="text-align: right;"><b>{{ $footer['total_gross_profit'] }}</b></x-table-cell>
         <x-table-cell class="number" style="text-align: right;"><b>{{ $footer['total_net_profit_before_discount_selling'] }}</b></x-table-cell>
         <x-table-cell class="number" style="text-align: right;"><b>{{ $footer['total_net_profit_after_discount_selling'] }}</b></x-table-cell>

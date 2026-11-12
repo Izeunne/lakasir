@@ -65,7 +65,7 @@ test('can send notification via pos:notify artisan command', function () {
 
     expect($exitCode)->toBe(0);
 
-    $latest = PosNotification::latest()->first();
+    $latest = PosNotification::latest('id')->first();
     expect($latest->title)->toBe('Artisan Test');
 });
 

@@ -14,22 +14,21 @@ class ProductReportService
     {
         $timezone = Profile::get()->timezone ?? config('app.timezone', 'UTC');
         $about = About::first();
-        $tzName = Carbon::parse($data['start_date'])->getTimezone()->getName();
-        $startDate = Carbon::parse($data['start_date'], $timezone)->setTimezone('UTC');
-        $endDate = Carbon::parse($data['end_date'], $timezone)->addDay()->setTimezone('UTC');
+        $startDateLocal = Carbon::parse($data['start_date'] ?? now(), $timezone)->startOfDay();
+        $endDateLocal = Carbon::parse($data['end_date'] ?? now(), $timezone)->endOfDay();
+        $startDateUtc = $startDateLocal->copy()->setTimezone('UTC');
+        $endDateUtc = $endDateLocal->copy()->setTimezone('UTC');
 
         $products = Product::query()
-            ->with(
-                ['sellingDetails' => function ($builder) use ($startDate, $endDate) {
-                    $builder->whereHas('selling', function ($query) use ($startDate, $endDate) {
-                        $query->whereBetween('date', [$startDate, $endDate]);
-                    });
-                }],
-            )
-            ->whereHas('sellingDetails', function ($query) use ($startDate, $endDate) {
-                $query->whereHas('selling', function ($query) use ($startDate, $endDate) {
-                    $query->whereBetween('date', [$startDate, $endDate]);
-                });
+            ->with([
+                'sellingDetails' => function ($builder) use ($startDateUtc, $endDateUtc) {
+                    $builder->whereHas('selling', function ($query) use ($startDateUtc, $endDateUtc) {
+                        $query->whereBetween('date', [$startDateUtc, $endDateUtc]);
+                    })->with('selling:id,code,discount_price,date');
+                },
+            ])
+            ->whereHas('sellingDetails.selling', function ($query) use ($startDateUtc, $endDateUtc) {
+                $query->whereBetween('date', [$startDateUtc, $endDateUtc]);
             })
             ->get();
 
@@ -38,8 +37,8 @@ class ProductReportService
             'shop_location' => $about?->shop_location,
             'business_type' => $about?->business_type,
             'owner_name' => $about?->owner_name,
-            'start_date' => $startDate->setTimezone($timezone)->format('d F Y'),
-            'end_date' => $endDate->subDay()->setTimezone($timezone)->format('d F Y'),
+            'start_date' => $startDateLocal->format('d F Y'),
+            'end_date' => $endDateLocal->format('d F Y'),
         ];
         $reports = [];
 
@@ -48,61 +47,56 @@ class ProductReportService
         $totalGross = 0;
         $totalNet = 0;
         $totalGrossProfit = 0;
-        $totalDiscount = 0;
-        $totalDiscountPerItem = 0;
         $totalAllDiscountPerItem = 0;
-        $totalNetProfitBeforeDiscountSelling = 0;
-        $totalNetProfitAfterDiscountSelling = 0;
 
         /** @var Product $product */
         foreach ($products as $product) {
             $sellingDetails = $product->sellingDetails;
-            $totalAllDiscountPerItemTemp = 0;
 
-            $totalCostPerSelling = $sellingDetails->sum('cost');
-            $totalDiscountPerItem = $sellingDetails->sum('discount_price');
-            $totalAllDiscountPerItemTemp += $sellingDetails->sum('discount_price');
-            $totalBeforeDiscountPerSelling = $sellingDetails->sum('price');
+            $totalQtyPerSelling = (float) $sellingDetails->sum('qty');
+            $totalCostPerSelling = (float) $sellingDetails->sum('cost');
+            $totalDiscountPerItem = (float) $sellingDetails->sum('discount_price');
+            $totalBeforeDiscountPerSelling = (float) $sellingDetails->sum('price');
             $totalAfterDiscountPerSelling = $totalBeforeDiscountPerSelling - $totalDiscountPerItem;
-            $totalNetProfitPerSelling = (($totalBeforeDiscountPerSelling - $totalCostPerSelling) - $totalDiscountPerItem);
             $totalGrossProfitPerSelling = $totalBeforeDiscountPerSelling - $totalCostPerSelling;
-            $totalQtyPerSelling = $sellingDetails->sum('qty');
+            $totalNetProfitPerSelling = $totalAfterDiscountPerSelling - $totalCostPerSelling;
+
+            $avgSellingPrice = $totalQtyPerSelling > 0 ? $totalBeforeDiscountPerSelling / $totalQtyPerSelling : 0;
+            $avgCostPrice = $totalQtyPerSelling > 0 ? $totalCostPerSelling / $totalQtyPerSelling : 0;
 
             $reports[] = [
-                'code' => $product->sellingDetails->first()->selling->code,
-                'sku' => $product->sku,
+                'code' => $product->sellingDetails->first()?->selling?->code ?? '-',
+                'sku' => $product->sku ?? '-',
                 'name' => $product->name,
-                'selling_price' => $this->formatCurrency($product->sellingDetails->sum('price') / $product->sellingDetails->sum('qty')),
-                'selling' => $this->formatCurrency($totalBeforeDiscountPerSelling - $totalDiscountPerItem),
+                'selling_price' => $this->formatCurrency($avgSellingPrice),
+                'selling' => $this->formatCurrency($totalBeforeDiscountPerSelling),
                 'discount_price' => $this->formatCurrency($totalDiscountPerItem),
-                'initial_price' => $this->formatCurrency($totalCostPerSelling / $totalQtyPerSelling),
+                'initial_price' => $this->formatCurrency($avgCostPrice),
                 'qty' => $totalQtyPerSelling,
                 'cost' => $totalCostPerSelling,
-                'total_after_discount' => $this->formatCurrency($totalAfterDiscountPerSelling - $totalDiscountPerItem),
-                'net_profit' => $this->formatCurrency($totalBeforeDiscountPerSelling - $totalDiscountPerItem - $totalCostPerSelling),
-                'gross_profit' => $this->formatCurrency($totalBeforeDiscountPerSelling - $totalCostPerSelling),
+                'total_after_discount' => $this->formatCurrency($totalAfterDiscountPerSelling),
+                'net_profit' => $this->formatCurrency($totalNetProfitPerSelling),
+                'gross_profit' => $this->formatCurrency($totalGrossProfitPerSelling),
             ];
 
             $totalCost += $totalCostPerSelling;
             $totalGross += $totalBeforeDiscountPerSelling;
             $totalNet += $totalAfterDiscountPerSelling;
-            $totalNetProfitBeforeDiscountSelling += $totalNetProfitPerSelling;
             $totalGrossProfit += $totalGrossProfitPerSelling;
-            $totalAllDiscountPerItem += $totalAllDiscountPerItemTemp;
+            $totalAllDiscountPerItem += $totalDiscountPerItem;
             $totalQty += $totalQtyPerSelling;
-
-            foreach ($sellingDetails as $sellingDetail) {
-                $totalDiscount += ($sellingDetail->selling->discount_price ?? 0.0);
-                $totalNetProfitAfterDiscountSelling += ($totalNetProfitPerSelling - ($sellingDetail->selling->discount_price ?? 0.0));
-            }
         }
+
+        // Calculate unique transaction discounts for sellings containing these products
+        $sellingIds = $products->flatMap(fn ($p) => $p->sellingDetails->pluck('selling_id'))->unique()->filter();
+        $totalDiscount = (float) \App\Models\Tenants\Selling::whereIn('id', $sellingIds)->sum('discount_price');
 
         $footer = [
             'total_cost' => $this->formatCurrency($totalCost),
             'total_gross' => $this->formatCurrency($totalGross),
             'total_net' => $this->formatCurrency($totalNet - $totalDiscount),
             'total_discount' => $this->formatCurrency($totalDiscount),
-            'total_discount_per_item' => $this->formatCurrency($totalDiscountPerItem),
+            'total_discount_per_item' => $this->formatCurrency($totalAllDiscountPerItem),
             'total_all_discount_per_item' => $this->formatCurrency($totalAllDiscountPerItem),
             'total_gross_profit' => $this->formatCurrency($totalGross - $totalCost),
             'total_net_profit_before_discount_selling' => $this->formatCurrency($totalNet - $totalCost),

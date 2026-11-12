@@ -239,22 +239,30 @@ test('multi-printer routes order items by category and respects show_price flag'
         ->not->toContain('LAN-BAR');
 });
 
-test('printer management page renders and can create default restaurant presets', function () {
+test('printer management page renders and displays configured printers', function () {
     Filament::setCurrentPanel(Filament::getPanel('tenant'));
     $user = User::first();
     actingAs($user);
 
-    Category::create(['name' => 'Makanan Utama']);
-    Category::create(['name' => 'Minuman']);
+    Printer::create([
+        'name' => 'Printer Kasir Utama',
+        'driver' => 'bluetooth',
+        'device_id' => 'BT-TEST-01',
+        'device_name' => 'Thermal Test',
+        'connection_type' => 'bluetooth',
+        'paper_width' => '58mm',
+        'print_all_categories' => true,
+        'category_ids' => [],
+        'show_price' => true,
+        'is_active' => true,
+    ]);
 
     Livewire::test(PrinterPage::class)
         ->assertOk()
-        ->call('createDefaultRestaurantPrinters')
-        ->assertSee('Printer Kasir')
-        ->assertSee('Printer Bar')
-        ->assertSee('Printer Dapur');
+        ->assertSee('Printer Kasir Utama')
+        ->assertDontSee('Buat Preset: Kasir + Bar + Dapur');
 
-    expect(Printer::count())->toBe(3);
+    expect(Printer::count())->toBeGreaterThanOrEqual(1);
 });
 
 test('cashier checkout automatically generates multi-printer print queue jobs', function () {
