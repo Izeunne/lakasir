@@ -1055,6 +1055,11 @@
       setTimeout(() => {
         document.getElementById('changes').innerHTML = moneyFormat(selling.money_changes);
       }, 300);
+
+      // PENCETAKAN OTOMATIS MULTI-PRINTER SAAT TRANSAKSI SELESAI
+      setTimeout(() => {
+        executeMultiPrinterPrint(selling, true);
+      }, 500);
     });
 
     document.getElementById("pdfReceiptButton")?.addEventListener('click', () => {
@@ -1065,7 +1070,10 @@
       }
     });
 
-    document.getElementById("printReceiptButton").addEventListener('click', async (event) => {
+    async function executeMultiPrinterPrint(currentSelling, isAutomatic = false) {
+      if (!currentSelling || !currentSelling.id) {
+        return;
+      }
       let about = @js($about);
       const dbPrinters = @js(\App\Models\Tenants\Printer::active()->orderBy('id')->get()->map(fn ($p) => [
         'id' => $p->id,
@@ -1104,14 +1112,14 @@
 
       try {
         if (printersList.length === 0) {
-          new FilamentNotification()
-            .title('@lang('Printer belum diatur atau tidak aktif')')
-            .body('@lang('Struk otomatis disimpan dalam format PDF dan dibuka untuk dicetak.')')
-            .warning()
-            .send();
+          if (!isAutomatic) {
+            new FilamentNotification()
+              .title('@lang('Printer belum diatur atau tidak aktif')')
+              .body('@lang('Struk otomatis disimpan dalam format PDF dan dibuka untuk dicetak.')')
+              .warning()
+              .send();
 
-          if (selling && selling.id) {
-            window.open('/member/sellings/' + selling.id + '/receipt-pdf?width=' + defaultPaperWidth, '_blank');
+            window.open('/member/sellings/' + currentSelling.id + '/receipt-pdf?width=' + defaultPaperWidth, '_blank');
           }
           return;
         }
@@ -1119,7 +1127,7 @@
         let anyPrinted = false;
 
         for (const printerData of printersList) {
-          const allDetails = (selling && Array.isArray(selling.selling_details)) ? selling.selling_details : [];
+          const allDetails = (currentSelling && Array.isArray(currentSelling.selling_details)) ? currentSelling.selling_details : [];
           const filteredDetails = printerData.print_all_categories
             ? allDetails
             : allDetails.filter(d => {
@@ -1158,18 +1166,18 @@
               printerAction.align('left').text(dividerLine);
             }
             printerAction.table(['Station', printerData.name || 'Kasir']);
-            printerAction.table(['@lang('Cashier')', selling.user.name]);
-            if (selling.order_type_label && selling.order_type_label !== '-') {
-              printerAction.table(['@lang('Kategori')', selling.order_type_label]);
+            printerAction.table(['@lang('Cashier')', currentSelling.user.name]);
+            if (currentSelling.order_type_label && currentSelling.order_type_label !== '-') {
+              printerAction.table(['@lang('Kategori')', currentSelling.order_type_label]);
             }
-            if (selling.table && selling.table.number) {
-              printerAction.table(['@lang('Table')', selling.table.number]);
+            if (currentSelling.table && currentSelling.table.number) {
+              printerAction.table(['@lang('Table')', currentSelling.table.number]);
             }
-            if (selling.payment_method && selling.payment_method.name) {
-              printerAction.table(['@lang('Payment method')', selling.payment_method.name]);
+            if (currentSelling.payment_method && currentSelling.payment_method.name) {
+              printerAction.table(['@lang('Payment method')', currentSelling.payment_method.name]);
             }
-            if (selling.member && selling.member.name) {
-              printerAction.table(['Member', selling.member.name]);
+            if (currentSelling.member && currentSelling.member.name) {
+              printerAction.table(['Member', currentSelling.member.name]);
             }
             printerAction.text(dividerLine);
 
@@ -1197,21 +1205,21 @@
 
             printerAction.text(dividerLine);
             if ("@js(feature(SellingTax::class))" == 'true') {
-              printerAction.table(['@lang('Tax')', `${selling.tax}%`])
-                .table(['@lang('Tax price')', moneyFormat(selling.tax_price)]);
+              printerAction.table(['@lang('Tax')', `${currentSelling.tax}%`])
+                .table(['@lang('Tax price')', moneyFormat(currentSelling.tax_price)]);
             }
-            printerAction.table(['@lang('Subtotal')', moneyFormat(selling.total_price)]);
+            printerAction.table(['@lang('Subtotal')', moneyFormat(currentSelling.total_price)]);
             if ("@js(feature(Discount::class))" == 'true') {
               printerAction.table([
                 '@lang('Discount')',
-                `(${moneyFormat(selling.total_discount_per_item + selling.discount_price)})`
+                `(${moneyFormat(currentSelling.total_discount_per_item + currentSelling.discount_price)})`
               ]);
             }
             printerAction
-              .table(['@lang('Total price')', moneyFormat(selling.grand_total_price)])
+              .table(['@lang('Total price')', moneyFormat(currentSelling.grand_total_price)])
               .text(dividerLine)
-              .table(['@lang('Payed money')', moneyFormat(selling.payed_money)])
-              .table(['@lang('Change')', moneyFormat(selling.money_changes)])
+              .table(['@lang('Payed money')', moneyFormat(currentSelling.payed_money)])
+              .table(['@lang('Change')', moneyFormat(currentSelling.money_changes)])
               .align('center');
 
             if (printerData.footer) {
@@ -1228,13 +1236,13 @@
             }
             printerAction.align('left')
               .text(dividerLine)
-              .table(['No. Pesanan', selling.code || ('#' + selling.id)])
-              .table(['@lang('Cashier')', selling.user.name]);
-            if (selling.order_type_label && selling.order_type_label !== '-') {
-              printerAction.table(['@lang('Kategori')', selling.order_type_label]);
+              .table(['No. Pesanan', currentSelling.code || ('#' + currentSelling.id)])
+              .table(['@lang('Cashier')', currentSelling.user.name]);
+            if (currentSelling.order_type_label && currentSelling.order_type_label !== '-') {
+              printerAction.table(['@lang('Kategori')', currentSelling.order_type_label]);
             }
-            if (selling.table && selling.table.number) {
-              printerAction.table(['@lang('Table')', selling.table.number]);
+            if (currentSelling.table && currentSelling.table.number) {
+              printerAction.table(['@lang('Table')', currentSelling.table.number]);
             }
             printerAction.text(dividerLine);
 
@@ -1267,29 +1275,39 @@
           }
         }
 
-        if (!anyPrinted) {
+        if (anyPrinted && isAutomatic) {
+          new FilamentNotification()
+            .title('@lang('Pencetakan Multi-Printer Otomatis Selesai')')
+            .body('@lang('Struk kasir dan nota pesanan (Dapur/Bar) telah otomatis diproses.')')
+            .success()
+            .send();
+        }
+
+        if (!anyPrinted && !isAutomatic) {
           new FilamentNotification()
             .title('@lang('Printer tidak terhubung atau gagal mencetak')')
             .body('@lang('Struk dialihkan ke format PDF dan dibuka untuk dicetak.')')
             .warning()
             .send();
 
-          if (selling && selling.id) {
-            window.open('/member/sellings/' + selling.id + '/receipt-pdf?width=' + defaultPaperWidth, '_blank');
-          }
+          window.open('/member/sellings/' + currentSelling.id + '/receipt-pdf?width=' + defaultPaperWidth, '_blank');
         }
       } catch (error) {
         console.error(error);
-        new FilamentNotification()
-          .title('@lang('Terjadi kendala pada printer fisik')')
-          .body('@lang('Struk otomatis dialihkan ke format PDF.')')
-          .warning()
-          .send();
+        if (!isAutomatic) {
+          new FilamentNotification()
+            .title('@lang('Terjadi kendala pada printer fisik')')
+            .body('@lang('Struk otomatis dialihkan ke format PDF.')')
+            .warning()
+            .send();
 
-        if (selling && selling.id) {
-          window.open('/member/sellings/' + selling.id + '/receipt-pdf?width=' + defaultPaperWidth, '_blank');
+          window.open('/member/sellings/' + currentSelling.id + '/receipt-pdf?width=' + defaultPaperWidth, '_blank');
         }
       }
+    }
+
+    document.getElementById("printReceiptButton").addEventListener('click', async (event) => {
+      await executeMultiPrinterPrint(selling, false);
     });
 
     Alpine.data('fullscreen', () => {

@@ -80,7 +80,7 @@ class PrintBridgeService
      */
     public static function queueSellingPrints(Selling $selling, int $outletId = 1): array
     {
-        $selling->loadMissing(['sellingDetails.product.category', 'paymentMethod', 'member', 'user', 'table']);
+        $selling->load(['sellingDetails.product.category', 'paymentMethod', 'member', 'user', 'table']);
 
         $activePrinters = Printer::active()->orderBy('id')->get();
 

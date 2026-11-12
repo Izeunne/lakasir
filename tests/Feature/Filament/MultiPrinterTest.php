@@ -257,3 +257,101 @@ test('printer management page renders and can create default restaurant presets'
     expect(Printer::count())->toBe(3);
 });
 
+test('cashier checkout automatically generates multi-printer print queue jobs', function () {
+    Filament::setCurrentPanel(Filament::getPanel('tenant'));
+    $user = User::first();
+    actingAs($user);
+
+    $catMakanan = Category::create(['name' => 'Makanan Utama']);
+    $catMinuman = Category::create(['name' => 'Minuman']);
+
+    $food = Product::create([
+        'name' => 'Bebek Goreng Sambal Korek',
+        'category_id' => $catMakanan->id,
+        'selling_price' => 42000,
+        'initial_price' => 25000,
+        'type' => 'product',
+        'is_non_stock' => true,
+        'show' => true,
+    ]);
+
+    $drink = Product::create([
+        'name' => 'Es Jeruk Peras',
+        'category_id' => $catMinuman->id,
+        'selling_price' => 10000,
+        'initial_price' => 4000,
+        'type' => 'product',
+        'is_non_stock' => true,
+        'show' => true,
+    ]);
+
+    Printer::create([
+        'name' => 'Printer Kasir',
+        'driver' => 'bluetooth',
+        'device_id' => 'BT-KASIR',
+        'paper_width' => '58mm',
+        'print_all_categories' => true,
+        'category_ids' => [],
+        'show_price' => true,
+        'is_active' => true,
+    ]);
+
+    Printer::create([
+        'name' => 'Printer Bar',
+        'driver' => 'lan',
+        'device_id' => 'LAN-BAR',
+        'paper_width' => '58mm',
+        'print_all_categories' => false,
+        'category_ids' => [$catMinuman->id],
+        'show_price' => false,
+        'is_active' => true,
+    ]);
+
+    Printer::create([
+        'name' => 'Printer Dapur',
+        'driver' => 'lan',
+        'device_id' => 'LAN-DAPUR',
+        'paper_width' => '80mm',
+        'print_all_categories' => false,
+        'category_ids' => [$catMakanan->id],
+        'show_price' => false,
+        'is_active' => true,
+    ]);
+
+    $paymentMethod = PaymentMethod::first() ?? PaymentMethod::create(['name' => 'Cash', 'is_cash' => true]);
+
+    PrintQueue::query()->delete();
+
+    // Add items to cart in Cashier Livewire component and checkout
+    Livewire::test(\App\Filament\Tenant\Pages\Cashier::class)
+        ->call('addCart', $food)
+        ->call('addCart', $drink)
+        ->set('orderType', 'Dine In')
+        ->set('cartDetail.payment_method_id', $paymentMethod->id)
+        ->set('cartDetail.payed_money', 60000)
+        ->call('proceedThePayment')
+        ->assertDispatched('selling-created');
+
+    // Verify print_queue has 3 distinct jobs: Kasir, Bar, and Dapur
+    $queuedJobs = PrintQueue::where('status', 'queued')->get();
+    expect($queuedJobs)->toHaveCount(3);
+
+    $kasirJob = $queuedJobs->firstWhere('target_printer', 'BT-KASIR');
+    $barJob = $queuedJobs->firstWhere('target_printer', 'LAN-BAR');
+    $dapurJob = $queuedJobs->firstWhere('target_printer', 'LAN-DAPUR');
+
+    expect($kasirJob)->not->toBeNull()
+        ->and($kasirJob->payload['show_price'])->toBeTrue()
+        ->and($kasirJob->layout['items'])->toHaveCount(2);
+
+    expect($barJob)->not->toBeNull()
+        ->and($barJob->payload['show_price'])->toBeFalse()
+        ->and($barJob->ticket['items'])->toHaveCount(1)
+        ->and($barJob->ticket['items'][0]['name'])->toBe('Es Jeruk Peras');
+
+    expect($dapurJob)->not->toBeNull()
+        ->and($dapurJob->payload['show_price'])->toBeFalse()
+        ->and($dapurJob->ticket['items'])->toHaveCount(1)
+        ->and($dapurJob->ticket['items'][0]['name'])->toBe('Bebek Goreng Sambal Korek');
+});
+
