@@ -13,7 +13,7 @@ class CashierReportService
 {
     public function generate(array $data)
     {
-        $timezone = Profile::get()->timezone;
+        $timezone = Profile::get()->timezone ?? config('app.timezone', 'UTC');
         $about = About::first();
         $tzName = Carbon::parse($data['start_date'])->getTimezone()->getName();
         $startDate = Carbon::parse($data['start_date'], $timezone)->setTimezone('UTC');

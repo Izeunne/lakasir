@@ -21,7 +21,21 @@ trait HasStockOpnameItemForm
                 ->native(false)
                 ->placeholder(__('Search...'))
                 ->relationship(name: $product, titleAttribute: 'name')
-                ->searchable(['name', 'barcode', 'sku'])
+                ->searchable(['name', 'sku'])
+                ->getSearchResultsUsing(function (string $search): array {
+                    return Product::query()
+                        ->where(function ($query) use ($search) {
+                            $query->where('name', 'like', "%{$search}%")
+                                ->orWhere('sku', 'like', "%{$search}%")
+                                ->orWhereHas('barcodes', function ($q) use ($search) {
+                                    $q->where('code', 'like', "%{$search}%");
+                                });
+                        })
+                        ->orderBy('name')
+                        ->limit(50)
+                        ->pluck('name', 'id')
+                        ->toArray();
+                })
                 ->live()
                 ->afterStateUpdated(function (Set $set, ?string $state) {
                     $product = Product::find($state);
@@ -54,7 +68,7 @@ trait HasStockOpnameItemForm
                         return;
                     }
 
-                    $set('missing_stock', $product->stock - $get('actual_stock'));
+                    $set('missing_stock', (float) $product->stock - (float) $get('actual_stock'));
                 })
                 ->options([
                     'broken' => __('Broken'),
@@ -79,7 +93,7 @@ trait HasStockOpnameItemForm
                         return;
                     }
 
-                    $set('missing_stock', $product->stock - $state);
+                    $set('missing_stock', (float) $product->stock - (float) $state);
                 })
                 ->numeric(),
             TextInput::make('missing_stock')
