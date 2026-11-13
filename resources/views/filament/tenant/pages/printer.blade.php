@@ -35,6 +35,17 @@
           <span>Deteksi / Sinkron Printer Mobile</span>
         </button>
 
+        @if ($connectedMobilePrinters->isNotEmpty())
+          <button
+            type="button"
+            wire:click="clearMobilePrinters"
+            wire:confirm="Yakin ingin mengosongkan data printer mobile (data simulasi)? Anda dapat menghubungkan printer fisik dari aplikasi mobile Lakasir."
+            class="inline-flex items-center gap-2 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 px-3.5 py-2.5 text-xs sm:text-sm font-medium shadow-xs transition cursor-pointer">
+            <x-heroicon-o-trash class="w-4 h-4 text-red-500" />
+            <span>Kosongkan Simulasi</span>
+          </button>
+        @endif
+
         <a
           href="/print-client.html"
           target="_blank"
@@ -49,10 +60,19 @@
     @if ($connectedMobilePrinters->isNotEmpty())
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
         @foreach ($connectedMobilePrinters as $mp)
+          @php
+            $typeLabel = match (strtolower($mp->connection_type ?? '')) {
+              'bluetooth' => 'BT',
+              'lan', 'network', 'ethernet' => 'LAN',
+              'usb' => 'USB',
+              'virtual' => 'VIR',
+              default => strtoupper(substr($mp->connection_type ?: 'PRN', 0, 3)),
+            };
+          @endphp
           <div class="flex items-start justify-between gap-3 rounded-xl border border-gray-200/80 dark:border-gray-700 bg-white dark:bg-gray-800/90 p-3.5 shadow-xs">
             <div class="flex items-start gap-3 min-w-0">
               <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
-                {{ strtoupper($mp->connection_type ?: 'BT') }}
+                {{ $typeLabel }}
               </div>
               <div class="min-w-0">
                 <p class="text-sm font-bold text-gray-900 dark:text-white truncate">

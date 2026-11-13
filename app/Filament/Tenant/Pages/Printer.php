@@ -398,6 +398,20 @@ class Printer extends Page implements HasActions, HasForms, HasTable
             ->send();
     }
 
+    /**
+     * Clear all detected mobile printers (useful to remove simulation/dummy data).
+     */
+    public function clearMobilePrinters(): void
+    {
+        MobilePrinter::query()->delete();
+
+        Notification::make()
+            ->title(__('Daftar Printer Mobile Dikosongkan'))
+            ->body(__('Data printer mobile simulasi berhasil dihapus. Hubungkan printer asli dari aplikasi mobile untuk mendeteksi kembali.'))
+            ->success()
+            ->send();
+    }
+
     protected function syncFrontendPrinters(): void
     {
         $printers = PrinterModel::active()->orderBy('id')->get()->map(fn (PrinterModel $p) => [
