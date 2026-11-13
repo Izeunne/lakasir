@@ -39,6 +39,7 @@ class BridgeForegroundService : Service() {
     private val notificationClient = PosNotificationApiClient()
     private var loopJob: Job? = null
     private var notificationJob: Job? = null
+    private var lastNotificationContent: String? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -73,12 +74,11 @@ class BridgeForegroundService : Service() {
                 }
 
                 try {
-                    val pollUrl = printJobRepository.getPollUrl(settings)
                     updateNotification(getString(R.string.notification_polling, settings.baseUrl))
-                    runtimeStateRepository.registerPoll("Polling dimulai: $pollUrl")
+                    runtimeStateRepository.registerPoll("Memantau antrean: Outlet #${settings.outletId}")
                     val jobs = printJobRepository.fetchJobs(settings)
                     if (jobs.isEmpty()) {
-                        delay(settings.pollingSeconds.coerceAtLeast(2L) * 1_000L)
+                        delay(settings.pollingSeconds.coerceAtLeast(3L) * 1_000L)
                         continue
                     }
 
@@ -129,7 +129,7 @@ class BridgeForegroundService : Service() {
                     runtimeStateRepository.registerFailed("❌ Error polling: $message")
                 }
 
-                delay(settings.pollingSeconds.coerceAtLeast(2L) * 1_000L)
+                delay(settings.pollingSeconds.coerceAtLeast(3L) * 1_000L)
             }
         }
 
@@ -154,7 +154,7 @@ class BridgeForegroundService : Service() {
                         if (e is CancellationException) throw e
                     }
                 }
-                delay(settings.pollingSeconds.coerceAtLeast(2L) * 1_000L)
+                delay((settings.pollingSeconds.coerceAtLeast(3L) + 2L) * 1_000L)
             }
         }
     }
@@ -190,6 +190,10 @@ class BridgeForegroundService : Service() {
     }
 
     private fun updateNotification(content: String) {
+        if (content == lastNotificationContent) {
+            return
+        }
+        lastNotificationContent = content
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.notify(NOTIFICATION_ID, buildNotification(content))
     }

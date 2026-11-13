@@ -10,18 +10,18 @@
       <div class="space-y-1">
         <div class="flex items-center gap-2 flex-wrap">
           <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 px-3 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300">
-            <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            Integrasi Mobile Print Bridge Aktif
+            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+            Print Bridge &amp; Multi-Printer
           </span>
           <span class="text-xs font-medium text-gray-500 dark:text-gray-400">
-            Hanya printer yang terhubung di Aplikasi Mobile yang dapat dipilih
+            Mendukung Printer Fisik Bluetooth, LAN Network, USB, dan Aplikasi Mobile Lakasir
           </span>
         </div>
         <h2 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-          📱 Perangkat Printer yang Terdeteksi di Aplikasi Mobile ({{ $connectedMobilePrinters->count() }} Terhubung)
+          📱 Perangkat Printer Mobile Terdeteksi ({{ $connectedMobilePrinters->count() }} Terhubung)
         </h2>
         <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-          Hubungkan printer Bluetooth / LAN pada aplikasi mobile Lakasir terlebih dahulu. Daftar di bawah ini otomatis tersinkronisasi dari aplikasi mobile.
+          Daftar printer Bluetooth / LAN yang tersinkronisasi otomatis dari aplikasi mobile Lakasir.
         </p>
       </div>
 
@@ -29,22 +29,11 @@
         <button
           type="button"
           onclick="syncMobileBridgePrinters()"
-          wire:click="simulateMobilePrinters"
+          wire:click="refreshMobilePrinters"
           class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 text-xs sm:text-sm font-semibold shadow-sm transition cursor-pointer">
           <x-heroicon-o-arrow-path class="w-4 h-4" />
-          <span>Deteksi / Sinkron Printer Mobile</span>
+          <span>Sinkron Printer Mobile</span>
         </button>
-
-        @if ($connectedMobilePrinters->isNotEmpty())
-          <button
-            type="button"
-            wire:click="clearMobilePrinters"
-            wire:confirm="Yakin ingin mengosongkan data printer mobile (data simulasi)? Anda dapat menghubungkan printer fisik dari aplikasi mobile Lakasir."
-            class="inline-flex items-center gap-2 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 px-3.5 py-2.5 text-xs sm:text-sm font-medium shadow-xs transition cursor-pointer">
-            <x-heroicon-o-trash class="w-4 h-4 text-red-500" />
-            <span>Kosongkan Simulasi</span>
-          </button>
-        @endif
 
         <a
           href="/print-client.html"
@@ -65,7 +54,6 @@
               'bluetooth' => 'BT',
               'lan', 'network', 'ethernet' => 'LAN',
               'usb' => 'USB',
-              'virtual' => 'VIR',
               default => strtoupper(substr($mp->connection_type ?: 'PRN', 0, 3)),
             };
           @endphp
@@ -93,44 +81,15 @@
         @endforeach
       </div>
     @else
-      <div class="rounded-xl border border-dashed border-amber-300 dark:border-amber-700 bg-amber-50/60 dark:bg-amber-900/20 p-4 text-xs sm:text-sm text-amber-800 dark:text-amber-300 flex items-center justify-between gap-4">
+      <div class="rounded-xl border border-dashed border-gray-300 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-800/40 p-4 text-xs sm:text-sm text-gray-700 dark:text-gray-300 flex items-center justify-between gap-4">
         <div>
-          <strong>Belum ada printer yang terdeteksi dari Aplikasi Mobile.</strong>
-          Klik tombol <em>"Deteksi / Sinkron Printer Mobile"</em> di kanan atas atau hubungkan melalui aplikasi Android Print Bridge.
+          <p class="font-bold text-gray-900 dark:text-white">Belum Ada Perangkat Printer Mobile yang Terhubung</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Hubungkan printer Bluetooth / LAN pada aplikasi Android Lakasir, atau Anda dapat langsung menambahkan Station Printer LAN / Bluetooth / USB melalui tombol <strong>Tambah Printer</strong> di bawah.</p>
         </div>
       </div>
     @endif
   </div>
 
-  {{-- Panduan Ringkas Routing Multi-Printer --}}
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-    <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
-      <div class="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
-        <span>🧾</span> 1. Printer Kasir (Tagihan)
-      </div>
-      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-        Set <strong>Cetak Semua Kategori = Aktif</strong> dan <strong>Tampilkan Harga = Aktif</strong> untuk mencetak struk pembayaran lengkap bagi pelanggan.
-      </p>
-    </div>
-
-    <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
-      <div class="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
-        <span>🥤</span> 2. Printer Bar (Minuman)
-      </div>
-      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-        Pilih kategori <strong>Minuman</strong> saja dan <strong>Tampilkan Harga = Nonaktif</strong> agar bartender langsung menerima nota pesanan minuman tanpa harga.
-      </p>
-    </div>
-
-    <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
-      <div class="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
-        <span>🍳</span> 3. Printer Dapur (Makanan)
-      </div>
-      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-        Pilih kategori <strong>Makanan Utama &amp; Camilan</strong> dan <strong>Tampilkan Harga = Nonaktif</strong> untuk mencetak nota checker dapur otomatis.
-      </p>
-    </div>
-  </div>
 
   {{-- Tabel Manajemen Station Multi-Printer --}}
   <div>
@@ -203,10 +162,7 @@
       : '-------------------------------';
 
     try {
-      // Gunakan virtual_simulator untuk preview layar saat test di browser jika tidak ada bridge fisik
-      const targetId = (st.connection_type === 'virtual' || !window.LakasirBridge)
-        ? 'virtual_simulator'
-        : (st.device_id || 'kasir');
+      const targetId = st.device_id || st.name || 'kasir';
 
       const printer = new Printer(targetId, paperWidth);
       let action = printer.font('a').align('center');

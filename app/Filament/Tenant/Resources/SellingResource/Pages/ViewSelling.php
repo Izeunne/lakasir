@@ -126,6 +126,12 @@ class ViewSelling extends ViewRecord
                 ])
                 ->color(Color::Teal)
                 ->visible(can('can print selling') && feature(PrintSellingA5::class)),
+            Action::make('preview_all_receipts')
+                ->label(__('Desain Semua Nota'))
+                ->icon('heroicon-o-eye')
+                ->color(Color::Emerald)
+                ->url(fn (): string => route('selling.preview-receipts', ['selling' => $this->getRecord()]))
+                ->openUrlInNewTab(),
             Action::make('print_pdf_receipt')
                 ->label(__('Struk PDF'))
                 ->icon('heroicon-o-document-arrow-down')

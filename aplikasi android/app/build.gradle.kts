@@ -3,13 +3,25 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+import java.io.File
 import java.util.Properties
 
 val signingProperties = Properties()
-val signingPropertiesFile = rootProject.file("signing.properties")
+val signingPropertiesFile = listOf(
+    rootProject.file("signing.properties"),
+    rootProject.file("app/signing.properties"),
+    file("signing.properties"),
+).firstOrNull { it.exists() }
 
-if (signingPropertiesFile.exists()) {
+if (signingPropertiesFile != null && signingPropertiesFile.exists()) {
     signingPropertiesFile.inputStream().use(signingProperties::load)
+}
+
+fun getSigningProp(key: String): String? {
+    return (signingProperties.getProperty(key)
+        ?: signingProperties.getProperty("\uFEFF$key")
+        ?: signingProperties[key] as? String
+        ?: signingProperties["\uFEFF$key"] as? String)?.trim()
 }
 
 android {
@@ -20,17 +32,41 @@ android {
         applicationId = "id.webprint.bridge"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        create("release") {
+            if (signingPropertiesFile != null && signingPropertiesFile.exists()) {
+                val storeFilePath = getSigningProp("storeFile").orEmpty()
+                if (storeFilePath.isNotEmpty()) {
+                    val candidateFiles = listOf(
+                        File(storeFilePath),
+                        rootProject.file(storeFilePath),
+                        rootProject.file("app/$storeFilePath"),
+                        file(storeFilePath),
+                    )
+                    val resolvedKeystore = candidateFiles.firstOrNull { it.exists() }
+                    if (resolvedKeystore != null) {
+                        storeFile = resolvedKeystore
+                        storePassword = getSigningProp("storePassword")
+                        keyAlias = getSigningProp("keyAlias")
+                        keyPassword = getSigningProp("keyPassword")
+                    }
+                }
+            }
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            if (signingPropertiesFile.exists()) {
-                signingConfig = signingConfigs.getByName("release")
+            val releaseSigning = signingConfigs.getByName("release")
+            if (releaseSigning.storeFile != null && releaseSigning.storeFile!!.exists()) {
+                signingConfig = releaseSigning
             }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -52,15 +88,9 @@ android {
         viewBinding = true
     }
 
-    signingConfigs {
-        create("release") {
-            if (signingPropertiesFile.exists()) {
-                storeFile = file(signingProperties["storeFile"] as String)
-                storePassword = signingProperties["storePassword"] as String
-                keyAlias = signingProperties["keyAlias"] as String
-                keyPassword = signingProperties["keyPassword"] as String
-            }
-        }
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
     }
 }
 

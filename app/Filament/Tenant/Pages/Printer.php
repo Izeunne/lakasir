@@ -47,7 +47,7 @@ class Printer extends Page implements HasActions, HasForms, HasTable
      */
     public static function getConnectedMobilePrinterOptions(): array
     {
-        $connected = MobilePrinter::query()
+        return MobilePrinter::query()
             ->where('is_connected', true)
             ->orderBy('device_name')
             ->get()
@@ -55,10 +55,6 @@ class Printer extends Page implements HasActions, HasForms, HasTable
                 return [$mp->device_id => '📱 ' . $mp->display_label];
             })
             ->toArray();
-
-        $connected['virtual_simulator'] = '🖥️ Virtual Thermal Simulator (Preview Layar Tanpa Printer Fisik)';
-
-        return $connected;
     }
 
     /**
@@ -66,9 +62,11 @@ class Printer extends Page implements HasActions, HasForms, HasTable
      */
     protected function getPrinterFormSchema(): array
     {
+        $hasMobilePrinters = MobilePrinter::where('is_connected', true)->exists();
+
         return [
             Components\Section::make(__('Identitas & Perangkat Printer'))
-                ->description(__('Pilih perangkat printer yang sudah terhubung di Aplikasi Mobile Lakasir.'))
+                ->description(__('Konfigurasi station printer fisik (Bluetooth, LAN / Network, USB, atau via Mobile Bridge).'))
                 ->columns(2)
                 ->schema([
                     Components\TextInput::make('name')
@@ -77,42 +75,91 @@ class Printer extends Page implements HasActions, HasForms, HasTable
                         ->required()
                         ->maxLength(100),
 
-                    Components\Select::make('device_id')
-                        ->label(__('Perangkat Printer (Terkoneksi di Mobile)'))
+                    Components\Select::make('connection_type')
+                        ->label(__('Jenis Koneksi Printer'))
+                        ->options([
+                            'bluetooth' => '📶 Bluetooth Thermal Printer',
+                            'lan' => '🌐 LAN / Network Thermal Printer (IP Address)',
+                            'usb' => '🔌 USB Thermal Printer (PC Kasir)',
+                            'mobile' => '📱 Terhubung via Lakasir Mobile Bridge',
+                        ])
+                        ->default($hasMobilePrinters ? 'mobile' : 'bluetooth')
+                        ->native(false)
+                        ->required()
+                        ->live()
+                        ->afterStateUpdated(function (?string $state, Set $set, Get $get) {
+                            if ($state === 'lan') {
+                                if (! $get('port')) {
+                                    $set('port', '9100');
+                                }
+                            }
+                        }),
+
+                    // Jika koneksi via Mobile Bridge
+                    Components\Select::make('mobile_device_id')
+                        ->label(__('Pilih Printer Mobile Terhubung'))
                         ->options(fn () => self::getConnectedMobilePrinterOptions())
                         ->searchable()
                         ->preload()
                         ->native(false)
-                        ->required()
+                        ->visible(fn (Get $get): bool => $get('connection_type') === 'mobile')
+                        ->required(fn (Get $get): bool => $get('connection_type') === 'mobile')
+                        ->helperText(fn () => MobilePrinter::where('is_connected', true)->exists()
+                            ? __('Pilih printer yang sedang terhubung aktif pada Aplikasi Mobile Lakasir.')
+                            : __('Belum ada printer mobile terdeteksi. Hubungkan printer di aplikasi mobile Lakasir terlebih dahulu atau pilih jenis koneksi lain (Bluetooth / LAN / USB).'))
                         ->live()
-                        ->helperText(__('Hanya menampilkan printer yang berstatus Terhubung (Connected) di Aplikasi Mobile.'))
                         ->afterStateUpdated(function (?string $state, Set $set) {
-                            if ($state === 'virtual_simulator') {
-                                $set('device_name', 'Virtual Printer (Preview Layar)');
-                                $set('connection_type', 'virtual');
-                                $set('driver', 'virtual');
-                                return;
-                            }
-
                             $mobile = MobilePrinter::where('device_id', $state)->first();
                             if ($mobile) {
                                 $set('device_name', $mobile->device_name);
-                                $set('connection_type', $mobile->connection_type);
-                                $set('driver', $mobile->connection_type);
+                                $set('device_id', $mobile->device_id);
                                 if ($mobile->paper_width) {
                                     $set('paper_width', $mobile->paper_width);
                                 }
                             }
                         }),
 
-                    Components\Hidden::make('device_name')
-                        ->default('Virtual Printer (Preview Layar)'),
+                    // Jika koneksi LAN / Network
+                    Components\TextInput::make('ip_address')
+                        ->label(__('Alamat IP Printer (LAN)'))
+                        ->placeholder(__('Contoh: 192.168.1.200'))
+                        ->required(fn (Get $get): bool => $get('connection_type') === 'lan')
+                        ->visible(fn (Get $get): bool => $get('connection_type') === 'lan')
+                        ->helperText(__('Alamat IP lokal printer thermal di jaringan Anda.'))
+                        ->columnSpan(1),
 
-                    Components\Hidden::make('connection_type')
-                        ->default('bluetooth'),
+                    Components\TextInput::make('port')
+                        ->label(__('Port Raw ESC/POS'))
+                        ->placeholder('9100')
+                        ->default('9100')
+                        ->required(fn (Get $get): bool => $get('connection_type') === 'lan')
+                        ->visible(fn (Get $get): bool => $get('connection_type') === 'lan')
+                        ->columnSpan(1),
 
-                    Components\Hidden::make('driver')
-                        ->default('bluetooth'),
+                    // Jika Bluetooth
+                    Components\TextInput::make('bt_address')
+                        ->label(__('Nama / MAC Address Bluetooth'))
+                        ->placeholder(__('Contoh: RPP02N atau DC:0D:30:A1:10:01'))
+                        ->required(fn (Get $get): bool => $get('connection_type') === 'bluetooth')
+                        ->visible(fn (Get $get): bool => $get('connection_type') === 'bluetooth')
+                        ->helperText(__('Nama perangkat Bluetooth atau MAC Address printer.'))
+                        ->columnSpan(1),
+
+                    // Nama Perangkat Printer
+                    Components\TextInput::make('device_name')
+                        ->label(__('Model / Nama Perangkat Printer'))
+                        ->placeholder(__('Contoh: Epson TM-T82, RPP02N, Thermal 58mm'))
+                        ->required()
+                        ->columnSpan(fn (Get $get): bool => in_array($get('connection_type'), ['bluetooth', 'usb'])),
+
+                    // ID / Vendor ID untuk USB
+                    Components\TextInput::make('device_id')
+                        ->label(__('ID Perangkat USB'))
+                        ->default('usb')
+                        ->placeholder(__('Contoh: usb atau Vendor ID'))
+                        ->visible(fn (Get $get): bool => $get('connection_type') === 'usb')
+                        ->required(fn (Get $get): bool => $get('connection_type') === 'usb')
+                        ->columnSpan(1),
 
                     Components\Select::make('paper_width')
                         ->label(__('Ukuran Lebar Kertas'))
@@ -126,6 +173,7 @@ class Printer extends Page implements HasActions, HasForms, HasTable
 
                     Components\TextInput::make('copies')
                         ->label(__('Jumlah Rangkap Cetak (Copy)'))
+                        ->helperText(__('Atur 2 rangkap jika ingin 1 lembar untuk Pelanggan dan 1 lembar Salinan Toko/Disimpan.'))
                         ->numeric()
                         ->minValue(1)
                         ->maxValue(5)
@@ -149,6 +197,12 @@ class Printer extends Page implements HasActions, HasForms, HasTable
                         ->helperText(__('Aktifkan untuk Struk Tagihan Kasir. Matikan untuk Nota Checker (Dapur/Bar) agar hanya mencetak Nama Menu, Qty, Variasi & Catatan tanpa harga.'))
                         ->default(true)
                         ->columnSpan(1),
+
+                    Components\Toggle::make('show_header')
+                        ->label(__('Cetak Header & Identitas Toko (Logo, Nama, Alamat, NPWP)'))
+                        ->helperText(__('Aktifkan untuk Struk Kasir Pelanggan. Matikan jika tidak memerlukan kop identitas (misal Salinan Toko / Backup Kasir / Dapur / Bar) agar lebih hemat kertas.'))
+                        ->default(true)
+                        ->columnSpanFull(),
 
                     Components\CheckboxList::make('category_ids')
                         ->label(__('Pilih Kategori Menu yang Dicetak oleh Printer Ini'))
@@ -197,20 +251,14 @@ class Printer extends Page implements HasActions, HasForms, HasTable
                     ->description(fn (PrinterModel $record): string => $record->header ?: ($record->show_price ? __('Struk Kasir / Tagihan') : __('Nota Checker Pesanan'))),
 
                 Tables\Columns\TextColumn::make('device_name')
-                    ->label(__('Perangkat Mobile'))
+                    ->label(__('Perangkat Printer'))
                     ->formatStateUsing(function (PrinterModel $record): string {
-                        if ($record->device_id === 'virtual_simulator' || $record->connection_type === 'virtual') {
-                            return '🖥️ Virtual Simulator (Layar)';
-                        }
                         $type = strtoupper($record->connection_type ?: 'BT');
                         $name = $record->device_name ?: $record->device_id;
 
                         return "[{$type}] {$name}";
                     })
                     ->description(function (PrinterModel $record): string {
-                        if ($record->device_id === 'virtual_simulator' || $record->connection_type === 'virtual') {
-                            return __('Mode Preview Layar Browser');
-                        }
                         $mobile = $record->mobilePrinter;
                         if ($mobile && $mobile->is_connected) {
                             $seen = $mobile->last_seen_at ? $mobile->last_seen_at->diffForHumans() : __('Baru saja');
@@ -218,7 +266,15 @@ class Printer extends Page implements HasActions, HasForms, HasTable
                             return "🟢 Terhubung di Mobile ({$seen})";
                         }
 
-                        return '🔴 Belum Terhubung di Mobile (' . ($record->device_id ?: '-') . ')';
+                        if ($record->connection_type === 'lan') {
+                            return '🌐 IP: ' . ($record->device_id ?: '-');
+                        }
+
+                        if ($record->connection_type === 'usb') {
+                            return '🔌 USB Port: ' . ($record->device_id ?: 'Default USB');
+                        }
+
+                        return '📶 ID/MAC: ' . ($record->device_id ?: '-');
                     }),
 
                 Tables\Columns\TextColumn::make('categories_display')
@@ -239,6 +295,9 @@ class Printer extends Page implements HasActions, HasForms, HasTable
                     ->badge()
                     ->color('gray')
                     ->formatStateUsing(fn (PrinterModel $record): string => "{$record->paper_width} ({$record->copies}x)"),
+
+                Tables\Columns\ToggleColumn::make('show_header')
+                    ->label(__('Kop Toko')),
 
                 Tables\Columns\ToggleColumn::make('is_active')
                     ->label(__('Aktif')),
@@ -277,6 +336,8 @@ class Printer extends Page implements HasActions, HasForms, HasTable
                                 'connection_type' => $record->connection_type,
                                 'paper_width' => $record->paper_width,
                                 'show_price' => $record->show_price,
+                                'show_header' => (bool) ($record->show_header ?? true),
+                                'copies' => (int) ($record->copies ?: 1),
                                 'categories' => implode(', ', $record->category_names),
                                 'header' => $record->header,
                                 'footer' => $record->footer,
@@ -298,6 +359,22 @@ class Printer extends Page implements HasActions, HasForms, HasTable
                     ->modalHeading(__('Edit Konfigurasi Printer'))
                     ->modalWidth('3xl')
                     ->form($this->getPrinterFormSchema())
+                    ->mutateRecordDataUsing(function (array $data): array {
+                        if (($data['connection_type'] ?? '') === 'lan') {
+                            if (!empty($data['device_id']) && str_contains($data['device_id'], ':')) {
+                                [$ip, $port] = explode(':', $data['device_id'], 2);
+                                $data['ip_address'] = $data['ip_address'] ?? $ip;
+                                $data['port'] = $data['port'] ?? $port;
+                            }
+                        } elseif (($data['connection_type'] ?? '') === 'bluetooth') {
+                            $data['bt_address'] = $data['device_id'] ?? '';
+                        } elseif (MobilePrinter::where('device_id', $data['device_id'] ?? '')->exists()) {
+                            $data['connection_type'] = 'mobile';
+                            $data['mobile_device_id'] = $data['device_id'];
+                        }
+
+                        return $data;
+                    })
                     ->mutateFormDataUsing(function (array $data): array {
                         return $this->SyncDeviceMeta($data);
                     })
@@ -316,19 +393,39 @@ class Printer extends Page implements HasActions, HasForms, HasTable
 
     protected function SyncDeviceMeta(array $data): array
     {
-        $deviceId = $data['device_id'] ?? null;
-        if ($deviceId === 'virtual_simulator') {
-            $data['device_name'] = 'Virtual Printer (Preview Layar)';
-            $data['connection_type'] = 'virtual';
-            $data['driver'] = 'virtual';
-        } elseif ($deviceId) {
-            $mobile = MobilePrinter::where('device_id', $deviceId)->first();
-            if ($mobile) {
-                $data['device_name'] = $mobile->device_name;
-                $data['connection_type'] = $mobile->connection_type;
-                $data['driver'] = $mobile->connection_type;
-            }
+        $connType = $data['connection_type'] ?? 'bluetooth';
+
+        if ($connType === 'mobile') {
+            $mobileId = $data['mobile_device_id'] ?? $data['device_id'] ?? null;
+            $mobile = MobilePrinter::where('device_id', $mobileId)->first();
+            $data['device_id'] = $mobileId;
+            $data['device_name'] = $mobile?->device_name ?? ($data['device_name'] ?? $mobileId);
+            $data['connection_type'] = $mobile?->connection_type ?? 'bluetooth';
+            $data['driver'] = $mobile?->connection_type ?? 'bluetooth';
+        } elseif ($connType === 'lan') {
+            $ip = trim($data['ip_address'] ?? '');
+            $port = trim($data['port'] ?? '9100') ?: '9100';
+            $data['ip_address'] = $ip;
+            $data['port'] = $port;
+            $data['device_id'] = $ip ? "{$ip}:{$port}" : ($data['device_id'] ?? 'lan');
+            $data['device_name'] = !empty($data['device_name']) ? $data['device_name'] : "LAN Printer ({$ip})";
+            $data['driver'] = 'lan';
+            $data['connection_type'] = 'lan';
+        } elseif ($connType === 'bluetooth') {
+            $bt = trim($data['bt_address'] ?? '');
+            $data['device_id'] = $bt ?: ($data['device_id'] ?? 'bluetooth');
+            $data['device_name'] = !empty($data['device_name']) ? $data['device_name'] : "Bluetooth ({$data['device_id']})";
+            $data['driver'] = 'bluetooth';
+            $data['connection_type'] = 'bluetooth';
+        } elseif ($connType === 'usb') {
+            $usb = trim($data['device_id'] ?? 'usb') ?: 'usb';
+            $data['device_id'] = $usb;
+            $data['device_name'] = !empty($data['device_name']) ? $data['device_name'] : 'USB Printer';
+            $data['driver'] = 'usb';
+            $data['connection_type'] = 'usb';
         }
+
+        unset($data['mobile_device_id'], $data['bt_address']);
 
         if (!empty($data['print_all_categories'])) {
             $data['category_ids'] = [];
@@ -358,56 +455,36 @@ class Printer extends Page implements HasActions, HasForms, HasTable
     }
 
     /**
-     * Simulate / Register mobile connected printers for testing or manual bridge pairing.
+     * Refresh status of connected mobile printers.
      */
-    public function simulateMobilePrinters(): void
+    public function refreshMobilePrinters(): void
     {
-        $samplePrinters = [
-            [
-                'device_id' => 'BT-KASIR-001',
-                'device_name' => 'RPP02N Thermal Kasir',
-                'connection_type' => 'bluetooth',
-                'address' => 'DC:0D:30:A1:10:01',
-                'paper_width' => '58mm',
-                'is_connected' => true,
-            ],
-            [
-                'device_id' => 'LAN-BAR-002',
-                'device_name' => 'Epson TM-T82 Bar',
-                'connection_type' => 'lan',
-                'address' => '192.168.1.201:9100',
-                'paper_width' => '58mm',
-                'is_connected' => true,
-            ],
-            [
-                'device_id' => 'LAN-DAPUR-003',
-                'device_name' => 'Epson TM-U220 Dapur',
-                'connection_type' => 'lan',
-                'address' => '192.168.1.202:9100',
-                'paper_width' => '80mm',
-                'is_connected' => true,
-            ],
-        ];
-
-        PrintBridgeService::syncMobilePrinters($samplePrinters, 1, 'Android POS Tablet', false);
-
-        Notification::make()
-            ->title(__('Printer Mobile Terdeteksi'))
-            ->body(__('3 perangkat printer dari Aplikasi Mobile (Kasir BT, Bar LAN, Dapur LAN) aktif dan siap dipilih.'))
-            ->success()
-            ->send();
+        $count = MobilePrinter::where('is_connected', true)->count();
+        if ($count > 0) {
+            Notification::make()
+                ->title(__('Sinkronisasi Printer Mobile'))
+                ->body(__(':count printer aktif terdeteksi dari Aplikasi Mobile.', ['count' => $count]))
+                ->success()
+                ->send();
+        } else {
+            Notification::make()
+                ->title(__('Tidak Ada Printer Mobile Baru'))
+                ->body(__('Belum ada printer yang terhubung dari Aplikasi Mobile Lakasir. Pastikan printer telah terhubung pada aplikasi mobile Lakasir.'))
+                ->info()
+                ->send();
+        }
     }
 
     /**
-     * Clear all detected mobile printers (useful to remove simulation/dummy data).
+     * Clear disconnected mobile printers.
      */
-    public function clearMobilePrinters(): void
+    public function clearDisconnectedPrinters(): void
     {
-        MobilePrinter::query()->delete();
+        $deleted = MobilePrinter::where('is_connected', false)->delete();
 
         Notification::make()
-            ->title(__('Daftar Printer Mobile Dikosongkan'))
-            ->body(__('Data printer mobile simulasi berhasil dihapus. Hubungkan printer asli dari aplikasi mobile untuk mendeteksi kembali.'))
+            ->title(__('Daftar Printer Mobile Diperbarui'))
+            ->body(__(':count printer terputus berhasil dibersihkan.', ['count' => $deleted]))
             ->success()
             ->send();
     }
@@ -425,6 +502,7 @@ class Printer extends Page implements HasActions, HasForms, HasTable
             'print_all_categories' => $p->print_all_categories,
             'category_ids' => array_map('intval', $p->category_ids ?? []),
             'show_price' => $p->show_price,
+            'show_header' => (bool) ($p->show_header ?? true),
             'header' => $p->header,
             'footer' => $p->footer,
             'copies' => $p->copies,

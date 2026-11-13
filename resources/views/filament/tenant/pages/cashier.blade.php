@@ -1173,41 +1173,53 @@
             ? '------------------------------------------------'
             : '-------------------------------';
 
-          const targetDeviceId = (printerData.driver === 'virtual' || (!window.LakasirBridge && printerData.driver !== 'usb'))
-            ? 'virtual_simulator'
-            : (printerData.device_id || printerData.printerId || 'kasir');
+          const targetDeviceId = printerData.device_id || printerData.printerId || 'kasir';
+          const numCopies = Math.max(1, parseInt(printerData.copies || 1));
 
-          const printer = new Printer(targetDeviceId, paperWidth);
-          let printerAction = printer.font('a');
+          for (let copyIndex = 1; copyIndex <= numCopies; copyIndex++) {
+            const isMerchantCopy = (copyIndex > 1);
+            const shouldShowHeader = (printerData.show_header !== false && printerData.show_header !== 0) && !isMerchantCopy;
 
-          if (printerData.show_price) {
-            // FORMAT STRUK DENGAN HARGA (KASIR)
-            if (about != undefined && about != null) {
-              printerAction.size(1)
-                .align('center')
-                .text(about.shop_name || '')
-                .size(0);
-              if (about.shop_location) {
-                printerAction.text(about.shop_location);
+            const printer = new Printer(targetDeviceId, paperWidth);
+            let printerAction = printer.font('a');
+
+            if (printerData.show_price) {
+              // FORMAT STRUK DENGAN HARGA (KASIR)
+              if (isMerchantCopy) {
+                printerAction.align('center')
+                  .text('*** SALINAN TOKO / UNTUK DISIMPAN ***')
+                  .align('left')
+                  .text(dividerLine);
               }
-              if (about.phone) {
-                printerAction.text('Telp: ' + about.phone);
+
+              if (shouldShowHeader && about != undefined && about != null) {
+                printerAction.size(1)
+                  .align('center')
+                  .text(about.shop_name || '')
+                  .size(0);
+                if (about.shop_location) {
+                  printerAction.text(about.shop_location);
+                }
+                if (about.phone) {
+                  printerAction.text('Telp: ' + about.phone);
+                }
+                if (about.email) {
+                  printerAction.text('Email: ' + about.email);
+                }
+                if (about.website) {
+                  printerAction.text(about.website);
+                }
+                if (about.npwp) {
+                  printerAction.text('NPWP: ' + about.npwp);
+                }
+                if (printerData.header) {
+                  printerAction.text(printerData.header);
+                }
+                printerAction.align('left').text(dividerLine);
+              } else if (printerData.header && !isMerchantCopy) {
+                printerAction.align('center').text(printerData.header).align('left').text(dividerLine);
               }
-              if (about.email) {
-                printerAction.text('Email: ' + about.email);
-              }
-              if (about.website) {
-                printerAction.text(about.website);
-              }
-              if (about.npwp) {
-                printerAction.text('NPWP: ' + about.npwp);
-              }
-              if (printerData.header) {
-                printerAction.text(printerData.header);
-              }
-              printerAction.align('left').text(dividerLine);
-            }
-            printerAction.table(['Station', printerData.name || 'Kasir']);
+              printerAction.table(['Station', isMerchantCopy ? (printerData.name + ' (Salinan)') : (printerData.name || 'Kasir')]);
             printerAction.table(['@lang('Cashier')', currentSelling.user.name]);
             if (currentSelling.order_type_label && currentSelling.order_type_label !== '-') {
               printerAction.table(['@lang('Kategori')', currentSelling.order_type_label]);
@@ -1316,6 +1328,7 @@
             anyPrinted = true;
           }
         }
+      }
 
         if (anyPrinted && isAutomatic) {
           new FilamentNotification()

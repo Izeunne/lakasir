@@ -20,6 +20,7 @@ class Printer extends Model
         'print_all_categories' => 'boolean',
         'category_ids' => 'array',
         'show_price' => 'boolean',
+        'show_header' => 'boolean',
         'copies' => 'integer',
         'is_active' => 'boolean',
     ];

@@ -5,12 +5,12 @@
   <title>Struk #{{ $selling->code }}</title>
   <style>
     @page {
-      margin: 4mm 4mm 6mm 4mm;
+      margin: 2.5mm 2.5mm 3mm 2.5mm;
     }
     body {
       font-family: 'DejaVu Sans', 'Helvetica', Arial, sans-serif;
-      font-size: {{ $paperWidth === '80mm' ? '9pt' : '8pt' }};
-      line-height: 1.35;
+      font-size: {{ $paperWidth === '80mm' ? '7.5pt' : '6.8pt' }};
+      line-height: 1.22;
       color: #111;
       margin: 0;
       padding: 0;
@@ -20,55 +20,120 @@
     .text-right { text-align: right; }
     .font-bold { font-weight: bold; }
     .uppercase { text-transform: uppercase; }
+    
     .divider {
-      border-top: 1px dashed #666;
-      margin: 4px 0;
+      border-top: 0.75px dashed #888;
+      margin: 3px 0;
     }
     .divider-double {
-      border-top: 1px solid #333;
-      margin: 5px 0;
+      border-top: 1.2px solid #222;
+      margin: 3.5px 0;
     }
     .table-full {
       width: 100%;
       border-collapse: collapse;
     }
     .table-full td {
-      padding: 1.5px 0;
+      padding: 0.75px 0;
       vertical-align: top;
-      font-size: {{ $paperWidth === '80mm' ? '9pt' : '8pt' }};
+      font-size: {{ $paperWidth === '80mm' ? '7.5pt' : '6.8pt' }};
     }
-    .item-name {
-      font-weight: 600;
-      word-break: break-word;
-    }
-    .sub-item {
-      font-size: {{ $paperWidth === '80mm' ? '8pt' : '7pt' }};
-      color: #444;
-      padding-left: 6px;
-    }
+    
+    /* Hierarchy: Header */
     .store-name {
-      font-size: {{ $paperWidth === '80mm' ? '12pt' : '11pt' }};
+      font-size: {{ $paperWidth === '80mm' ? '8.8pt' : '7.8pt' }};
       font-weight: bold;
-      letter-spacing: 0.5px;
-      margin-bottom: 2px;
+      letter-spacing: 0.3px;
+      line-height: 1.15;
+      margin-bottom: 1px;
     }
-    .store-address {
-      font-size: {{ $paperWidth === '80mm' ? '8.5pt' : '7.5pt' }};
-      color: #333;
-      margin-bottom: 4px;
+    .store-meta {
+      font-size: {{ $paperWidth === '80mm' ? '6.5pt' : '5.8pt' }};
+      color: #555;
+      line-height: 1.15;
+    }
+    
+    /* Hierarchy: Transaction Meta */
+    .meta-table td {
+      font-size: {{ $paperWidth === '80mm' ? '7pt' : '6.2pt' }};
+      padding: 0.5px 0;
     }
     .badge {
       display: inline-block;
-      font-size: 7pt;
-      padding: 1px 4px;
-      border: 0.5px solid #666;
-      border-radius: 3px;
-      margin-top: 2px;
+      font-size: {{ $paperWidth === '80mm' ? '6.5pt' : '5.8pt' }};
+      font-weight: bold;
+      padding: 0 3px;
+      border: 0.5px solid #444;
+      border-radius: 2px;
     }
-    .footer-text {
-      margin-top: 6px;
-      font-size: 7pt;
+    .table-number-box {
+      font-weight: bold;
+      font-size: {{ $paperWidth === '80mm' ? '7.8pt' : '7pt' }};
+      color: #000;
+    }
+    
+    /* Hierarchy: Items */
+    .item-name {
+      font-size: {{ $paperWidth === '80mm' ? '7.8pt' : '7.1pt' }};
+      font-weight: bold;
+      color: #000;
+      word-break: break-word;
+      padding-top: 1.5px;
+    }
+    .item-calc {
+      font-size: {{ $paperWidth === '80mm' ? '6.8pt' : '6pt' }};
       color: #555;
+    }
+    .item-total {
+      font-size: {{ $paperWidth === '80mm' ? '7.8pt' : '7.1pt' }};
+      font-weight: bold;
+      color: #000;
+    }
+    .sub-item {
+      font-size: {{ $paperWidth === '80mm' ? '6.5pt' : '5.8pt' }};
+      color: #666;
+      padding-left: 4px;
+    }
+    .item-note {
+      font-size: {{ $paperWidth === '80mm' ? '6.2pt' : '5.6pt' }};
+      color: #555;
+      font-style: italic;
+      padding-left: 4px;
+    }
+    
+    /* Hierarchy: Totals & Grand Total */
+    .summary-table td {
+      padding: 0.5px 0;
+      font-size: {{ $paperWidth === '80mm' ? '7.2pt' : '6.5pt' }};
+      color: #444;
+    }
+    .grand-total-box {
+      border-top: 1.2px solid #111;
+      border-bottom: 1.2px solid #111;
+      padding: 2px 0;
+      margin: 2.5px 0;
+    }
+    .grand-total-label {
+      font-size: {{ $paperWidth === '80mm' ? '10.5pt' : '9.5pt' }};
+      font-weight: 900;
+      color: #000;
+    }
+    .grand-total-value {
+      font-size: {{ $paperWidth === '80mm' ? '10.5pt' : '9.5pt' }};
+      font-weight: 900;
+      color: #000;
+    }
+    .payment-row td {
+      font-size: {{ $paperWidth === '80mm' ? '7.5pt' : '6.8pt' }};
+      padding: 0.5px 0;
+    }
+    
+    /* Hierarchy: Footer */
+    .footer-text {
+      margin-top: 4px;
+      font-size: {{ $paperWidth === '80mm' ? '6.2pt' : '5.6pt' }};
+      color: #666;
+      line-height: 1.2;
     }
   </style>
 </head>
@@ -86,40 +151,50 @@
                 }
             }
         } catch (\Throwable $e) {
-            // Silently fallback if disk not local
+            // Silently fallback
         }
     }
+
+    $contactParts = array_filter([
+        !empty($about?->phone) ? 'Telp: ' . $about->phone : null,
+        !empty($about?->npwp) ? 'NPWP: ' . $about->npwp : null,
+    ]);
+
+    $webParts = array_filter([
+        !empty($about?->website) ? $about->website : null,
+        !empty($about?->email) ? $about->email : null,
+    ]);
   @endphp
+
+  <!-- Header Section with Logo Centered on Top -->
   <div class="text-center">
     @if($logoBase64)
-      <div style="margin-bottom: 4px;">
-        <img src="{{ $logoBase64 }}" style="max-height: 44px; max-width: 140px; object-fit: contain;">
+      <div style="margin-bottom: 3px;">
+        <img src="{{ $logoBase64 }}" style="max-height: 40px; max-width: 120px; object-fit: contain;">
       </div>
     @endif
     <div class="store-name uppercase">{{ $about->shop_name ?? config('app.name', 'Lakasir POS') }}</div>
+    
     @if(!empty($about->shop_location))
-      <div class="store-address">{{ $about->shop_location }}</div>
+      <div class="store-meta">{{ $about->shop_location }}</div>
     @endif
-    @if(!empty($about->phone))
-      <div class="store-address">Telp: {{ $about->phone }}</div>
+    
+    @if(!empty($contactParts))
+      <div class="store-meta">{{ implode(' • ', $contactParts) }}</div>
     @endif
-    @if(!empty($about->email))
-      <div class="store-address">Email: {{ $about->email }}</div>
-    @endif
-    @if(!empty($about->website))
-      <div class="store-address">Web: {{ $about->website }}</div>
-    @endif
-    @if(!empty($about->npwp))
-      <div class="store-address">NPWP: {{ $about->npwp }}</div>
+
+    @if(!empty($webParts))
+      <div class="store-meta">{{ implode(' • ', $webParts) }}</div>
     @endif
   </div>
 
   <div class="divider"></div>
 
-  <table class="table-full">
+  <!-- Meta Info Transaksi (Compact) -->
+  <table class="table-full meta-table">
     <tr>
-      <td class="text-left font-bold">No: #{{ $selling->code }}</td>
-      <td class="text-right">{{ \Carbon\Carbon::parse($selling->date)->setTimezone($timezone)->format('d/m/Y H:i') }}</td>
+      <td class="text-left font-bold">#{{ $selling->code }}</td>
+      <td class="text-right">{{ \Carbon\Carbon::parse($selling->date)->setTimezone($timezone)->format('d/m/y H:i') }}</td>
     </tr>
     <tr>
       <td class="text-left">Kasir: {{ $selling->user->cashier_name ?? $selling->user->name ?? 'Kasir' }}</td>
@@ -129,33 +204,36 @@
         @endif
       </td>
     </tr>
-    @if($selling->table)
+    @if($selling->table || $selling->member)
       <tr>
-        <td class="text-left" colspan="2">Meja: <strong>{{ $selling->table->number }}</strong></td>
+        <td class="text-left" colspan="2">
+          @if($selling->table)
+            <span class="table-number-box">MEJA: {{ $selling->table->number }}</span>
+          @endif
+          @if($selling->table && $selling->member)
+            <span style="color: #888;"> • </span>
+          @endif
+          @if($selling->member)
+            <span style="color: #444;">{{ $selling->member->name }}</span>
+          @endif
+        </td>
       </tr>
     @endif
-    @if($selling->member)
-      <tr>
-        <td class="text-left" colspan="2">Pelanggan: {{ $selling->member->name }}</td>
-      </tr>
-    @endif
-    <tr>
-      <td class="text-left" colspan="2">Pembayaran: <strong>{{ $selling->paymentMethod->name ?? 'Cash' }}</strong></td>
-    </tr>
   </table>
 
   <div class="divider"></div>
 
+  <!-- Item Details -->
   <table class="table-full">
     @foreach($selling->sellingDetails as $detail)
       <tr>
         <td colspan="2" class="item-name">{{ $detail->product->name ?? 'Item' }}</td>
       </tr>
       <tr>
-        <td class="text-left" style="font-size: 7.5pt; color: #333;">
+        <td class="text-left item-calc">
           {{ (float)$detail->qty }} x {{ price_format($detail->price / max(1, (float)$detail->qty)) }}
         </td>
-        <td class="text-right font-bold">
+        <td class="text-right item-total">
           {{ price_format($detail->price) }}
         </td>
       </tr>
@@ -175,7 +253,7 @@
 
       @if(!empty($detail->note))
         <tr>
-          <td colspan="2" class="sub-item" style="font-style: italic;">
+          <td colspan="2" class="item-note">
             * {{ $detail->note }}
           </td>
         </tr>
@@ -183,8 +261,8 @@
 
       @if(!empty($detail->discount_price) && $detail->discount_price > 0)
         <tr>
-          <td class="sub-item" style="color: #c00;">Diskon Item:</td>
-          <td class="text-right" style="font-size: 7.5pt; color: #c00;">-{{ price_format($detail->discount_price) }}</td>
+          <td class="sub-item" style="color: #b00;">Diskon:</td>
+          <td class="text-right item-calc" style="color: #b00;">-{{ price_format($detail->discount_price) }}</td>
         </tr>
       @endif
     @endforeach
@@ -192,15 +270,16 @@
 
   <div class="divider"></div>
 
-  <table class="table-full">
+  <!-- Summary Subtotal & Diskon -->
+  <table class="table-full summary-table">
     <tr>
       <td class="text-left">Subtotal</td>
       <td class="text-right">{{ price_format($selling->total_price) }}</td>
     </tr>
     @if($selling->total_discount_per_item > 0 || $selling->discount_price > 0)
       <tr>
-        <td class="text-left" style="color: #c00;">Total Diskon</td>
-        <td class="text-right" style="color: #c00;">-{{ price_format($selling->total_discount_per_item + $selling->discount_price) }}</td>
+        <td class="text-left" style="color: #b00;">Diskon</td>
+        <td class="text-right" style="color: #b00;">-{{ price_format($selling->total_discount_per_item + $selling->discount_price) }}</td>
       </tr>
     @endif
     @if($selling->tax > 0)
@@ -211,36 +290,40 @@
     @endif
   </table>
 
-  <div class="divider-double"></div>
+  <!-- TOTAL HIGHLIGHT (SANGAT MENONJOL) -->
+  <div class="grand-total-box">
+    <table class="table-full">
+      <tr>
+        <td class="text-left grand-total-label">TOTAL</td>
+        <td class="text-right grand-total-value">{{ price_format($selling->grand_total_price) }}</td>
+      </tr>
+    </table>
+  </div>
 
-  <table class="table-full font-bold">
+  <!-- Pembayaran & Kembalian -->
+  <table class="table-full payment-row">
     <tr>
-      <td class="text-left" style="font-size: 9pt;">TOTAL</td>
-      <td class="text-right" style="font-size: 9.5pt;">{{ price_format($selling->grand_total_price) }}</td>
+      <td class="text-left" style="color: #444;">Bayar ({{ $selling->paymentMethod->name ?? 'Cash' }})</td>
+      <td class="text-right font-bold">{{ price_format($selling->payed_money) }}</td>
     </tr>
     <tr>
-      <td class="text-left">Bayar ({{ $selling->paymentMethod->name ?? 'Cash' }})</td>
-      <td class="text-right">{{ price_format($selling->payed_money) }}</td>
-    </tr>
-    <tr>
-      <td class="text-left">Kembalian</td>
-      <td class="text-right">{{ price_format($selling->money_changes) }}</td>
+      <td class="text-left font-bold">Kembalian</td>
+      <td class="text-right font-bold">{{ price_format($selling->money_changes) }}</td>
     </tr>
   </table>
 
   @if(!empty($selling->note))
     <div class="divider"></div>
-    <div style="font-size: 7pt; color: #333; margin-top: 2px;">
-      <strong>Catatan:</strong> {{ strip_tags($selling->note) }}
+    <div style="font-size: 5.8pt; color: #444;">
+      <strong>Note:</strong> {{ strip_tags($selling->note) }}
     </div>
   @endif
 
   <div class="divider"></div>
 
+  <!-- Footer (Small & Compact) -->
   <div class="text-center footer-text">
-    <div>Terima kasih atas kunjungan Anda</div>
-    <div style="font-size: 6.5pt; color: #888; margin-top: 3px;">Struk Digital (PDF) • Lakasir POS</div>
+    <div style="font-weight: 600;">Terima kasih atas kunjungan Anda</div>
   </div>
 </body>
 </html>
-

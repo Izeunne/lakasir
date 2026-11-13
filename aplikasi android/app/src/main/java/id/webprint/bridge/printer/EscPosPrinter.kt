@@ -79,7 +79,7 @@ class EscPosPrinter(
         }
     }
 
-    fun openDrawer(settings: BridgeSettings) {
+    fun openDrawer(settings: BridgeSettings) = synchronized(printerLock) {
         val mode = PrinterMode.fromValue(settings.printerMode)
         val kickBytes = byteArrayOf(0x1B, 0x70, 0x00, 0x19, 0xFA.toByte())
         when (mode) {
@@ -114,7 +114,7 @@ class EscPosPrinter(
         return PrinterMode.fromValue(job.printerMode ?: settings.printerMode)
     }
 
-    fun printTcpDirect(host: String, port: Int, timeoutMs: Int, bytes: ByteArray) {
+    fun printTcpDirect(host: String, port: Int, timeoutMs: Int, bytes: ByteArray) = synchronized(printerLock) {
         require(host.isNotBlank()) { "Printer host belum dikonfigurasi" }
         Socket().use { socket ->
             socket.connect(InetSocketAddress(host, port), timeoutMs)
@@ -124,7 +124,7 @@ class EscPosPrinter(
     }
 
     @SuppressLint("MissingPermission")
-    fun printBluetoothDirect(macAddress: String, transportMode: String, bytes: ByteArray) {
+    fun printBluetoothDirect(macAddress: String, transportMode: String, bytes: ByteArray) = synchronized(printerLock) {
         require(macAddress.isNotBlank()) { "Printer Bluetooth belum dipilih" }
         when (BluetoothTransportMode.fromValue(transportMode)) {
             BluetoothTransportMode.CLASSIC -> printBluetoothClassic(macAddress, bytes)
@@ -580,6 +580,7 @@ class EscPosPrinter(
     }
 
     companion object {
+        private val printerLock = Any()
         val SPP_UUID: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
         private val INITIALIZE = byteArrayOf(0x1B, 0x40)
         private val LINE_BREAK = byteArrayOf(0x0A)

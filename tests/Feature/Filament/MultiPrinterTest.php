@@ -56,7 +56,7 @@ test('mobile app can sync connected printers and only connected printers appear 
     $options = PrinterPage::getConnectedMobilePrinterOptions();
     expect($options)->toHaveKey('BT-001')
         ->toHaveKey('LAN-002')
-        ->toHaveKey('virtual_simulator');
+        ->not->toHaveKey('virtual_simulator');
 
     // Now sync again with only 1 connected printer; the other should automatically mark disconnected
     postJson('/api/print-queue/printers/sync?token=' . $token, [
@@ -361,5 +361,93 @@ test('cashier checkout automatically generates multi-printer print queue jobs', 
         ->and($dapurJob->payload['show_price'])->toBeFalse()
         ->and($dapurJob->ticket['items'])->toHaveCount(1)
         ->and($dapurJob->ticket['items'][0]['name'])->toBe('Bebek Goreng Sambal Korek');
+});
+
+test('cashier printer with copies=2 prints customer copy and merchant copy, and show_header suppresses company header', function () {
+    $user = User::first();
+    actingAs($user);
+
+    \App\Models\Tenants\About::updateOrCreate(['id' => 1], [
+        'shop_name' => 'Resto Berkah Utama',
+        'shop_location' => 'Jl. Merdeka No. 10',
+        'phone' => '081299998888',
+        'email' => 'contact@resto.com',
+        'website' => 'https://resto.com',
+        'npwp' => '01.234.567.8-901.000',
+    ]);
+
+    Printer::query()->delete();
+    PrintQueue::query()->delete();
+
+    // 1 Printer dengan copies = 2 (1 customer copy, 1 merchant copy)
+    $printerKasir = Printer::create([
+        'name' => 'Printer Kasir 2 Rangkap',
+        'driver' => 'bluetooth',
+        'device_id' => 'BT-DUAL-COPY',
+        'paper_width' => '58mm',
+        'print_all_categories' => true,
+        'category_ids' => [],
+        'show_price' => true,
+        'show_header' => true,
+        'copies' => 2,
+        'is_active' => true,
+    ]);
+
+    $category = Category::create(['name' => 'Makanan']);
+    $product = Product::create([
+        'name' => 'Paket Ayam Geprek',
+        'category_id' => $category->id,
+        'selling_price' => 25000,
+        'initial_price' => 15000,
+        'type' => 'product',
+        'is_non_stock' => true,
+        'show' => true,
+    ]);
+
+    $paymentMethod = PaymentMethod::first() ?? PaymentMethod::create(['name' => 'Cash', 'is_cash' => true]);
+
+    $selling = Selling::create([
+        'user_id' => $user->id,
+        'code' => 'INV-COPY-TEST',
+        'date' => now()->toDateTimeString(),
+        'payment_method_id' => $paymentMethod->id,
+        'total_price' => 25000,
+        'grand_total_price' => 25000,
+        'payed_money' => 25000,
+        'money_changes' => 0,
+    ]);
+
+    SellingDetail::create([
+        'selling_id' => $selling->id,
+        'product_id' => $product->id,
+        'qty' => 1,
+        'price' => 25000,
+        'cost' => 15000,
+    ]);
+
+    $jobs = PrintBridgeService::queueSellingPrints($selling);
+
+    // Harus menghasilkan 2 jobs karena copies = 2
+    expect($jobs)->toHaveCount(2);
+
+    $custCopy = $jobs[0];
+    $storeCopy = $jobs[1];
+
+    // Lembar 1 (Customer Copy): ada identitas perusahaan lengkap
+    expect($custCopy->payload['copy'])->toBe(1)
+        ->and($custCopy->layout['company'])->not->toBeNull()
+        ->and($custCopy->layout['company']['name'])->toBe('Resto Berkah Utama')
+        ->and($custCopy->layout['company']['phone'])->toBe('081299998888');
+
+    // Lembar 2 (Salinan Toko): ditandai untuk disimpan dan tidak menduplikasi header logo/alamat
+    expect($storeCopy->payload['copy'])->toBe(2)
+        ->and($storeCopy->layout['company'])->toBeNull()
+        ->and($storeCopy->layout['meta_rows'][0]['value'])->toBe('*** SALINAN TOKO / UNTUK DISIMPAN ***');
+
+    // Uji jika show_header = false (misal printer backup kasir atau stasiun)
+    $printerKasir->update(['show_header' => false, 'copies' => 1]);
+    $noHeaderData = PrintBridgeService::buildFilteredReceiptData($selling, $selling->sellingDetails, $printerKasir);
+
+    expect($noHeaderData['layout']['company'])->toBeNull();
 });
 

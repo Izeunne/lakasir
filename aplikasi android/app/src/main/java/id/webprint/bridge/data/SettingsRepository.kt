@@ -36,6 +36,7 @@ class SettingsRepository(context: Context) {
             autoStart = preferences.getBoolean(KEY_AUTO_START, false),
             posUrl = preferences.getString(KEY_POS_URL, "").orEmpty(),
             backgroundServerEnabled = preferences.getBoolean(KEY_BACKGROUND_SERVER_ENABLED, false),
+            keepScreenOn = preferences.getBoolean(KEY_KEEP_SCREEN_ON, true),
             printers = loadPrinters(preferences),
         )
     }
@@ -94,6 +95,7 @@ class SettingsRepository(context: Context) {
             .putBoolean(KEY_AUTO_START, settings.autoStart)
             .putString(KEY_POS_URL, settings.posUrl)
             .putBoolean(KEY_BACKGROUND_SERVER_ENABLED, settings.backgroundServerEnabled)
+            .putBoolean(KEY_KEEP_SCREEN_ON, settings.keepScreenOn)
             .putString(KEY_PRINTERS_JSON, PrinterDevice.listToJsonString(settings.printers))
             .apply()
     }
@@ -196,6 +198,7 @@ class SettingsRepository(context: Context) {
         private const val KEY_AUTO_START = "auto_start"
         private const val KEY_POS_URL = "pos_url"
         private const val KEY_BACKGROUND_SERVER_ENABLED = "background_server_enabled"
+        private const val KEY_KEEP_SCREEN_ON = "keep_screen_on"
         private const val KEY_PRINTERS_JSON = "printers_json"
     }
 }

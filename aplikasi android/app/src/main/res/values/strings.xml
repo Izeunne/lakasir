@@ -107,4 +107,5 @@
     <string name="notification_printing">Mencetak struk order #%1$s...</string>
     <string name="notification_success">Struk #%1$s selesai dicetak</string>
     <string name="notification_error">Kendala cetak: %1$s</string>
+    <string name="label_keep_screen_on">Layar Tetap Menyala (Kasir)</string>
 </resources>

@@ -52,6 +52,8 @@ Route::middleware([
             ->name('cashier-report.generate');
         Route::view('/member/sellings/{selling}/print', 'filament.tenant.pages.selling.print-receipt')
             ->name('selling.print');
+        Route::get('/member/sellings/{selling}/preview-receipts', [SellingReceiptPdfController::class, 'previewAllReceipts'])
+            ->name('selling.preview-receipts');
         Route::get('/member/sellings/{selling}/receipt-pdf', [SellingReceiptPdfController::class, 'generate'])
             ->name('selling.receipt.pdf');
         Route::get('/reset-password/{token}', ResetPassword::class)

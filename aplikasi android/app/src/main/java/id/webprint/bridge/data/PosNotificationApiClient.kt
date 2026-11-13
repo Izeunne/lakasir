@@ -10,11 +10,7 @@ import java.util.concurrent.TimeUnit
 
 class PosNotificationApiClient {
 
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .writeTimeout(15, TimeUnit.SECONDS)
-        .build()
+    private val client = HttpClientProvider.client
 
     fun fetchNotifications(settings: BridgeSettings): List<PosNotification> {
         val httpUrl = "${settings.baseUrl}/api/pos-notifications"

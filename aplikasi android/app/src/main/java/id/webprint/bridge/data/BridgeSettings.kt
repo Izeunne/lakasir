@@ -20,6 +20,7 @@ data class BridgeSettings(
     val autoStart: Boolean = false,
     val posUrl: String = "",
     val backgroundServerEnabled: Boolean = false,
+    val keepScreenOn: Boolean = true,
     val printers: List<PrinterDevice> = emptyList(),
 ) {
     fun resolvedPosUrl(): String {

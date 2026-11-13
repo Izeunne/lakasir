@@ -1207,6 +1207,15 @@
                             android:text="@string/label_background_server"
                             android:textColor="@color/mataverse_text_main"
                             android:textSize="13sp" />
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/keepScreenOnSwitch"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:text="@string/label_keep_screen_on"
+                            android:textColor="@color/mataverse_text_main"
+                            android:textSize="13sp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 

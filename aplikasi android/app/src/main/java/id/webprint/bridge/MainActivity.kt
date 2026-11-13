@@ -73,12 +73,11 @@ class MainActivity : AppCompatActivity() {
     private val refreshHandler = Handler(Looper.getMainLooper())
     private val refreshRunnable = object : Runnable {
         override fun run() {
-            renderStatus()
-            refreshTick++
-            if (refreshTick % 10 == 0) {
-                runPassiveHealthCheck()
+            // Only update dashboard/settings/logs when that section is actually visible to save CPU & battery
+            if (binding.mainTabLayout.selectedTabPosition != 0) {
+                renderStatus()
             }
-            refreshHandler.postDelayed(this, 1000L)
+            refreshHandler.postDelayed(this, 2000L)
         }
     }
 
@@ -105,10 +104,10 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Keep screen awake for cashier desk usage
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-
         settingsRepository = SettingsRepository(this)
+        val initialSettings = settingsRepository.load()
+        applyScreenAwake(initialSettings.keepScreenOn)
+
         runtimeStateRepository = RuntimeStateRepository(this)
         serviceController = ServiceController(this)
         bluetoothPrinterRepository = BluetoothPrinterRepository()
@@ -178,9 +177,18 @@ class MainActivity : AppCompatActivity() {
             override fun onTabSelected(tab: TabLayout.Tab?) {
                 when (tab?.position) {
                     0 -> showSection(pos = true, dashboard = false, settings = false, logs = false)
-                    1 -> showSection(pos = false, dashboard = true, settings = false, logs = false)
-                    2 -> showSection(pos = false, dashboard = false, settings = true, logs = false)
-                    3 -> showSection(pos = false, dashboard = false, settings = false, logs = true)
+                    1 -> {
+                        showSection(pos = false, dashboard = true, settings = false, logs = false)
+                        renderStatus()
+                    }
+                    2 -> {
+                        showSection(pos = false, dashboard = false, settings = true, logs = false)
+                        renderStatus()
+                    }
+                    3 -> {
+                        showSection(pos = false, dashboard = false, settings = false, logs = true)
+                        renderStatus()
+                    }
                 }
             }
 
@@ -294,17 +302,29 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        renderStatus()
+        binding.posWebView.onResume()
+        if (binding.mainTabLayout.selectedTabPosition != 0) {
+            renderStatus()
+        }
         refreshHandler.post(refreshRunnable)
     }
 
     override fun onPause() {
         refreshHandler.removeCallbacks(refreshRunnable)
+        binding.posWebView.onPause()
         super.onPause()
     }
 
     override fun onDestroy() {
+        refreshHandler.removeCallbacks(refreshRunnable)
         uiScope.cancel()
+        binding.posWebView.apply {
+            stopLoading()
+            loadUrl("about:blank")
+            clearHistory()
+            removeAllViews()
+            destroy()
+        }
         super.onDestroy()
     }
 
@@ -325,6 +345,7 @@ class MainActivity : AppCompatActivity() {
         binding.pollingSecondsInput.setText(settings.pollingSeconds.toString())
         binding.autoStartSwitch.isChecked = settings.autoStart
         binding.backgroundServerSwitch.isChecked = settings.backgroundServerEnabled
+        binding.keepScreenOnSwitch.isChecked = settings.keepScreenOn
 
         binding.queueTypeGroup.check(
             if (QueueType.fromValue(settings.queueType) == QueueType.KITCHEN) {
@@ -413,6 +434,7 @@ class MainActivity : AppCompatActivity() {
         binding.saveButton.setOnClickListener {
             val updated = collectSettingsFromForm() ?: return@setOnClickListener
             settingsRepository.save(updated)
+            applyScreenAwake(updated.keepScreenOn)
             if (updated.backgroundServerEnabled && !isServiceActive()) {
                 serviceController.start()
             } else if (!updated.backgroundServerEnabled && isServiceActive()) {
@@ -740,6 +762,7 @@ class MainActivity : AppCompatActivity() {
             pollingSeconds = binding.pollingSecondsInput.text.toString().trim().toLongOrNull() ?: 3L,
             autoStart = binding.autoStartSwitch.isChecked,
             backgroundServerEnabled = binding.backgroundServerSwitch.isChecked,
+            keepScreenOn = binding.keepScreenOnSwitch.isChecked,
             printers = currentPrinters,
         )
 
@@ -1144,6 +1167,14 @@ class MainActivity : AppCompatActivity() {
             }
             renderStatus()
             setBusy(false)
+        }
+    }
+
+    private fun applyScreenAwake(keepAwake: Boolean) {
+        if (keepAwake) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
     }
 

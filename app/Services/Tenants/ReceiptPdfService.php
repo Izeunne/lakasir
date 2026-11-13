@@ -39,20 +39,54 @@ class ReceiptPdfService
         // 80mm thermal is approx 226.77 pt wide (80 / 25.4 * 72)
         $widthPt = ($paperWidth === '80mm') ? 226.77 : 164.4;
 
-        $itemCount = $selling->sellingDetails->count();
-        $variationCount = 0;
+        // Dynamic height calculation to provide a seamless single-page continuous receipt look
+        $height = 70; // Base margin & store name
+        if (! empty($about?->photo)) {
+            $height += 50;
+        }
+        if (! empty($about?->shop_location)) {
+            $height += 16;
+        }
+        if (! empty($about?->phone) || ! empty($about?->npwp)) {
+            $height += 12;
+        }
+        if (! empty($about?->website) || ! empty($about?->email)) {
+            $height += 12;
+        }
+
+        // Meta info (Invoice, date, cashier, table, member, payment)
+        $height += 55;
+        if ($selling->table) {
+            $height += 12;
+        }
+        if ($selling->member) {
+            $height += 12;
+        }
+
+        // Items & sub-items
         foreach ($selling->sellingDetails as $detail) {
+            $height += 20; // Item name & price row
+            if (! empty($detail->note)) {
+                $height += 11;
+            }
             if (! empty($detail->selected_variations)) {
-                $variationCount += count($detail->selected_variations);
+                $height += count($detail->selected_variations) * 11;
+            }
+            if (! empty($detail->discount_price) && $detail->discount_price > 0) {
+                $height += 11;
             }
         }
 
-        // Base height estimate to provide a seamless continuous receipt look
-        $estimatedHeight = 220 + ($itemCount * 38) + ($variationCount * 14);
+        // Totals, payment, changes
+        $height += 70;
         if ($selling->note) {
-            $estimatedHeight += 35;
+            $height += 20;
         }
-        $heightPt = max(280, $estimatedHeight);
+
+        // Footer & safety buffer
+        $height += 45;
+
+        $heightPt = max(240, $height);
 
         /** @var DomPdfWrapper $pdf */
         $pdf = Pdf::loadView('reports.selling-receipt-pdf', compact(

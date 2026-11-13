@@ -111,8 +111,9 @@ class PrintBridgeService
             $targetPrinter = $printer->device_id;
 
             for ($i = 0; $i < $copies; $i++) {
+                $copyNum = $i + 1;
                 if ($printer->show_price) {
-                    $payloadData = self::buildFilteredReceiptData($selling, $filteredDetails, $printer);
+                    $payloadData = self::buildFilteredReceiptData($selling, $filteredDetails, $printer, $copyNum);
 
                     $queuedJobs[] = PrintQueue::create([
                         'outlet_id' => $outletId,
@@ -425,32 +426,41 @@ class PrintBridgeService
     /**
      * Build receipt data with prices for a specific printer and filtered selling details.
      */
-    public static function buildFilteredReceiptData(Selling $selling, Collection $details, Printer $printer): array
+    public static function buildFilteredReceiptData(Selling $selling, Collection $details, Printer $printer, int $copyNumber = 1): array
     {
         $about = About::first();
+        $showHeader = ($printer->show_header ?? true) && ($copyNumber === 1);
 
         $headerRows = [];
-        if (!empty($printer->header)) {
+        if ($copyNumber > 1) {
+            $headerRows[] = ['label' => '', 'value' => '*** SALINAN TOKO / UNTUK DISIMPAN ***'];
+        }
+
+        if ($showHeader) {
+            if (!empty($printer->header)) {
+                $headerRows[] = ['label' => '', 'value' => $printer->header];
+            } elseif ($about) {
+                if (!empty($about->shop_name)) {
+                    $headerRows[] = ['label' => '', 'value' => strtoupper($about->shop_name)];
+                }
+                if (!empty($about->shop_location)) {
+                    $headerRows[] = ['label' => '', 'value' => $about->shop_location];
+                }
+                if (!empty($about->phone)) {
+                    $headerRows[] = ['label' => '', 'value' => 'Telp: ' . $about->phone];
+                }
+                if (!empty($about->email)) {
+                    $headerRows[] = ['label' => '', 'value' => 'Email: ' . $about->email];
+                }
+                if (!empty($about->website)) {
+                    $headerRows[] = ['label' => '', 'value' => $about->website];
+                }
+                if (!empty($about->npwp)) {
+                    $headerRows[] = ['label' => '', 'value' => 'NPWP: ' . $about->npwp];
+                }
+            }
+        } elseif ($copyNumber === 1 && !empty($printer->header)) {
             $headerRows[] = ['label' => '', 'value' => $printer->header];
-        } elseif ($about) {
-            if (!empty($about->shop_name)) {
-                $headerRows[] = ['label' => '', 'value' => strtoupper($about->shop_name)];
-            }
-            if (!empty($about->shop_location)) {
-                $headerRows[] = ['label' => '', 'value' => $about->shop_location];
-            }
-            if (!empty($about->phone)) {
-                $headerRows[] = ['label' => '', 'value' => 'Telp: ' . $about->phone];
-            }
-            if (!empty($about->email)) {
-                $headerRows[] = ['label' => '', 'value' => 'Email: ' . $about->email];
-            }
-            if (!empty($about->website)) {
-                $headerRows[] = ['label' => '', 'value' => $about->website];
-            }
-            if (!empty($about->npwp)) {
-                $headerRows[] = ['label' => '', 'value' => 'NPWP: ' . $about->npwp];
-            }
         }
 
         $metaRows = array_merge($headerRows, [
@@ -562,7 +572,7 @@ class PrintBridgeService
         return [
             'layout' => [
                 'header' => $printer->header ?: ($about?->shop_name ?? ''),
-                'company' => [
+                'company' => $showHeader ? [
                     'name' => $about->shop_name ?? '',
                     'address' => $about->shop_location ?? '',
                     'phone' => $about->phone ?? '',
@@ -571,7 +581,7 @@ class PrintBridgeService
                     'npwp' => $about->npwp ?? '',
                     'logo' => $about->photo ?? '',
                     'logo_url' => $about?->logo_url ?? '',
-                ],
+                ] : null,
                 'station_name' => $printer->name,
                 'show_price' => true,
                 'meta_rows' => $metaRows,

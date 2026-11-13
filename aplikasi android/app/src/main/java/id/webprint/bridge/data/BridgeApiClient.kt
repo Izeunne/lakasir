@@ -16,11 +16,7 @@ class BridgeApiClient {
         val body: String,
     )
 
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
-        .build()
+    private val client = HttpClientProvider.client
 
     fun fetchJobs(settings: BridgeSettings): List<PrintJob> {
         val response = fetchQueueResponse(settings)

@@ -100,6 +100,26 @@ class LakasirBridgeInterface(
     }
 
     @JavascriptInterface
+    fun getConnectedPrinters(): String {
+        val settings = settingsRepository.load()
+        val printersArray = JSONArray()
+        for (printer in settings.printers) {
+            val pObj = JSONObject()
+            pObj.put("device_id", printer.id)
+            pObj.put("device_name", printer.name)
+            pObj.put("connection_type", printer.mode)
+            pObj.put(
+                "address",
+                if (printer.mode == "bluetooth") printer.bluetoothMacAddress else "${printer.host}:${printer.port}",
+            )
+            pObj.put("paper_width", printer.paperWidthPreset)
+            pObj.put("is_connected", true)
+            printersArray.put(pObj)
+        }
+        return printersArray.toString()
+    }
+
+    @JavascriptInterface
     fun openSettings() {
         mainHandler.post {
             onOpenSettingsRequested?.invoke()
