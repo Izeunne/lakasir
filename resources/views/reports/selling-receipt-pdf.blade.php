@@ -73,13 +73,44 @@
   </style>
 </head>
 <body>
+  @php
+    $logoBase64 = null;
+    if (!empty($about?->photo)) {
+        $uploadDisk = config('filesystems.upload_disk', 'public');
+        try {
+            if (\Illuminate\Support\Facades\Storage::disk($uploadDisk)->exists($about->photo)) {
+                $path = \Illuminate\Support\Facades\Storage::disk($uploadDisk)->path($about->photo);
+                if (file_exists($path)) {
+                    $mime = @mime_content_type($path) ?: 'image/png';
+                    $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($path));
+                }
+            }
+        } catch (\Throwable $e) {
+            // Silently fallback if disk not local
+        }
+    }
+  @endphp
   <div class="text-center">
+    @if($logoBase64)
+      <div style="margin-bottom: 4px;">
+        <img src="{{ $logoBase64 }}" style="max-height: 44px; max-width: 140px; object-fit: contain;">
+      </div>
+    @endif
     <div class="store-name uppercase">{{ $about->shop_name ?? config('app.name', 'Lakasir POS') }}</div>
     @if(!empty($about->shop_location))
       <div class="store-address">{{ $about->shop_location }}</div>
     @endif
     @if(!empty($about->phone))
       <div class="store-address">Telp: {{ $about->phone }}</div>
+    @endif
+    @if(!empty($about->email))
+      <div class="store-address">Email: {{ $about->email }}</div>
+    @endif
+    @if(!empty($about->website))
+      <div class="store-address">Web: {{ $about->website }}</div>
+    @endif
+    @if(!empty($about->npwp))
+      <div class="store-address">NPWP: {{ $about->npwp }}</div>
     @endif
   </div>
 

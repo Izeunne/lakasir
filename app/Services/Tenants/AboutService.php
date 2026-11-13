@@ -20,6 +20,10 @@ class AboutService
                 'shop_location',
                 'business_type',
                 'other_business_type',
+                'phone',
+                'email',
+                'website',
+                'npwp',
             ]));
 
         $owner = User::owner()->first();

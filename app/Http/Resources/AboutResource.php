@@ -32,13 +32,21 @@ class AboutResource extends JsonResource
 
         return [
             'shop_name' => $this?->shop_name ?? '',
+            'company_name' => $this?->shop_name ?? '',
             'shop_location' => $this?->shop_location ?? '',
+            'address' => $this?->shop_location ?? '',
+            'phone' => $this?->phone ?? '',
+            'email' => $this?->email ?? '',
+            'website' => $this?->website ?? '',
+            'npwp' => $this?->npwp ?? '',
             'owner_name' => $owner->name ?? '',
             'business_type' => $this?->business_type ?? '',
             'other_business_type' => $this?->other_business_type ?? '',
             'currency' => Setting::get('currency') ?? 'IDR',
             'photo_url' => $photoUrl,
+            'logo_url' => $photoUrl,
             'photo_path' => $this?->photo ?? '',
+            'logo_path' => $this?->photo ?? '',
         ];
     }
 }

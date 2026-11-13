@@ -48,8 +48,15 @@ class GeneralSetting extends Page implements HasActions, HasForms
     }
 
     public $about = [
+        'shop_name' => '',
         'shop_location' => '',
-        'photo' => '',
+        'business_type' => '',
+        'other_business_type' => '',
+        'photo' => null,
+        'phone' => '',
+        'email' => '',
+        'website' => '',
+        'npwp' => '',
     ];
 
     public $setting = [];
@@ -60,12 +67,24 @@ class GeneralSetting extends Page implements HasActions, HasForms
 
     public function mount(): void
     {
-        $about = About::first()?->toArray() ?? $this->about;
+        $aboutRecord = About::first();
+        $about = $aboutRecord ? $aboutRecord->toArray() : $this->about;
         if ($about) {
-            $about['preview_image'] = $about['photo'];
-            if ($about['photo']) {
-                $about['photo'] = [$about['photo']];
+            $about['preview_image'] = !empty($about['photo']) ? $about['photo'] : null;
+            if (!empty($about['photo'])) {
+                $about['photo'] = is_array($about['photo']) ? $about['photo'] : [$about['photo']];
+            } else {
+                $about['photo'] = null;
             }
+            $about['shop_name'] = $about['shop_name'] ?? '';
+            $about['shop_location'] = $about['shop_location'] ?? '';
+            $about['business_type'] = $about['business_type'] ?? '';
+            $about['other_business_type'] = $about['other_business_type'] ?? '';
+            $about['phone'] = $about['phone'] ?? '';
+            $about['email'] = $about['email'] ?? '';
+            $about['website'] = $about['website'] ?? '';
+            $about['npwp'] = $about['npwp'] ?? '';
+
             foreach (config('setting.key') as $key) {
                 $this->setting[$key] = Setting::get($key);
             }
@@ -83,16 +102,16 @@ class GeneralSetting extends Page implements HasActions, HasForms
         ];
 
         $user = auth()->user();
-        $profile = $user->profile;
+        $profile = $user?->profile;
 
         $this->profile = [
-            'name' => $user->name,
-            'email' => $user->email,
-            'phone' => $profile->phone,
-            'address' => $profile->address,
-            'locale' => $profile->locale,
-            'timezone' => $profile->timezone,
-            'photo' => $profile->photo ? [$profile->photo] : null,
+            'name' => $user?->name ?? '',
+            'email' => $user?->email ?? '',
+            'phone' => $profile?->phone ?? '',
+            'address' => $profile?->address ?? '',
+            'locale' => $profile?->locale ?? '',
+            'timezone' => $profile?->timezone ?? '',
+            'photo' => $profile?->photo ? [$profile->photo] : null,
         ];
     }
 
@@ -102,8 +121,8 @@ class GeneralSetting extends Page implements HasActions, HasForms
             Tabs::make('Tabs')
                 ->tabs([
                     Tabs\Tab::make('About')
+                        ->label(__('Identitas Perusahaan'))
                         ->statePath('about')
-                        ->translateLabel()
                         ->schema(About::form()),
                     Tabs\Tab::make('App')
                         ->statePath('setting')
@@ -210,16 +229,23 @@ class GeneralSetting extends Page implements HasActions, HasForms
     public function saveAbout(AboutService $aboutService): void
     {
         $this->validate([
-            'about.shop_name' => 'required',
+            'about.shop_name' => 'required|string|max:255',
             'about.business_type' => 'required',
-            'about.shop_location' => 'required',
+            'about.shop_location' => 'required|string',
+            'about.phone' => 'nullable|string|max:50',
+            'about.email' => 'nullable|email|max:255',
+            'about.website' => 'nullable|string|max:255',
+            'about.npwp' => 'nullable|string|max:50',
         ]);
 
-        if (isset($this->about['photo']) && $this->about['photo'] != null && array_values($this->about['photo'])[0] instanceof TemporaryUploadedFile) {
-            /** @var TemporaryUploadedFile $image */
-            $image = array_values($this->about['photo'])[0];
-            $this->about['uploaded_file_id'] = $this->storeAsUploadedFile($image);
-            $this->about['photo'] = null;
+        if (isset($this->about['photo']) && !empty($this->about['photo']) && is_array($this->about['photo'])) {
+            $firstFile = array_values($this->about['photo'])[0] ?? null;
+            if ($firstFile instanceof TemporaryUploadedFile) {
+                $this->about['uploaded_file_id'] = $this->storeAsUploadedFile($firstFile);
+                $this->about['photo'] = null;
+            }
+        } elseif (empty($this->about['photo'])) {
+            $this->about['uploaded_file_id'] = null;
         }
 
         $aboutService->createOrUpdate($this->about);

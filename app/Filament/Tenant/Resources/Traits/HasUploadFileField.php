@@ -25,11 +25,20 @@ trait HasUploadFileField
             }
         }
 
+        $url = $storage->url($file);
+
+        // If using local/public disk, use root-relative URL to prevent CORS errors when accessing via 127.0.0.1 vs localhost
+        if (config('filesystems.upload_disk') === 'public' || $component->getDiskName() === 'public') {
+            $url = '/storage/' . ltrim($file, '/');
+        } elseif (str_contains($url, '/storage/')) {
+            $url = '/storage/' . ltrim(substr($url, strpos($url, '/storage/') + 9), '/');
+        }
+
         return [
-            'name' => $file,
+            'name' => basename($file),
             'size' => $shouldFetchFileInformation ? $storage->size($file) : 0,
             'type' => $shouldFetchFileInformation ? $storage->mimeType($file) : null,
-            'url' => $storage->url($file),
+            'url' => $url,
         ];
     }
 }

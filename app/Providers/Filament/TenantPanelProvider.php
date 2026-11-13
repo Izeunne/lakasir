@@ -259,7 +259,7 @@ class TenantPanelProvider extends PanelProvider
         try {
             if (Schema::hasTable('abouts') && $about = About::first()) {
                 $panel->brandName($about->shop_name ?? 'Your Brand')
-                    ->brandLogo($about->photo ?? null);
+                    ->brandLogo($about->logo_url ?? $about->photo ?? null);
             }
         } catch (\Throwable) {
             // DB not available during build/package-discovery
@@ -272,7 +272,7 @@ class TenantPanelProvider extends PanelProvider
             $about = About::first();
 
             $panel->brandName($about->shop_name ?? 'Your Brand')
-                ->brandLogo($about->photo ?? null);
+                ->brandLogo($about->logo_url ?? $about->photo ?? null);
         } catch (\Throwable) {
             // DB not available during build/package-discovery
         }

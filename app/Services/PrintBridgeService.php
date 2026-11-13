@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Tenants\About;
 use App\Models\Tenants\MobilePrinter;
 use App\Models\Tenants\Printer;
 use App\Models\Tenants\PrintQueue;
@@ -232,8 +233,31 @@ class PrintBridgeService
         $now = now()->format('d/m/Y H:i:s');
         $categoriesLabel = implode(', ', $printer->category_names);
         $paperWidth = $printer->paper_width ?: '58mm';
+        $about = About::first();
 
         if ($printer->show_price) {
+            $testHeaderRows = [];
+            if (!empty($printer->header)) {
+                $testHeaderRows[] = ['label' => '', 'value' => $printer->header];
+            } elseif ($about && !empty($about->shop_name)) {
+                $testHeaderRows[] = ['label' => '', 'value' => strtoupper($about->shop_name)];
+                if (!empty($about->shop_location)) {
+                    $testHeaderRows[] = ['label' => '', 'value' => $about->shop_location];
+                }
+                if (!empty($about->phone)) {
+                    $testHeaderRows[] = ['label' => '', 'value' => 'Telp: ' . $about->phone];
+                }
+                if (!empty($about->email)) {
+                    $testHeaderRows[] = ['label' => '', 'value' => 'Email: ' . $about->email];
+                }
+                if (!empty($about->website)) {
+                    $testHeaderRows[] = ['label' => '', 'value' => $about->website];
+                }
+                if (!empty($about->npwp)) {
+                    $testHeaderRows[] = ['label' => '', 'value' => 'NPWP: ' . $about->npwp];
+                }
+            }
+
             return PrintQueue::create([
                 'outlet_id' => $outletId,
                 'queue_type' => 'cashier',
@@ -243,14 +267,24 @@ class PrintBridgeService
                 'type' => 'receipt',
                 'paper_width' => $paperWidth,
                 'layout' => [
-                    'header' => $printer->header ?: $printer->name,
-                    'meta_rows' => [
+                    'header' => $printer->header ?: ($about?->shop_name ?? $printer->name),
+                    'company' => [
+                        'name' => $about->shop_name ?? '',
+                        'address' => $about->shop_location ?? '',
+                        'phone' => $about->phone ?? '',
+                        'email' => $about->email ?? '',
+                        'website' => $about->website ?? '',
+                        'npwp' => $about->npwp ?? '',
+                        'logo' => $about->photo ?? '',
+                        'logo_url' => $about?->logo_url ?? '',
+                    ],
+                    'meta_rows' => array_merge($testHeaderRows, [
                         ['label' => 'Station', 'value' => $printer->name],
                         ['label' => 'Perangkat', 'value' => $printer->device_name ?: ($printer->device_id ?: 'Default')],
                         ['label' => 'Kategori', 'value' => $categoriesLabel],
                         ['label' => 'Tampil Harga', 'value' => 'YA (Struk Harga)'],
                         ['label' => 'Waktu', 'value' => $now],
-                    ],
+                    ]),
                     'items' => [
                         [
                             'name' => 'Contoh Menu Test',
@@ -393,11 +427,37 @@ class PrintBridgeService
      */
     public static function buildFilteredReceiptData(Selling $selling, Collection $details, Printer $printer): array
     {
-        $metaRows = [
+        $about = About::first();
+
+        $headerRows = [];
+        if (!empty($printer->header)) {
+            $headerRows[] = ['label' => '', 'value' => $printer->header];
+        } elseif ($about) {
+            if (!empty($about->shop_name)) {
+                $headerRows[] = ['label' => '', 'value' => strtoupper($about->shop_name)];
+            }
+            if (!empty($about->shop_location)) {
+                $headerRows[] = ['label' => '', 'value' => $about->shop_location];
+            }
+            if (!empty($about->phone)) {
+                $headerRows[] = ['label' => '', 'value' => 'Telp: ' . $about->phone];
+            }
+            if (!empty($about->email)) {
+                $headerRows[] = ['label' => '', 'value' => 'Email: ' . $about->email];
+            }
+            if (!empty($about->website)) {
+                $headerRows[] = ['label' => '', 'value' => $about->website];
+            }
+            if (!empty($about->npwp)) {
+                $headerRows[] = ['label' => '', 'value' => 'NPWP: ' . $about->npwp];
+            }
+        }
+
+        $metaRows = array_merge($headerRows, [
             ['label' => 'No', 'value' => (string) ($selling->code ?? ('#' . $selling->id))],
             ['label' => 'Waktu', 'value' => $selling->date ? date('d/m/Y H:i', strtotime($selling->date)) : now()->format('d/m/Y H:i')],
             ['label' => 'Kasir', 'value' => (string) ($selling->user->name ?? 'Kasir')],
-        ];
+        ]);
 
         if (!empty($selling->order_type_label) && $selling->order_type_label !== '-') {
             $metaRows[] = ['label' => 'Kategori Pesanan', 'value' => (string) $selling->order_type_label];
@@ -501,7 +561,17 @@ class PrintBridgeService
 
         return [
             'layout' => [
-                'header' => $printer->header,
+                'header' => $printer->header ?: ($about?->shop_name ?? ''),
+                'company' => [
+                    'name' => $about->shop_name ?? '',
+                    'address' => $about->shop_location ?? '',
+                    'phone' => $about->phone ?? '',
+                    'email' => $about->email ?? '',
+                    'website' => $about->website ?? '',
+                    'npwp' => $about->npwp ?? '',
+                    'logo' => $about->photo ?? '',
+                    'logo_url' => $about?->logo_url ?? '',
+                ],
                 'station_name' => $printer->name,
                 'show_price' => true,
                 'meta_rows' => $metaRows,

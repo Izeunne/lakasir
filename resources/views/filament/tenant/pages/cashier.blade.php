@@ -1185,9 +1185,23 @@
             if (about != undefined && about != null) {
               printerAction.size(1)
                 .align('center')
-                .text(about.shop_name)
-                .size(0)
-                .text(about.shop_location);
+                .text(about.shop_name || '')
+                .size(0);
+              if (about.shop_location) {
+                printerAction.text(about.shop_location);
+              }
+              if (about.phone) {
+                printerAction.text('Telp: ' + about.phone);
+              }
+              if (about.email) {
+                printerAction.text('Email: ' + about.email);
+              }
+              if (about.website) {
+                printerAction.text(about.website);
+              }
+              if (about.npwp) {
+                printerAction.text('NPWP: ' + about.npwp);
+              }
               if (printerData.header) {
                 printerAction.text(printerData.header);
               }
