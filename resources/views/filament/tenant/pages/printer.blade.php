@@ -4,92 +4,82 @@
     $activeStations = \App\Models\Tenants\Printer::active()->orderBy('id')->get();
   @endphp
 
-  {{-- Banner Status Integrasi Aplikasi Mobile & Printer Terdeteksi --}}
-  <div class="rounded-2xl border border-indigo-200 dark:border-indigo-900/60 bg-gradient-to-br from-indigo-50/90 via-white to-emerald-50/50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 p-5 shadow-sm space-y-4">
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-      <div class="space-y-1">
-        <div class="flex items-center gap-2 flex-wrap">
-          <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 px-3 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300">
-            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-            Print Bridge &amp; Multi-Printer
-          </span>
-          <span class="text-xs font-medium text-gray-500 dark:text-gray-400">
-            Mendukung Printer Fisik Bluetooth, LAN Network, USB, dan Aplikasi Mobile Lakasir
-          </span>
+  {{-- Status Card Integrasi Mobile Print Bridge --}}
+  <div class="rounded-xl border border-gray-200/90 bg-white p-4 shadow-2xs dark:border-gray-800 dark:bg-gray-900">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-lakasir-primary/10 text-lakasir-primary">
+          <x-heroicon-o-device-phone-mobile class="h-5 w-5" />
         </div>
-        <h2 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-          📱 Perangkat Printer Mobile Terdeteksi ({{ $connectedMobilePrinters->count() }} Terhubung)
-        </h2>
-        <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-          Daftar printer Bluetooth / LAN yang tersinkronisasi otomatis dari aplikasi mobile Lakasir.
-        </p>
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h3 class="text-sm font-bold text-gray-900 dark:text-white">
+              {{ __('Lakasir Mobile Print Bridge') }}
+            </h3>
+            @if ($connectedMobilePrinters->isNotEmpty())
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-success-50 dark:bg-success-950/40 px-2 py-0.5 text-[11px] font-bold text-success-700 dark:text-success-400">
+                <span class="h-1.5 w-1.5 rounded-full bg-success-500 animate-pulse"></span>
+                {{ $connectedMobilePrinters->count() }} {{ __('Printer Mobile Terhubung') }}
+              </span>
+            @else
+              <span class="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                ● {{ __('Standby / Menunggu Aplikasi Mobile') }}
+              </span>
+            @endif
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            {{ __('Mendukung printer thermal Bluetooth, LAN Network, dan USB langsung dari HP/Tablet Android atau browser.') }}
+          </p>
+        </div>
       </div>
 
-      <div class="flex flex-wrap items-center gap-2 shrink-0">
-        <button
-          type="button"
-          onclick="syncMobileBridgePrinters()"
+      <div class="flex items-center gap-2 shrink-0">
+        <x-filament::button
           wire:click="refreshMobilePrinters"
-          class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 text-xs sm:text-sm font-semibold shadow-sm transition cursor-pointer">
-          <x-heroicon-o-arrow-path class="w-4 h-4" />
-          <span>Sinkron Printer Mobile</span>
-        </button>
+          color="gray"
+          size="sm"
+          icon="heroicon-o-arrow-path"
+          onclick="syncMobileBridgePrinters()">
+          {{ __('Sinkron Mobile') }}
+        </x-filament::button>
 
-        <a
+        <x-filament::button
+          tag="a"
           href="/print-client.html"
           target="_blank"
-          class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 text-xs sm:text-sm font-semibold shadow-sm transition">
-          <x-heroicon-o-qr-code class="w-4 h-4" />
-          <span>QR &amp; Setup Mobile Bridge</span>
-        </a>
+          color="gray"
+          size="sm"
+          icon="heroicon-o-qr-code">
+          {{ __('Setup & QR') }}
+        </x-filament::button>
       </div>
     </div>
 
-    {{-- Grid Daftar Printer yang Sedang Konek di Mobile --}}
     @if ($connectedMobilePrinters->isNotEmpty())
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
+      <div class="mt-3.5 pt-3 border-t border-gray-100 dark:border-gray-800 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
         @foreach ($connectedMobilePrinters as $mp)
           @php
             $typeLabel = match (strtolower($mp->connection_type ?? '')) {
-              'bluetooth' => 'BT',
+              'bluetooth' => 'Bluetooth',
               'lan', 'network', 'ethernet' => 'LAN',
               'usb' => 'USB',
-              default => strtoupper(substr($mp->connection_type ?: 'PRN', 0, 3)),
+              default => strtoupper($mp->connection_type ?: 'Printer'),
             };
           @endphp
-          <div class="flex items-start justify-between gap-3 rounded-xl border border-gray-200/80 dark:border-gray-700 bg-white dark:bg-gray-800/90 p-3.5 shadow-xs">
-            <div class="flex items-start gap-3 min-w-0">
-              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
-                {{ $typeLabel }}
+          <div class="flex items-center justify-between rounded-lg border border-gray-200/80 bg-gray-50/70 px-3 py-2 text-xs dark:border-gray-700/60 dark:bg-gray-800/50">
+            <div class="min-w-0 pr-2">
+              <div class="flex items-center gap-1.5">
+                <span class="font-bold text-gray-900 dark:text-white truncate">{{ $mp->device_name }}</span>
+                <span class="rounded bg-gray-200/80 px-1 py-0.2 text-[10px] font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-300">{{ $typeLabel }}</span>
               </div>
-              <div class="min-w-0">
-                <p class="text-sm font-bold text-gray-900 dark:text-white truncate">
-                  {{ $mp->device_name }}
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 font-mono truncate">
-                  ID: {{ $mp->device_id }} {{ $mp->address && $mp->address !== $mp->device_id ? '• ' . $mp->address : '' }}
-                </p>
-                <div class="mt-1 flex items-center gap-2">
-                  <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                    ● Connected
-                  </span>
-                  <span class="text-[11px] text-gray-400">• Kertas {{ $mp->paper_width }}</span>
-                </div>
-              </div>
+              <p class="text-[11px] text-gray-500 dark:text-gray-400 font-mono truncate">{{ $mp->device_id }} • {{ $mp->paper_width }}</p>
             </div>
+            <span class="inline-flex h-2 w-2 rounded-full bg-success-500 shrink-0" title="Online"></span>
           </div>
         @endforeach
       </div>
-    @else
-      <div class="rounded-xl border border-dashed border-gray-300 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-800/40 p-4 text-xs sm:text-sm text-gray-700 dark:text-gray-300 flex items-center justify-between gap-4">
-        <div>
-          <p class="font-bold text-gray-900 dark:text-white">Belum Ada Perangkat Printer Mobile yang Terhubung</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">Hubungkan printer Bluetooth / LAN pada aplikasi Android Lakasir, atau Anda dapat langsung menambahkan Station Printer LAN / Bluetooth / USB melalui tombol <strong>Tambah Printer</strong> di bawah.</p>
-        </div>
-      </div>
     @endif
   </div>
-
 
   {{-- Tabel Manajemen Station Multi-Printer --}}
   <div>

@@ -6,7 +6,7 @@ return [
 
     'spa_mode' => env('SPA_MODE', false),
 
-    'dark_mode' => env('DARK_MODE', false),
+    'dark_mode' => env('DARK_MODE', true),
 
     /*
     |--------------------------------------------------------------------------

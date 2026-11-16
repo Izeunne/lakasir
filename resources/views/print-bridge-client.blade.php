@@ -22,6 +22,12 @@
         .qr-section img { border: 1px solid #e2e8f0; border-radius: 12px; padding: 8px; background: white; }
         .footer { font-size: 12px; color: #94a3b8; text-align: center; margin-top: 20px; }
     </style>
+    <script src="/js/qrcode.min.js"></script>
+    <script>
+        if (typeof QRCode === 'undefined') {
+            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>');
+        }
+    </script>
 </head>
 <body>
     <div class="card">
@@ -44,7 +50,7 @@
 
         <div class="qr-section">
             <p style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Scan dengan Kamera / Barcode Scanner di Tablet:</p>
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ urlencode($fullClientUrl) }}" alt="QR Setup" width="180" height="180">
+            <div id="qrcode" style="display: inline-flex; align-items: center; justify-content: center; background: white; padding: 10px; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 8px;"></div>
         </div>
 
         <div style="border-top: 1px solid #e2e8f0; padding-top: 16px;">
@@ -75,6 +81,23 @@
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const qrEl = document.getElementById('qrcode');
+            const url = @js($fullClientUrl);
+            if (typeof QRCode !== 'undefined' && qrEl) {
+                new QRCode(qrEl, {
+                    text: url,
+                    width: 180,
+                    height: 180,
+                    colorDark: '#1e293b',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            } else if (qrEl) {
+                qrEl.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}" width="180" height="180" alt="QR Setup">`;
+            }
+        });
+
         function onTargetPrinterChange(val) {
             const customInput = document.getElementById('customTargetPrinterInput');
             if (val === '__custom__') {

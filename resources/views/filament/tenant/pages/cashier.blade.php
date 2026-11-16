@@ -226,8 +226,8 @@
             ->flatten(1);
         @endphp
         @forelse($orderedCartItems as $item)
-        <div class="mb-4 rounded-lg border bg-white px-4 py-2 dark:border-gray-900 dark:bg-gray-900"
-          style="margin-bottom: 14px;" id="cart-item-{{ $item->id }}" wire:key="cart-item-{{ $item->id }}">
+        <div class="mb-3 rounded-xl border border-gray-200/90 bg-white px-3.5 py-2.5 shadow-2xs dark:border-gray-800 dark:bg-gray-800/80"
+          id="cart-item-{{ $item->id }}" wire:key="cart-item-{{ $item->id }}">
           <div class="grid items-center space-x-3">
             <div class="flex items-start justify-between gap-2">
               <div>
@@ -394,35 +394,35 @@
           @endif
         </div>
         @empty
-        <div
-          class="flex h-40 items-center justify-center rounded-lg border bg-white dark:border-gray-900 dark:bg-gray-900">
-          <x-heroicon-o-x-mark class="hidden h-10 w-10 text-gray-900 dark:text-white lg:block" />
-          <p class="text-xl text-gray-600 dark:text-white lg:text-3xl">{{ __('No item') }}</p>
+        <div class="flex h-36 flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/60 p-4 text-center dark:border-gray-800 dark:bg-gray-800/40">
+          <x-heroicon-o-shopping-bag class="h-8 w-8 mb-1.5 text-gray-300 dark:text-gray-600" />
+          <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ __('Belum ada pesanan') }}</p>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ __('Pilih menu di sebelah kiri untuk menambahkan') }}</p>
         </div>
         @endforelse
       </div>
       {{-- Pilihan Kategori Pesanan (Wajib) --}}
       <div>
         <div
-          class="w-full rounded-lg border px-4 py-2.5 transition-colors {{ empty($orderType) ? 'border-danger-300 bg-danger-50/40 dark:border-danger-800 dark:bg-gray-900' : 'border-gray-200 bg-white dark:border-gray-900 dark:bg-gray-900' }}">
-          <div class="mb-1.5 flex items-center justify-between">
+          class="w-full rounded-xl border px-3.5 py-2.5 transition-colors shadow-2xs {{ empty($orderType) ? 'border-amber-300 bg-amber-50/50 dark:border-amber-600/60 dark:bg-amber-950/20' : 'border-gray-200/90 bg-white dark:border-gray-700/80 dark:bg-gray-800/60' }}">
+          <div class="mb-2 flex items-center justify-between">
             <span class="text-xs font-bold text-gray-800 dark:text-gray-200">{{ __('Kategori Pesanan') }}</span>
             <span
-              class="text-[10px] font-bold {{ empty($orderType) ? 'text-danger-600 dark:text-danger-400' : 'text-gray-400' }}">
+              class="text-[10px] font-bold {{ empty($orderType) ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500' }}">
               * {{ __('Wajib Dipilih') }}
             </span>
           </div>
           <div class="grid grid-cols-3 gap-1.5">
             <button type="button" wire:click="setOrderType('dine_in')"
-              class="flex items-center justify-center gap-1 rounded-lg border px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold transition {{ $orderType === 'dine_in' ? 'border-lakasir-primary bg-lakasir-primary text-white shadow-sm' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200' }}">
+              class="flex items-center justify-center gap-1 rounded-lg border px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold transition {{ $orderType === 'dine_in' ? 'border-lakasir-primary bg-lakasir-primary text-white shadow-xs' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700' }}">
               <span class="truncate">Dine In</span>
             </button>
             <button type="button" wire:click="setOrderType('take_away')"
-              class="flex items-center justify-center gap-1 rounded-lg border px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold transition {{ $orderType === 'take_away' ? 'border-lakasir-primary bg-lakasir-primary text-white shadow-sm' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200' }}">
+              class="flex items-center justify-center gap-1 rounded-lg border px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold transition {{ $orderType === 'take_away' ? 'border-lakasir-primary bg-lakasir-primary text-white shadow-xs' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700' }}">
               <span class="truncate">Take Away</span>
             </button>
             <button type="button" wire:click="setOrderType('ojek_online')"
-              class="flex items-center justify-center gap-1 rounded-lg border px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold transition {{ $orderType === 'ojek_online' ? 'border-lakasir-primary bg-lakasir-primary text-white shadow-sm' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200' }}">
+              class="flex items-center justify-center gap-1 rounded-lg border px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold transition {{ $orderType === 'ojek_online' ? 'border-lakasir-primary bg-lakasir-primary text-white shadow-xs' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700' }}">
               <span class="truncate">Ojek Online</span>
             </button>
           </div>
@@ -431,13 +431,13 @@
 
       <div>
         <div
-          class="w-full rounded-lg border bg-gray-50/50 px-3 py-2 text-xs text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-white">
+          class="w-full rounded-xl border border-gray-200/90 bg-white px-3.5 py-2.5 text-xs text-gray-700 shadow-2xs dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-200">
           @include('filament.tenant.pages.cashier.detail')
         </div>
       </div>
       <div>
         <div
-          class="w-full rounded-lg border bg-gray-50/50 px-3 py-2 text-xs text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-white">
+          class="w-full rounded-xl border border-gray-200/90 bg-white px-3.5 py-2.5 text-xs text-gray-700 shadow-2xs dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-200">
           @include('filament.tenant.pages.cashier.total')
         </div>
       </div>
@@ -448,7 +448,7 @@
       class="p-3 sm:p-4 pr-16 md:pr-16 lg:pr-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 shrink-0">
       <div class="grid grid-cols-3 gap-2">
         <button type="button" wire:click="openSaveDraftModal"
-          class="col-span-1 flex items-center justify-center gap-1 rounded-lg border border-lakasir-primary bg-white px-1.5 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-lakasir-primary transition hover:bg-lakasir-primary/10 dark:bg-gray-900">
+          class="col-span-1 flex items-center justify-center gap-1 rounded-lg border border-lakasir-primary bg-white px-1.5 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-lakasir-primary transition hover:bg-lakasir-primary/10 dark:bg-gray-800">
           <x-heroicon-o-bookmark class="h-4 w-4 shrink-0" />
           <span class="truncate">{{ $activeDraftId ? __('Update') : __('Draft') }}</span>
         </button>

@@ -39,8 +39,8 @@ trait TableProduct
                     })
                     ->where('show', true)
             )
-            ->defaultPaginationPageOption(25)
-            ->paginationPageOptions([15, 25, 50])
+            ->defaultPaginationPageOption(24)
+            ->paginationPageOptions([16, 24, 48])
             ->columns([
                 Stack::make([
                     ImageColumn::make('hero_image')
@@ -95,9 +95,9 @@ trait TableProduct
             ->contentGrid([
                 'sm' => 2,
                 'md' => 3,
-                'lg' => 5,
-                'xl' => 5,
-                '2xl' => 5,
+                'lg' => 4,
+                'xl' => 4,
+                '2xl' => 4,
             ])
             ->headerActionsPosition(HeaderActionsPosition::Bottom)
             ->searchPlaceholder(__('Search (SKU, name, barcode)'))

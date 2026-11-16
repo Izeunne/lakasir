@@ -42,22 +42,22 @@
   @apply mx-0;
 }
 
-/* Card Menu Kasir Compact & Rapi (5 Kolom per Row) */
+/* Card Menu Kasir Compact & Rapi (4 Kolom per Row) */
 .fi-ta-content-grid {
-  gap: 0.65rem !important;
+  gap: 0.75rem !important;
   padding: 0.75rem !important;
 }
 
 @media (min-width: 1024px) {
   .fi-ta-content-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   }
 }
 
 .fi-ta-content-grid .fi-ta-record {
   border-radius: 0.75rem !important;
-  border: 1px solid rgba(229, 231, 235, 0.8) !important;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+  border: 1px solid rgba(229, 231, 235, 0.9) !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
   overflow: hidden !important;
   transition: all 0.15s ease-in-out !important;
   background-color: #ffffff !important;
@@ -70,7 +70,7 @@
 
 .dark .fi-ta-content-grid .fi-ta-record {
   border-color: rgba(55, 65, 81, 0.8) !important;
-  background-color: #111827 !important;
+  background-color: #1f2937 !important;
 }
 
 /* Pastikan gambar di dalam card memenuhi lebar kartu dengan tinggi kompak yang seragam (edge-to-edge) */
@@ -91,8 +91,8 @@
 
 .fi-ta-content-grid .fi-ta-record .fi-ta-image img {
   width: 100% !important;
-  height: 96px !important;
-  max-height: 96px !important;
+  height: 110px !important;
+  max-height: 110px !important;
   object-fit: cover !important;
   border-top-left-radius: 0.75rem !important;
   border-top-right-radius: 0.75rem !important;

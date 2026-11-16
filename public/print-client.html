@@ -201,8 +201,13 @@
       color: #1e40af;
     }
   </style>
-  <!-- Pure offline QRCode generator -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <!-- Local pure offline QRCode generator with CDN fallback -->
+  <script src="/js/qrcode.min.js"></script>
+  <script>
+    if (typeof QRCode === 'undefined') {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>');
+    }
+  </script>
 </head>
 <body>
   <div class="container">
@@ -276,9 +281,7 @@
         </div>
 
         <div class="qr-container">
-          <div id="qrcode">
-            <canvas id="qrCanvas"></canvas>
-          </div>
+          <div id="qrcode"></div>
           <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px;">
             Arahkan kamera HP atau gunakan tombol di bawah
           </p>
@@ -329,7 +332,42 @@
     const elUrlDisplay = document.getElementById('urlDisplay');
     const elDeepLink = document.getElementById('btnDeepLink');
     const elBtnCopy = document.getElementById('btnCopyUrl');
-    const qrCanvas = document.getElementById('qrCanvas');
+    let qrInstance = null;
+
+    function renderQRCode(text) {
+      const qrContainer = document.getElementById('qrcode');
+      if (!qrContainer) return;
+
+      if (typeof QRCode !== 'undefined') {
+        if (!qrInstance) {
+          qrContainer.innerHTML = '';
+          try {
+            qrInstance = new QRCode(qrContainer, {
+              text: text,
+              width: 200,
+              height: 200,
+              colorDark: '#1e293b',
+              colorLight: '#ffffff',
+              correctLevel: QRCode.CorrectLevel.M
+            });
+          } catch (e) {
+            console.error('QRCode init error:', e);
+            qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(text)}" width="200" height="200" alt="QR Code" style="display:block;margin:0 auto;border-radius:8px;">`;
+          }
+        } else {
+          try {
+            qrInstance.makeCode(text);
+          } catch (e) {
+            console.error('QRCode makeCode error:', e);
+            qrContainer.innerHTML = '';
+            qrInstance = null;
+            renderQRCode(text);
+          }
+        }
+      } else {
+        qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(text)}" width="200" height="200" alt="QR Code" style="display:block;margin:0 auto;border-radius:8px;">`;
+      }
+    }
 
     // Isi dari URL params jika ada, atau default
     elBaseUrl.value = urlParams.get('base_url') || hostOrigin;
@@ -368,15 +406,7 @@
       elDeepLink.href = deepLinkUrl;
 
       // Render QR
-      if (typeof QRCode !== 'undefined' && QRCode.toCanvas) {
-        QRCode.toCanvas(qrCanvas, fullUrl, {
-          width: 200,
-          margin: 1,
-          color: { dark: '#1e293b', light: '#ffffff' }
-        }, function (error) {
-          if (error) console.error(error);
-        });
-      }
+      renderQRCode(fullUrl);
     }
 
     [elBaseUrl, elToken, elOutletId, elQueueType, elPaper, elAutostart, elStationId].forEach(el => {

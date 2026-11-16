@@ -105,6 +105,11 @@ class TenantPanelProvider extends PanelProvider
             fn () => view('version-indicator')
         );
 
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::USER_MENU_BEFORE,
+            fn () => filament()->hasDarkMode() ? view('filament.components.topbar-theme-switcher') : ''
+        );
+
         if (app()->environment('demo')) {
             FilamentView::registerRenderHook(
                 PanelsRenderHook::BODY_START,

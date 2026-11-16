@@ -1,4 +1,4 @@
-# ==============================================================================
+﻿# ==============================================================================
 # Mataverse Hub - Automated Production APK Builder (Windows PowerShell)
 # Usage:
 #   .\build-apk.ps1 <version_name> [version_code] [-Install]

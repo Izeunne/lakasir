@@ -16,6 +16,7 @@ use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Support\Enums\MaxWidth;
 use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -37,7 +38,48 @@ class Printer extends Page implements HasActions, HasForms, HasTable
 
     public function getTitle(): string
     {
-        return __('Manajemen Multi-Printer & Routing Kategori');
+        return __('Pengaturan Printer');
+    }
+
+    public function getMaxContentWidth(): MaxWidth | string | null
+    {
+        return MaxWidth::Full;
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('create_printer')
+                ->label(__('Tambah Printer'))
+                ->icon('heroicon-o-plus')
+                ->color('primary')
+                ->modalHeading(__('Tambah Station Printer Baru'))
+                ->modalWidth('3xl')
+                ->form($this->getPrinterFormSchema())
+                ->mutateFormDataUsing(fn (array $data): array => $this->SyncDeviceMeta($data))
+                ->action(function (array $data): void {
+                    PrinterModel::create($data);
+                    $this->syncFrontendPrinters();
+                    Notification::make()
+                        ->title(__('Station Printer Berhasil Ditambahkan'))
+                        ->success()
+                        ->send();
+                }),
+
+            Action::make('sync_mobile')
+                ->label(__('Sinkron Mobile'))
+                ->icon('heroicon-o-arrow-path')
+                ->color('gray')
+                ->action(fn () => $this->refreshMobilePrinters())
+                ->extraAttributes(['onclick' => 'syncMobileBridgePrinters()']),
+
+            Action::make('setup_bridge')
+                ->label(__('Setup Mobile Bridge'))
+                ->icon('heroicon-o-qr-code')
+                ->color('gray')
+                ->url('/print-client.html')
+                ->openUrlInNewTab(),
+        ];
     }
 
     /**
@@ -387,8 +429,20 @@ class Printer extends Page implements HasActions, HasForms, HasTable
                         $this->syncFrontendPrinters();
                     }),
             ])
+            ->emptyStateIcon('heroicon-o-printer')
             ->emptyStateHeading(__('Belum Ada Station Printer'))
-            ->emptyStateDescription(__('Tambahkan printer untuk Kasir, Bar, atau Dapur dan atur kategori menu yang akan dicetak oleh masing-masing printer.'));
+            ->emptyStateDescription(__('Tambahkan printer untuk Kasir, Bar, atau Dapur dan atur kategori menu yang akan dicetak oleh masing-masing printer.'))
+            ->emptyStateActions([
+                Tables\Actions\CreateAction::make('create_printer_empty')
+                    ->label(__('Tambah Printer'))
+                    ->icon('heroicon-o-plus')
+                    ->model(PrinterModel::class)
+                    ->modalHeading(__('Tambah Station Printer Baru'))
+                    ->modalWidth('3xl')
+                    ->form($this->getPrinterFormSchema())
+                    ->mutateFormDataUsing(fn (array $data): array => $this->SyncDeviceMeta($data))
+                    ->after(fn () => $this->syncFrontendPrinters()),
+            ]);
     }
 
     protected function SyncDeviceMeta(array $data): array
