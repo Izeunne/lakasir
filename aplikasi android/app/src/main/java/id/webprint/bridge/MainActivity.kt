@@ -712,14 +712,26 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val imported = settingsRepository.load().copy(
+        val explicitBase = uri.getQueryParameter("base_url")?.trim()?.removeSuffix("/").orEmpty()
+        val resolvedBase = if (explicitBase.isNotBlank()) {
+            explicitBase
+        } else if (uri.scheme in listOf("http", "https") && !uri.authority.isNullOrBlank()) {
+            "${uri.scheme}://${uri.authority}"
+        } else {
+            ""
+        }
+        val explicitPosUrl = uri.getQueryParameter("pos_url")?.trim().orEmpty()
+        val currentSettings = settingsRepository.load()
+
+        val imported = currentSettings.copy(
             clientUrl = rawUrl,
-            baseUrl = uri.getQueryParameter("base_url")?.trim()?.removeSuffix("/").orEmpty(),
-            token = uri.getQueryParameter("token")?.trim().orEmpty(),
-            outletId = uri.getQueryParameter("outlet_id")?.trim()?.toIntOrNull() ?: 0,
-            queueType = QueueType.fromValue(uri.getQueryParameter("type")).value,
-            stationId = uri.getQueryParameter("station_id")?.trim().orEmpty(),
-            paperWidthPreset = parsePaperWidthPresetFromClientUrl(uri.getQueryParameter("paper")).value,
+            baseUrl = if (resolvedBase.isNotBlank()) resolvedBase else currentSettings.baseUrl,
+            posUrl = if (explicitPosUrl.isNotBlank()) explicitPosUrl else currentSettings.posUrl,
+            token = uri.getQueryParameter("token")?.trim()?.takeIf { it.isNotBlank() } ?: currentSettings.token,
+            outletId = uri.getQueryParameter("outlet_id")?.trim()?.toIntOrNull() ?: currentSettings.outletId,
+            queueType = if (uri.getQueryParameter("type") != null) QueueType.fromValue(uri.getQueryParameter("type")).value else currentSettings.queueType,
+            stationId = uri.getQueryParameter("station_id")?.trim() ?: currentSettings.stationId,
+            paperWidthPreset = if (uri.getQueryParameter("paper") != null) parsePaperWidthPresetFromClientUrl(uri.getQueryParameter("paper")).value else currentSettings.paperWidthPreset,
             autoStart = uri.getQueryParameter("autostart") == "1" ||
                 uri.getQueryParameter("autostart").equals("true", ignoreCase = true),
         )

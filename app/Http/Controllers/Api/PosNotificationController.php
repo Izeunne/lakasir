@@ -12,11 +12,36 @@ class PosNotificationController extends Controller
 {
     private function validateToken(Request $request): void
     {
+        $this->ensureTenancyInitialized($request);
+
         $expectedToken = config('services.print_bridge.token', env('PRINT_BRIDGE_TOKEN', 'lakasir-print-token-2026'));
         $receivedToken = $request->query('token') ?? $request->header('X-Bridge-Token') ?? $request->bearerToken();
 
         if (empty($expectedToken) || !hash_equals((string) $expectedToken, (string) $receivedToken)) {
             abort(401, 'Token notifikasi tidak valid.');
+        }
+    }
+
+    private function ensureTenancyInitialized(Request $request): void
+    {
+        if (function_exists('tenancy') && ! tenancy()->initialized) {
+            $tenantId = $request->query('tenant') ?? $request->header('X-Tenant') ?? $request->query('tenant_id');
+            if ($tenantId && class_exists(\App\Tenant::class)) {
+                $tenant = \App\Tenant::find($tenantId);
+                if ($tenant) {
+                    tenancy()->initialize($tenant);
+
+                    return;
+                }
+            }
+
+            // Fallback: if only one tenant exists in system, auto-initialize
+            if (class_exists(\App\Tenant::class)) {
+                $firstTenant = \App\Tenant::first();
+                if ($firstTenant) {
+                    tenancy()->initialize($firstTenant);
+                }
+            }
         }
     }
 

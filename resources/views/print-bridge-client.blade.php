@@ -38,6 +38,8 @@
             <p style="font-size: 12px; color: #64748b; margin-top: 4px;">Copy link di bawah ini dan paste ke kolom "Setup Cepat" pada aplikasi Android:</p>
             <div class="url-box" id="clientUrl">{{ $fullClientUrl }}</div>
             <button class="btn" onclick="copyUrl()">📋 Salin Link Setup Otomatis</button>
+            <a href="lakasir://config?base_url={{ urlencode($baseUrl) }}&token={{ urlencode($token) }}&outlet_id={{ $outletId }}&type={{ $type }}&autostart={{ $autoStart }}" class="btn btn-outline" style="background: #4f46e5; color: white;">🚀 Buka di Aplikasi Android</a>
+            <a href="/downloads/lakasir-bridge.apk" class="btn btn-outline" style="background: #10b981; color: white; border-color: #10b981;" download>⬇️ Unduh APK Android</a>
         </div>
 
         <div class="qr-section">

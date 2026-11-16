@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup Lakasir Mobile Print Bridge</title>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --success: #10b981;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 24px 16px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .header h1 {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .header p {
+      color: var(--text-muted);
+      margin-top: 6px;
+      font-size: 0.95rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    @media (min-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    .card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    }
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .form-group {
+      margin-bottom: 14px;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    input[type="text"], input[type="number"], select {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus {
+      border-color: var(--primary);
+    }
+    .hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+    .qr-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 10px;
+    }
+    #qrcode {
+      background: #fff;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      display: inline-block;
+      margin-bottom: 14px;
+    }
+    #qrcode canvas, #qrcode img {
+      max-width: 220px;
+      height: auto;
+      display: block;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      border: none;
+      transition: background 0.2s, transform 0.1s;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    .btn:active {
+      transform: scale(0.98);
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+    .btn-success {
+      background: var(--success);
+      color: #fff;
+    }
+    .btn-success:hover {
+      background: #059669;
+    }
+    .btn-outline {
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:hover {
+      background: #f1f5f9;
+    }
+    .url-box {
+      background: #f1f5f9;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 0.78rem;
+      word-break: break-all;
+      margin: 10px 0;
+      border: 1px solid #cbd5e1;
+      user-select: all;
+    }
+    .steps {
+      margin-top: 24px;
+      background: #eff6ff;
+      border-radius: 12px;
+      padding: 18px 20px;
+      border: 1px solid #bfdbfe;
+    }
+    .steps h3 {
+      font-size: 0.95rem;
+      color: #1e40af;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+    .steps ol {
+      padding-left: 20px;
+      font-size: 0.85rem;
+      color: #1e3a8a;
+    }
+    .steps li {
+      margin-bottom: 4px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: #dbeafe;
+      color: #1e40af;
+    }
+  </style>
+  <!-- Pure offline QRCode generator -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📱 Lakasir Mobile Print Bridge</h1>
+      <p>Konfigurasi otomatis koneksi printer thermal Bluetooth/LAN untuk Android</p>
+    </div>
+
+    <div class="grid">
+      <!-- Kolom Pengaturan -->
+      <div class="card">
+        <div class="card-title">
+          <span>⚙️</span> Parameter Koneksi
+        </div>
+
+        <div class="form-group">
+          <label for="baseUrl">Base URL Server POS</label>
+          <input type="text" id="baseUrl" value="">
+          <p class="hint">Gunakan IP LAN komputer kasir (contoh: <code>http://192.168.1.10:8000</code>). Jangan gunakan <code>localhost</code> jika membuka dari HP fisik.</p>
+        </div>
+
+        <div class="form-group">
+          <label for="token">Token Print Bridge</label>
+          <input type="text" id="token" value="lakasir-print-token-2026">
+          <p class="hint">Harus sama dengan <code>PRINT_BRIDGE_TOKEN</code> di file .env server.</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label for="outletId">Outlet ID</label>
+            <input type="number" id="outletId" value="1" min="1">
+          </div>
+
+          <div class="form-group">
+            <label for="queueType">Tipe Antrean</label>
+            <select id="queueType">
+              <option value="cashier" selected>Kasir (Receipt)</option>
+              <option value="kitchen">Dapur (Kitchen Ticket)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label for="paper">Lebar Kertas</label>
+            <select id="paper">
+              <option value="58mm" selected>58 mm (Standar)</option>
+              <option value="80mm">80 mm (Besar)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="autostart">Auto Start Service</label>
+            <select id="autostart">
+              <option value="1" selected>Ya (Otomatis)</option>
+              <option value="0">Tidak</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" id="stationGroup" style="display: none;">
+          <label for="stationId">Station ID (Opsional)</label>
+          <input type="text" id="stationId" placeholder="dapur, bar, dll.">
+        </div>
+      </div>
+
+      <!-- Kolom QR Code & Aksi -->
+      <div class="card">
+        <div class="card-title">
+          <span>📷</span> Scan QR / Buka di Android
+        </div>
+
+        <div class="qr-container">
+          <div id="qrcode">
+            <canvas id="qrCanvas"></canvas>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px;">
+            Arahkan kamera HP atau gunakan tombol di bawah
+          </p>
+
+          <a id="btnDeepLink" href="#" class="btn btn-primary">
+            🚀 Buka di Aplikasi Android
+          </a>
+
+          <button id="btnCopyUrl" type="button" class="btn btn-outline">
+            📋 Salin URL Konfigurasi
+          </button>
+
+          <a href="/downloads/lakasir-bridge.apk" class="btn btn-success" download>
+            ⬇️ Unduh APK Lakasir Bridge (Android)
+          </a>
+
+          <div class="url-box" id="urlDisplay"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Petunjuk Pemakaian -->
+    <div class="steps">
+      <h3>Cara Penggunaan:</h3>
+      <ol>
+        <li>Pasang aplikasi <strong>Lakasir Mobile Bridge</strong> di HP / Tablet Android kasir Anda (unduh APK di atas jika belum terpasang).</li>
+        <li>Pastikan HP / Tablet terhubung ke jaringan Wi-Fi yang sama dengan komputer server kasir.</li>
+        <li>Buka aplikasi Lakasir di Android, lalu scan QR Code di atas atau klik tombol <strong>Buka di Aplikasi Android</strong>.</li>
+        <li>Pasangkan printer Bluetooth Anda pada Bluetooth Settings Android, lalu pilih printer pada tab Pengaturan di aplikasi Lakasir.</li>
+        <li>Klik <strong>Mulai Polling Service</strong> untuk mode background, atau gunakan langsung tab <strong>POS</strong> untuk tampilan kasir layar penuh.</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    // Inisialisasi otomatis Base URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const hostOrigin = window.location.origin;
+
+    const elBaseUrl = document.getElementById('baseUrl');
+    const elToken = document.getElementById('token');
+    const elOutletId = document.getElementById('outletId');
+    const elQueueType = document.getElementById('queueType');
+    const elPaper = document.getElementById('paper');
+    const elAutostart = document.getElementById('autostart');
+    const elStationId = document.getElementById('stationId');
+    const elStationGroup = document.getElementById('stationGroup');
+    const elUrlDisplay = document.getElementById('urlDisplay');
+    const elDeepLink = document.getElementById('btnDeepLink');
+    const elBtnCopy = document.getElementById('btnCopyUrl');
+    const qrCanvas = document.getElementById('qrCanvas');
+
+    // Isi dari URL params jika ada, atau default
+    elBaseUrl.value = urlParams.get('base_url') || hostOrigin;
+    if (urlParams.get('token')) elToken.value = urlParams.get('token');
+    if (urlParams.get('outlet_id')) elOutletId.value = urlParams.get('outlet_id');
+    if (urlParams.get('type')) elQueueType.value = urlParams.get('type');
+    if (urlParams.get('paper')) elPaper.value = urlParams.get('paper');
+    if (urlParams.get('autostart')) elAutostart.value = urlParams.get('autostart');
+    if (urlParams.get('station_id')) elStationId.value = urlParams.get('station_id');
+
+    function buildClientUrl(useCustomScheme = false) {
+      const base = elBaseUrl.value.trim().replace(/\/$/, '');
+      const token = encodeURIComponent(elToken.value.trim());
+      const outlet = encodeURIComponent(elOutletId.value.trim());
+      const type = encodeURIComponent(elQueueType.value);
+      const paper = encodeURIComponent(elPaper.value);
+      const autostart = encodeURIComponent(elAutostart.value);
+      const station = encodeURIComponent(elStationId.value.trim());
+
+      const query = `base_url=${encodeURIComponent(base)}&token=${token}&outlet_id=${outlet}&type=${type}&paper=${paper}&autostart=${autostart}` +
+        (station ? `&station_id=${station}` : '');
+
+      if (useCustomScheme) {
+        return `lakasir://config?${query}`;
+      }
+      return `${base}/print-client.html?${query}`;
+    }
+
+    function updateView() {
+      elStationGroup.style.display = elQueueType.value === 'kitchen' ? 'block' : 'none';
+
+      const fullUrl = buildClientUrl(false);
+      const deepLinkUrl = buildClientUrl(true);
+
+      elUrlDisplay.textContent = fullUrl;
+      elDeepLink.href = deepLinkUrl;
+
+      // Render QR
+      if (typeof QRCode !== 'undefined' && QRCode.toCanvas) {
+        QRCode.toCanvas(qrCanvas, fullUrl, {
+          width: 200,
+          margin: 1,
+          color: { dark: '#1e293b', light: '#ffffff' }
+        }, function (error) {
+          if (error) console.error(error);
+        });
+      }
+    }
+
+    [elBaseUrl, elToken, elOutletId, elQueueType, elPaper, elAutostart, elStationId].forEach(el => {
+      el.addEventListener('input', updateView);
+      el.addEventListener('change', updateView);
+    });
+
+    elBtnCopy.addEventListener('click', () => {
+      const fullUrl = buildClientUrl(false);
+      navigator.clipboard.writeText(fullUrl).then(() => {
+        const originalText = elBtnCopy.textContent;
+        elBtnCopy.textContent = '✅ URL Disalin!';
+        setTimeout(() => { elBtnCopy.textContent = originalText; }, 2000);
+      });
+    });
+
+    // Jalankan pertama kali saat load
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', updateView);
+    } else {
+      updateView();
+    }
+  </script>
+</body>
+</html>

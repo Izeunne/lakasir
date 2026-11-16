@@ -14,11 +14,36 @@ class PrintQueueController extends Controller
 {
     private function validateToken(Request $request): void
     {
+        $this->ensureTenancyInitialized($request);
+
         $expectedToken = config('services.print_bridge.token', env('PRINT_BRIDGE_TOKEN', 'lakasir-print-token-2026'));
         $receivedToken = $request->query('token') ?? $request->header('X-Bridge-Token') ?? $request->bearerToken();
 
         if (empty($expectedToken) || !hash_equals((string) $expectedToken, (string) $receivedToken)) {
             abort(401, 'Token print queue tidak valid.');
+        }
+    }
+
+    private function ensureTenancyInitialized(Request $request): void
+    {
+        if (function_exists('tenancy') && ! tenancy()->initialized) {
+            $tenantId = $request->query('tenant') ?? $request->header('X-Tenant') ?? $request->query('tenant_id');
+            if ($tenantId && class_exists(\App\Tenant::class)) {
+                $tenant = \App\Tenant::find($tenantId);
+                if ($tenant) {
+                    tenancy()->initialize($tenant);
+
+                    return;
+                }
+            }
+
+            // Fallback: if only one tenant exists in system, auto-initialize
+            if (class_exists(\App\Tenant::class)) {
+                $firstTenant = \App\Tenant::first();
+                if ($firstTenant) {
+                    tenancy()->initialize($firstTenant);
+                }
+            }
         }
     }
 
@@ -127,6 +152,11 @@ class PrintQueueController extends Controller
             ->get();
 
         $formatted = $jobs->map(function (PrintQueue $job) {
+            $payload = $job->payload ?? ['lines' => []];
+            if (! isset($payload['raw_base64']) && ! empty($job->raw_base64)) {
+                $payload['raw_base64'] = $job->raw_base64;
+            }
+
             return [
                 'id' => (string) $job->id,
                 'queue_type' => $job->queue_type,
@@ -134,11 +164,11 @@ class PrintQueueController extends Controller
                 'station_id' => $job->station_id,
                 'target_printer' => $job->target_printer,
                 'paper_width' => $job->paper_width,
-                'show_price' => $job->payload['show_price'] ?? ($job->type === 'receipt'),
+                'show_price' => $payload['show_price'] ?? ($job->type === 'receipt'),
                 'layout' => $job->layout,
                 'transaction' => $job->transaction,
                 'ticket' => $job->ticket,
-                'payload' => $job->payload ?? ['lines' => []],
+                'payload' => $payload,
                 'raw_base64' => $job->raw_base64,
             ];
         });

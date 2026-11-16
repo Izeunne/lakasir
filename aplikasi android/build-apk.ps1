@@ -1,4 +1,4 @@
-﻿# ==============================================================================
+# ==============================================================================
 # Mataverse Hub - Automated Production APK Builder (Windows PowerShell)
 # Usage:
 #   .\build-apk.ps1 <version_name> [version_code] [-Install]
@@ -189,7 +189,7 @@ $updatedGradle = $updatedGradle -replace 'versionName\s*=\s*"[^"]+"', "versionNa
 Write-Host "⚙️  Menjalankan gradlew.bat assembleRelease..." -ForegroundColor Cyan
 
 # Set JAVA_HOME jika belum ada atau gunakan JBR bawaan Android Studio
-if (-not $env:JAVA_HOME -or -not (Test-Path "$env:JAVA_HOME\bin\javac.exe")) {
+if (-not $env:JAVA_HOME -or -not (Test-Path "$env:JAVA_HOME\bin\javac.exe") -or -not (Test-Path "$env:JAVA_HOME\bin\jlink.exe")) {
     $jbrPath = "C:\Program Files\Android\Android Studio\jbr"
     if (Test-Path $jbrPath) {
         $env:JAVA_HOME = $jbrPath

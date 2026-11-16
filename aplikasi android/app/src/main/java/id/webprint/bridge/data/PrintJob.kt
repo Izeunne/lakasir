@@ -29,6 +29,7 @@ data class PrintJob(
             val printer = json.optJSONObject("printer")
             val payload = json.optJSONObject("payload")
             val rawBase64 = cleanNullable(payload?.optString("raw_base64"))
+                ?: cleanNullable(json.optString("raw_base64"))
             val targetPrinterVal = cleanNullable(json.optString("target_printer"))
                 ?: cleanNullable(json.optString("printer_id"))
                 ?: cleanNullable(payload?.optString("target_printer"))

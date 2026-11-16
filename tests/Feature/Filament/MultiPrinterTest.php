@@ -451,3 +451,34 @@ test('cashier printer with copies=2 prints customer copy and merchant copy, and 
     expect($noHeaderData['layout']['company'])->toBeNull();
 });
 
+test('print queue and notification routes are accessible on tenant context and return expected payload and raw_base64', function () {
+    $token = config('services.print_bridge.token', env('PRINT_BRIDGE_TOKEN', 'lakasir-print-token-2026'));
+
+    // Create a print queue item with raw_base64
+    $queue = PrintQueue::create([
+        'outlet_id' => 1,
+        'queue_type' => 'cashier',
+        'status' => 'queued',
+        'type' => 'receipt',
+        'paper_width' => '58mm',
+        'raw_base64' => base64_encode("TEST ESC POS BYTES"),
+        'payload' => ['printer_id' => 'BT-001'],
+    ]);
+
+    $response = getJson("/api/print-queue/cashier?token={$token}&outlet_id=1");
+    $response->assertOk()
+        ->assertJsonPath('success', true)
+        ->assertJsonPath('count', 1)
+        ->assertJsonPath('jobs.0.id', (string) $queue->id)
+        ->assertJsonPath('jobs.0.raw_base64', base64_encode("TEST ESC POS BYTES"))
+        ->assertJsonPath('jobs.0.payload.raw_base64', base64_encode("TEST ESC POS BYTES"));
+
+    // Mark done
+    postJson("/api/print-queue/{$queue->id}/done?token={$token}")
+        ->assertOk()
+        ->assertJsonPath('success', true);
+
+    expect($queue->fresh()->status)->toBe('completed');
+});
+
+

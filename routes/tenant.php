@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\PosNotificationController;
+use App\Http\Controllers\Api\PrintQueueController;
 use App\Http\Controllers\Api\Tenants\AboutController;
 use App\Http\Controllers\Api\Tenants\Master\CategoryController;
 use App\Http\Controllers\Api\Tenants\Master\MemberController;
@@ -50,6 +52,17 @@ Route::middleware([
             ->name('product-report.generate');
         Route::get('/member/cashier-report/generate', CashierReportController::class)
             ->name('cashier-report.generate');
+        Route::get('/print-client.html', function (Request $request) {
+            $baseUrl = $request->getSchemeAndHttpHost();
+            $token = config('services.print_bridge.token', env('PRINT_BRIDGE_TOKEN', 'lakasir-print-token-2026'));
+            $outletId = (int) $request->query('outlet_id', 1);
+            $type = (string) $request->query('type', 'cashier');
+            $autoStart = (int) $request->query('autostart', 1);
+
+            $fullClientUrl = "{$baseUrl}/print-client.html?base_url={$baseUrl}&token={$token}&outlet_id={$outletId}&type={$type}&autostart={$autoStart}";
+
+            return view('print-bridge-client', compact('baseUrl', 'token', 'outletId', 'type', 'autoStart', 'fullClientUrl'));
+        })->name('print-client');
         Route::view('/member/sellings/{selling}/print', 'filament.tenant.pages.selling.print-receipt')
             ->name('selling.print');
         Route::get('/member/sellings/{selling}/preview-receipts', [SellingReceiptPdfController::class, 'previewAllReceipts'])
@@ -73,6 +86,24 @@ Route::middleware([
                 'tenant' => tenant('id'),
                 'tenant_email' => tenant()->tenancy_db_profile_email,
             ]);
+        });
+
+        // POS Realtime Notifications
+        Route::prefix('pos-notifications')->group(function () {
+            Route::get('/', [PosNotificationController::class, 'index']);
+            Route::post('/send', [PosNotificationController::class, 'send']);
+            Route::post('/test', [PosNotificationController::class, 'sendTest']);
+            Route::post('/{id}/read', [PosNotificationController::class, 'markRead']);
+        });
+
+        // POS Mataverse Print Bridge Routes
+        Route::prefix('print-queue')->group(function () {
+            Route::get('/printers', [PrintQueueController::class, 'printers']);
+            Route::post('/printers/sync', [PrintQueueController::class, 'syncPrinters']);
+            Route::get('/{queueType}', [PrintQueueController::class, 'index'])->where('queueType', 'cashier|kitchen|all');
+            Route::post('/{id}/done', [PrintQueueController::class, 'markDone']);
+            Route::post('/{id}/fail', [PrintQueueController::class, 'markFailed']);
+            Route::post('/test', [PrintQueueController::class, 'test']);
         });
         Route::group(['prefix' => 'auth'], function () {
             Route::post('/login', [AuthenticatedSessionController::class, 'store'])
