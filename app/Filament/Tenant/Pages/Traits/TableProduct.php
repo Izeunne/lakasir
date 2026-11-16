@@ -45,14 +45,15 @@ trait TableProduct
                 Stack::make([
                     ImageColumn::make('hero_image')
                         ->translateLabel()
-                        ->alignCenter()
+                        ->defaultImageUrl(url('/images/food-placeholder.svg'))
                         ->extraAttributes([
-                            'class' => 'py-0 w-full',
+                            'class' => 'py-0 w-full block m-0 p-0',
                         ])
                         ->extraImgAttributes([
-                            'class' => 'object-cover w-full h-24 rounded-t-lg',
+                            'class' => 'object-cover w-full h-32 rounded-t-xl block',
+                            'onerror' => "this.src='/images/food-placeholder.svg'",
                         ])
-                        ->height(96)
+                        ->height(130)
                         ->width('100%'),
                     TextColumn::make('selling_price')
                         ->color('primary')
@@ -60,7 +61,7 @@ trait TableProduct
                         ->size('xs')
                         ->weight('extrabold')
                         ->extraAttributes([
-                            'class' => 'font-extrabold text-primary-600 dark:text-primary-400 mt-0.5 text-xs',
+                            'class' => 'font-extrabold text-primary-600 dark:text-primary-400 mt-1 text-xs px-3',
                         ]),
                     TextColumn::make('name')
                         ->size('xs')
@@ -74,7 +75,7 @@ trait TableProduct
                                 });
                         })
                         ->extraAttributes([
-                            'class' => 'font-bold line-clamp-2 min-h-[2rem] text-gray-900 dark:text-white leading-tight text-xs sm:text-sm',
+                            'class' => 'font-bold line-clamp-2 min-h-[2rem] text-gray-900 dark:text-white leading-tight text-xs sm:text-sm px-3',
                         ]),
                     TextColumn::make('stock')
                         ->hidden(function (Product $product) {
@@ -89,8 +90,15 @@ trait TableProduct
                                 ? 'danger'
                                 : 'success';
                         })
-                        ->formatStateUsing(fn (Product $product) => __('Stock').': '.$product->stock_calculate),
-                ])->space(1),
+                        ->formatStateUsing(fn (Product $product) => __('Stock').': '.$product->stock_calculate)
+                        ->extraAttributes([
+                            'class' => 'px-3',
+                        ]),
+                ])
+                ->extraAttributes([
+                    'class' => 'w-full !items-stretch',
+                ])
+                ->space(1),
             ])
             ->contentGrid([
                 'sm' => 2,

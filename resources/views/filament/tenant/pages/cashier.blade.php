@@ -81,6 +81,99 @@
       flex: 0 0 33.333333% !important;
     }
   }
+
+  /* POS Product Card: Full Width Edge-to-Edge Image */
+  .fi-ta-content-grid .fi-ta-record {
+    border-radius: 0.75rem !important;
+    border: 1px solid rgba(229, 231, 235, 0.9) !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+    overflow: hidden !important;
+    background-color: #ffffff !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .dark .fi-ta-content-grid .fi-ta-record {
+    border-color: rgba(55, 65, 81, 0.8) !important;
+    background-color: #1f2937 !important;
+  }
+
+  .fi-ta-content-grid .fi-ta-record > div {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+  }
+
+  .fi-ta-content-grid .fi-ta-record div.py-4 {
+    padding-top: 0 !important;
+    padding-bottom: 0.75rem !important;
+  }
+
+  .fi-ta-content-grid .fi-ta-record .flex-1 {
+    width: 100% !important;
+  }
+
+  .fi-ta-content-grid .fi-ta-record .flex-1 > button,
+  .fi-ta-content-grid .fi-ta-record .flex-1 > a,
+  .fi-ta-content-grid .fi-ta-record .flex-1 > div {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-top: 0 !important;
+    width: 100% !important;
+    display: block !important;
+  }
+
+  .fi-ta-content-grid .fi-ta-record .flex-col.items-start {
+    align-items: stretch !important;
+    width: 100% !important;
+  }
+
+  .fi-ta-content-grid .fi-ta-record .fi-ta-col-wrp {
+    width: 100% !important;
+  }
+
+  .fi-ta-content-grid .fi-ta-record .fi-ta-image {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    display: block !important;
+    overflow: hidden !important;
+  }
+
+  .fi-ta-content-grid .fi-ta-record .fi-ta-image > div,
+  .fi-ta-content-grid .fi-ta-record .fi-ta-image .flex {
+    width: 100% !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .fi-ta-content-grid .fi-ta-record .fi-ta-image img {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    height: 130px !important;
+    min-height: 130px !important;
+    max-height: 130px !important;
+    object-fit: cover !important;
+    border-top-left-radius: 0.75rem !important;
+    border-top-right-radius: 0.75rem !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    display: block !important;
+  }
+
+  .fi-ta-content-grid .fi-ta-record .fi-ta-text {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  .fi-ta-content-grid .fi-ta-record .fi-ta-actions {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    margin-top: auto !important;
+  }
 </style>
 
 <div class="pos-main-layout flex flex-col md:flex-row gap-3 lg:gap-4 items-start w-full">

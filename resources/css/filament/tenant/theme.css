@@ -61,6 +61,8 @@
   overflow: hidden !important;
   transition: all 0.15s ease-in-out !important;
   background-color: #ffffff !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 .fi-ta-content-grid .fi-ta-record:hover {
@@ -73,32 +75,84 @@
   background-color: #1f2937 !important;
 }
 
-/* Pastikan gambar di dalam card memenuhi lebar kartu dengan tinggi kompak yang seragam (edge-to-edge) */
+/* Pastikan card anak dan tombol membentang penuh tanpa padding atas */
+.fi-ta-content-grid .fi-ta-record > div {
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+}
+
+.fi-ta-content-grid .fi-ta-record div.py-4 {
+  padding-top: 0 !important;
+  padding-bottom: 0.75rem !important;
+}
+
+.fi-ta-content-grid .fi-ta-record .flex-1 {
+  width: 100% !important;
+}
+
+.fi-ta-content-grid .fi-ta-record .flex-1 > button,
+.fi-ta-content-grid .fi-ta-record .flex-1 > a,
+.fi-ta-content-grid .fi-ta-record .flex-1 > div {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  padding-top: 0 !important;
+  width: 100% !important;
+  display: block !important;
+}
+
+.fi-ta-content-grid .fi-ta-record .flex-col.items-start {
+  align-items: stretch !important;
+  width: 100% !important;
+}
+
+.fi-ta-content-grid .fi-ta-record .fi-ta-col-wrp {
+  width: 100% !important;
+}
+
+/* Gambar di dalam card membentang 100% penuh kartu (Edge-to-Edge) */
 .fi-ta-content-grid .fi-ta-record .fi-ta-image {
-  margin-left: -1rem !important;
-  margin-right: -1rem !important;
-  margin-top: -1rem !important;
-  margin-bottom: 0.35rem !important;
+  margin: 0 !important;
   padding: 0 !important;
-  width: calc(100% + 2rem) !important;
+  width: 100% !important;
+  display: block !important;
   overflow: hidden !important;
 }
 
 .fi-ta-content-grid .fi-ta-record .fi-ta-image > div,
 .fi-ta-content-grid .fi-ta-record .fi-ta-image .flex {
   width: 100% !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .fi-ta-content-grid .fi-ta-record .fi-ta-image img {
   width: 100% !important;
-  height: 110px !important;
-  max-height: 110px !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  height: 130px !important;
+  min-height: 130px !important;
+  max-height: 130px !important;
   object-fit: cover !important;
   border-top-left-radius: 0.75rem !important;
   border-top-right-radius: 0.75rem !important;
   border-bottom-left-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
   display: block !important;
+}
+
+/* Kolom teks dan aksi tetap memiliki padding dalam yang nyaman */
+.fi-ta-content-grid .fi-ta-record .fi-ta-text {
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+}
+
+.fi-ta-content-grid .fi-ta-record .fi-ta-actions {
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+  margin-top: auto !important;
 }
 
 .fi-ta-record.product-ordered {
