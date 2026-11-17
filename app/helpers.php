@@ -54,3 +54,29 @@ if (! function_exists('price_format')) {
         );
     }
 }
+
+if (! function_exists('pos_user')) {
+    function pos_user(): ?User
+    {
+        $posUserId = session('pos_user_id');
+
+        if ($posUserId) {
+            $posUser = User::find($posUserId);
+            if ($posUser) {
+                return $posUser;
+            }
+        }
+
+        /** @var ?User $authUser */
+        $authUser = Filament::getCurrentPanel() ? Filament::auth()->user() : auth()->user();
+
+        return $authUser;
+    }
+}
+
+if (! function_exists('pos_user_id')) {
+    function pos_user_id(): int|string|null
+    {
+        return pos_user()?->getKey();
+    }
+}

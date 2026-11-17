@@ -176,61 +176,80 @@ class SellingResource extends Resource
                             ->send();
                     }),
                 Action::make('delete_with_pin')
-                    ->label(__('Hapus'))
+                    ->label(__('Void'))
                     ->icon('heroicon-o-trash')
                     ->color('danger')
-                    ->modalHeading(__('Hapus Riwayat Penjualan'))
-                    ->modalDescription(__('Masukkan PIN Toko untuk menghapus riwayat penjualan ini. Stok produk pada transaksi ini akan dikembalikan.'))
-                    ->modalSubmitActionLabel(__('Verifikasi PIN & Hapus'))
+                    ->modalHeading(__('Void Riwayat Penjualan'))
+                    ->modalDescription(__('Masukkan PIN Toko untuk me-void riwayat penjualan ini. Data tidak tampil di riwayat maupun laporan, dan stok produk akan dikembalikan.'))
+                    ->modalSubmitActionLabel(__('Verifikasi PIN & Void'))
                     ->visible(function (): bool {
                         /** @var ?User $user */
                         $user = Filament::auth()->user();
 
                         return $user ? $user->canManageStorePin() : false;
                     })
-                    ->form([
-                        TextInput::make('pin')
-                            ->label(__('PIN Toko'))
-                            ->password()
-                            ->revealable()
-                            ->numeric()
-                            ->required()
-                            ->placeholder(__('Masukkan PIN Toko')),
-                    ])
+                    ->form(fn (): array => self::getVoidFormSchema())
                     ->action(function (Selling $record, array $data): void {
-                        if (! StorePin::isPinConfigured()) {
-                            Notification::make()
-                                ->title(__('PIN Toko Belum Diatur'))
-                                ->body(__('Silakan atur PIN Toko terlebih dahulu di menu PIN Toko sebelum menghapus penjualan.'))
-                                ->danger()
-                                ->send();
-                            return;
-                        }
-
-                        if (! StorePin::verify($data['pin'] ?? null)) {
-                            Notification::make()
-                                ->title(__('PIN Toko Salah'))
-                                ->body(__('PIN Toko yang Anda masukkan tidak sesuai. Penghapusan dibatalkan.'))
-                                ->danger()
-                                ->send();
-                            return;
-                        }
-
-                        self::deleteSellingAndRestoreStock($record);
-
-                        Notification::make()
-                            ->title(__('Riwayat Penjualan Dihapus'))
-                            ->body(__('Data penjualan berhasil dihapus dan stok produk telah dikembalikan.'))
-                            ->success()
-                            ->send();
+                        self::handleVoidAction($record, $data);
                     }),
             ])
             ->deferFilters();
     }
 
-    public static function deleteSellingAndRestoreStock(Selling $record): void
+    public static function getVoidFormSchema(): array
     {
-        DB::transaction(function () use ($record) {
+        return [
+            TextInput::make('pin')
+                ->label(__('PIN Toko'))
+                ->password()
+                ->revealable()
+                ->numeric()
+                ->required()
+                ->placeholder(__('Masukkan PIN Toko')),
+            Textarea::make('void_reason')
+                ->label(__('Alasan Void (Opsional)'))
+                ->placeholder(__('Contoh: Salah input item, pelanggan membatalkan pesanan, dll.'))
+                ->rows(3)
+                ->maxLength(500),
+        ];
+    }
+
+    public static function handleVoidAction(Selling $record, array $data): bool
+    {
+        if (! StorePin::isPinConfigured()) {
+            Notification::make()
+                ->title(__('PIN Toko Belum Diatur'))
+                ->body(__('Silakan atur PIN Toko terlebih dahulu di menu PIN Toko sebelum melakukan void penjualan.'))
+                ->danger()
+                ->send();
+
+            return false;
+        }
+
+        if (! StorePin::verify($data['pin'] ?? null)) {
+            Notification::make()
+                ->title(__('PIN Toko Salah'))
+                ->body(__('PIN Toko yang Anda masukkan tidak sesuai. Void dibatalkan.'))
+                ->danger()
+                ->send();
+
+            return false;
+        }
+
+        self::deleteSellingAndRestoreStock($record, $data['void_reason'] ?? null);
+
+        Notification::make()
+            ->title(__('Penjualan Berhasil Di-Void'))
+            ->body(__('Transaksi telah dipindahkan ke Riwayat Void dan stok produk telah dikembalikan.'))
+            ->success()
+            ->send();
+
+        return true;
+    }
+
+    public static function deleteSellingAndRestoreStock(Selling $record, ?string $voidReason = null): void
+    {
+        DB::transaction(function () use ($record, $voidReason) {
             $stockService = app(StockService::class);
             $record->loadMissing('sellingDetails.product');
 
@@ -240,7 +259,11 @@ class SellingResource extends Resource
                 }
             }
 
-            $record->sellingDetails()->delete();
+            $record->update([
+                'void_reason' => filled($voidReason) ? trim($voidReason) : null,
+                'voided_by' => Filament::auth()->id() ?? auth()->id(),
+            ]);
+
             $record->delete();
         });
     }

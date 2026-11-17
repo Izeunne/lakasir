@@ -4,8 +4,8 @@
 
 @endphp
 <div class="p-2 sm:p-4 min-h-screen" x-data="{ mobileTab: 'products' }">
-  {{-- Mobile Top Navigation Switcher (< 768px) --}} <div
-    class="mb-3 flex items-center justify-between gap-2 md:hidden">
+  {{-- Mobile Top Navigation Switcher (< 480px) --}} <div
+    class="pos-mobile-switcher mb-3 flex items-center justify-between gap-2 md:hidden">
     <div class="inline-flex rounded-lg bg-gray-200/90 p-1 dark:bg-gray-800">
       <button type="button" @click="mobileTab = 'products'"
         :class="mobileTab === 'products' ? 'bg-white shadow text-gray-900 font-bold dark:bg-gray-700 dark:text-white' : 'text-gray-600 dark:text-gray-400'"
@@ -25,7 +25,7 @@
         @endif
       </button>
     </div>
-    <a href="/member/sellings"
+    <a href="{{ \App\Filament\Tenant\Pages\Portal::getUrl() }}"
       class="flex items-center gap-1 rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300">
       <x-heroicon-o-arrow-left class="h-3.5 w-3.5" />
       <span>{{ __('Kembali') }}</span>
@@ -33,28 +33,48 @@
 </div>
 
 <style>
-  @media (min-width: 768px) {
+  @media (min-width: 480px) {
+    .pos-mobile-switcher {
+      display: none !important;
+    }
+
     .pos-main-layout {
       display: flex !important;
       flex-direction: row !important;
       align-items: flex-start !important;
-      gap: 1rem !important;
+      gap: 0.625rem !important;
     }
 
     .pos-catalog-col {
       display: block !important;
-      width: 58% !important;
-      flex: 1 1 58% !important;
+      width: 54% !important;
+      flex: 1 1 54% !important;
       min-width: 0 !important;
     }
 
     .pos-cart-col {
       display: flex !important;
-      width: 42% !important;
-      flex: 0 0 42% !important;
+      width: 46% !important;
+      flex: 0 0 46% !important;
       max-height: calc(100vh - 1rem) !important;
       position: sticky !important;
       top: 0.5rem !important;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .pos-main-layout {
+      gap: 1rem !important;
+    }
+
+    .pos-catalog-col {
+      width: 58% !important;
+      flex: 1 1 58% !important;
+    }
+
+    .pos-cart-col {
+      width: 42% !important;
+      flex: 0 0 42% !important;
     }
   }
 
@@ -203,6 +223,150 @@
     padding-right: 0.75rem !important;
     margin-top: auto !important;
   }
+
+  /* POS View Mode: Grid */
+  .pos-view-grid .fi-ta-content-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.75rem !important;
+  }
+
+  @media (min-width: 768px) {
+    .pos-view-grid .fi-ta-content-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .pos-view-grid .fi-ta-content-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    }
+  }
+
+  /* POS View Mode: List */
+  .pos-view-list .fi-ta-content-grid {
+    display: grid !important;
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+    gap: 0.5rem !important;
+  }
+
+  .pos-view-list .fi-ta-content-grid .fi-ta-record {
+    padding: 0.5rem 0.75rem !important;
+  }
+
+  .pos-view-list .fi-ta-content-grid .fi-ta-record > div {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+  }
+
+  .pos-view-list .fi-ta-content-grid .fi-ta-record > div > div:first-child {
+    flex: 1 1 0% !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+  }
+
+  .pos-view-list .pos-product-img-box {
+    width: 52px !important;
+    min-width: 52px !important;
+    max-width: 52px !important;
+    height: 52px !important;
+    min-height: 52px !important;
+    max-height: 52px !important;
+    margin: 0 !important;
+    border-radius: 0.5rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .pos-view-list .pos-product-img-box img {
+    border-radius: 0.5rem !important;
+  }
+
+  .pos-view-list .fi-ta-content-grid .fi-ta-record .fi-ta-text {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    min-height: unset !important;
+  }
+
+  .pos-view-list .fi-ta-content-grid .fi-ta-record .fi-ta-actions {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-top: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* POS View Mode: Small Icon (Compact) */
+  .pos-view-compact .fi-ta-content-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0.5rem !important;
+  }
+
+  @media (min-width: 768px) {
+    .pos-view-compact .fi-ta-content-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .pos-view-compact .fi-ta-content-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .pos-view-compact .fi-ta-content-grid {
+      grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    }
+  }
+
+  .pos-view-compact .fi-ta-content-grid .fi-ta-record {
+    padding: 0.5rem !important;
+    text-align: center !important;
+  }
+
+  .pos-view-compact .pos-product-img-box {
+    width: 52px !important;
+    min-width: 52px !important;
+    max-width: 52px !important;
+    height: 52px !important;
+    min-height: 52px !important;
+    max-height: 52px !important;
+    margin: 0.125rem auto 0.375rem auto !important;
+    border-radius: 0.625rem !important;
+  }
+
+  .pos-view-compact .pos-product-img-box img {
+    border-radius: 0.625rem !important;
+  }
+
+  .pos-view-compact .fi-ta-content-grid .fi-ta-record .fi-ta-text {
+    padding-left: 0.125rem !important;
+    padding-right: 0.125rem !important;
+    font-size: 0.72rem !important;
+    min-height: unset !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  .pos-view-compact .fi-ta-content-grid .fi-ta-record .fi-ta-actions {
+    padding-left: 0.125rem !important;
+    padding-right: 0.125rem !important;
+    justify-content: center !important;
+  }
+
+  .pos-view-compact .fi-ta-content-grid .fi-ta-record .fi-ta-actions > div {
+    justify-content: center !important;
+    width: 100% !important;
+  }
+
+  .pos-view-compact .fi-ta-content-grid .fi-ta-record .fi-ta-actions .mr-auto {
+    margin-right: 0 !important;
+  }
 </style>
 
 <div class="pos-main-layout flex flex-col md:flex-row gap-3 lg:gap-4 items-start w-full">
@@ -241,7 +405,9 @@
       @endforeach
     </div>
 
-    {{ $this->table }}
+    <div :class="'pos-view-' + ($wire.viewMode || 'grid')">
+      {{ $this->table }}
+    </div>
   </div>
 
   {{-- Kolom Order Details / Keranjang --}}
@@ -261,9 +427,9 @@
           <p class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">{{ __('Orders details') }}</p>
         </div>
         <div class="flex items-center">
-          <div class="hidden items-center gap-x-2 xl:flex">
-            <a href="/member/sellings"
-              class="flex items-center justify-center gap-x-1 rounded-lg bg-gray-100 px-4 py-1 text-gray-500">
+          <div class="hidden min-[480px]:flex items-center gap-x-1.5 lg:gap-x-2">
+            <a href="{{ \App\Filament\Tenant\Pages\Portal::getUrl() }}"
+              class="flex items-center justify-center gap-x-1 rounded-lg bg-gray-100 px-2.5 lg:px-4 py-1 text-xs lg:text-sm text-gray-500">
               <x-heroicon-o-arrow-left class="h-4 w-4 text-gray-500" />
               <p class="hidden lg:block">{{ __('Back') }} </p>
             </a>
@@ -308,7 +474,13 @@
         </div>
       </div>
       <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-        <p>{{ Filament::auth()->user()->cashier_name }}</p>
+        <div class="flex items-center gap-2">
+          <p class="font-medium text-gray-700 dark:text-gray-300">{{ pos_user()?->cashier_name ?? Filament::auth()->user()->cashier_name }}</p>
+          <button type="button" wire:click="switchCashier"
+            class="rounded-md border border-gray-200 dark:border-gray-700 px-2 py-0.5 text-[11px] font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+            {{ __('Ganti Kasir') }}
+          </button>
+        </div>
         <div class="flex items-center gap-x-2">
           <button type="button" x-on:click="$dispatch('open-modal', {id: 'draft-list-modal'})"
             class="flex items-center gap-1 rounded-lg border border-lakasir-primary/40 bg-lakasir-primary/10 px-2.5 py-1 text-xs font-semibold text-lakasir-primary transition hover:bg-lakasir-primary hover:text-white">
@@ -627,7 +799,8 @@
   <x-filament::modal id="proceed-the-payment" width="5xl">
     <form wire:submit.prevent="proceedThePayment">
       <div class="my-2 grid gap-x-4 md:grid-cols-2">
-        <div x-data="detail">
+        <div x-data="detail"
+          x-on:open-modal.window="if ($event.detail?.id === 'proceed-the-payment') { setTimeout(() => { if (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) { document.activeElement.blur(); } }, 60); }">
           <div class="rounded-lg">
             <div class="mb-4 grid grid-cols-4 gap-1">
               <template x-for="paymentMethod in paymentMethods">
@@ -666,9 +839,8 @@
               <span class="error text-danger-500">{{ $message }}</span>
             @enderror
             <input id="display"
-              class="@error('payed_money') 'border-danger-500' @enderror w-full rounded-md border border-gray-300 bg-white p-2 text-right text-lg text-black dark:bg-gray-900 dark:text-white"
-              focus :disabled="isTouchScreen" x-mask:dynamic="$money($input)" x-on:keyup="changes" x-ref="payedMoney"
-              inputMode="numeric">
+              class="@error('payed_money') 'border-danger-500' @enderror w-full rounded-md border border-gray-300 bg-white p-2 text-right text-lg text-black dark:bg-gray-900 dark:text-white cursor-default select-none"
+              readonly inputmode="none" x-mask:dynamic="$money($input)" x-on:keyup="changes" x-ref="payedMoney">
             <div class="mt-4 grid grid-cols-3 gap-4" id="calculator-button-shortcut">
             </div>
             <div class="mt-2 grid grid-cols-3 gap-2 lg:mt-2 lg:gap-2" id="calculator-button">

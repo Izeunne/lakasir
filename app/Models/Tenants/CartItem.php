@@ -46,7 +46,7 @@ class CartItem extends Model
 
     public function scopeCashier(Builder $builder): Builder
     {
-        return $builder->where('user_id', Filament::auth()->id());
+        return $builder->where('user_id', pos_user_id());
     }
 
     public function getPriceFormatMOneyAttribute()

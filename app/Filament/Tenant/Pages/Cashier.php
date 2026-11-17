@@ -66,11 +66,18 @@ class Cashier extends Page implements HasForms, HasTable
 
     public ?int $selectedCategoryId = null;
 
+    public string $viewMode = 'grid';
+
     public function setCategory(?int $categoryId = null): void
     {
         $this->selectedCategoryId = $categoryId;
         $this->resetPage();
         $this->resetTable();
+    }
+
+    public function setViewMode(string $mode): void
+    {
+        $this->viewMode = in_array($mode, ['grid', 'list', 'compact'], true) ? $mode : 'grid';
     }
 
     public ?int $activeDraftId = null;
@@ -408,5 +415,12 @@ class Cashier extends Page implements HasForms, HasTable
         });
 
         $this->total_price = $this->sub_total + ($this->sub_total * $this->tax / 100) - $this->discount_price;
+    }
+
+    public function switchCashier(): void
+    {
+        session()->forget('pos_user_id');
+
+        $this->redirect(Portal::getUrl(['open_pos' => 1]));
     }
 }
