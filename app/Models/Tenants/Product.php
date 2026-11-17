@@ -47,7 +47,7 @@ class Product extends Model
     public function CartItems(): HasMany
     {
         return $this->hasMany(CartItem::class)
-            ->where('user_id', Filament::auth()->id());
+            ->where('user_id', pos_user_id());
     }
 
     public function scopeStockLatestCalculateIn()

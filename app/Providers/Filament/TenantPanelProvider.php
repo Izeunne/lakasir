@@ -16,7 +16,9 @@ use App\Features\Voucher;
 use App\Filament\Tenant\Pages\CartItem;
 use App\Filament\Tenant\Pages\Cashier;
 use App\Filament\Tenant\Pages\CashierReport;
+use App\Filament\Tenant\Pages\Dashboard;
 use App\Filament\Tenant\Pages\GeneralSetting;
+use App\Filament\Tenant\Pages\Portal;
 use App\Filament\Tenant\Pages\POS;
 use App\Filament\Tenant\Pages\Printer;
 use App\Filament\Tenant\Pages\ProductReport;
@@ -25,6 +27,7 @@ use App\Filament\Tenant\Pages\Report;
 use App\Filament\Tenant\Pages\SellingReport;
 use App\Filament\Tenant\Pages\StorePin;
 use App\Filament\Tenant\Pages\TenantLogin;
+use App\Filament\Tenant\Pages\VoidedSellings;
 use App\Filament\Tenant\Resources\CategoryResource;
 use App\Filament\Tenant\Resources\MemberResource;
 use App\Filament\Tenant\Resources\PaymentMethodResource;
@@ -40,6 +43,7 @@ use App\Filament\Tenant\Resources\TableResource;
 use App\Filament\Tenant\Resources\UserResource;
 use App\Filament\Tenant\Resources\VoucherResource;
 use App\Http\Middleware\LocalizationMiddleware;
+use App\Http\Middleware\TenantPortalSecurityMiddleware;
 use App\Models\Tenants\About;
 use App\Tenant;
 use Filament\Forms\Components\DatePicker;
@@ -57,6 +61,7 @@ use Filament\Resources\Resource;
 use Filament\Support\Assets\Js;
 use Filament\Support\Colors\Color;
 use Filament\Support\Facades\FilamentView;
+use Filament\Tables\View\TablesRenderHook;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -110,6 +115,12 @@ class TenantPanelProvider extends PanelProvider
             fn () => filament()->hasDarkMode() ? view('filament.components.topbar-theme-switcher') : ''
         );
 
+        FilamentView::registerRenderHook(
+            TablesRenderHook::TOOLBAR_START,
+            fn () => view('filament.tenant.pages.cashier.view-mode-switcher'),
+            scopes: Cashier::class,
+        );
+
         if (app()->environment('demo')) {
             FilamentView::registerRenderHook(
                 PanelsRenderHook::BODY_START,
@@ -142,13 +153,17 @@ class TenantPanelProvider extends PanelProvider
             ->spa(config('app.spa_mode'))
             ->authGuard('web')
             ->path('/member')
+            ->homeUrl(fn (): string => Portal::getUrl())
             ->login(TenantLogin::class)
             ->navigation(fn (NavigationBuilder $navigationBuilder) => $this->buildNavigation($navigationBuilder))
             ->discoverResources(in: app_path('Filament/Tenant/Resources'), for: 'App\\Filament\\Tenant\\Resources')
             ->discoverPages(in: app_path('Filament/Tenant/Pages'), for: 'App\\Filament\\Tenant\\Pages')
             ->discoverWidgets(in: app_path('Filament/Tenant/Widgets'), for: 'App\\Filament\\Tenant\\Widgets')
             ->middleware($this->getMiddleware())
-            ->authMiddleware([Authenticate::class])
+            ->authMiddleware([
+                Authenticate::class,
+                TenantPortalSecurityMiddleware::class,
+            ])
             ->pages([
                 CartItem::class,
             ]);
@@ -166,10 +181,12 @@ class TenantPanelProvider extends PanelProvider
     private function getNavigationItems(): array
     {
         return [
-            ...Pages\Dashboard::getNavigationItems(),
-            $this->generateNavigationItem(Cashier::class),
-            $this->generateNavigationItem(POS::class, PosV2::class),
+            NavigationItem::make(__('Portal / Kunci Admin'))
+                ->icon('heroicon-o-squares-2x2')
+                ->url(fn (): string => Portal::getUrl()),
+            ...Dashboard::getNavigationItems(),
             $this->generateNavigationItem(SellingResource::class),
+            $this->generateNavigationItem(VoidedSellings::class),
             $this->generateNavigationItem(SupplierResource::class, Supplier::class),
             $this->generateNavigationItem(MemberResource::class, Member::class),
             $this->generateNavigationItem(PaymentMethodResource::class, PaymentMethod::class),

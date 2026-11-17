@@ -90,13 +90,32 @@ trait TableProduct
                 ])
                 ->space(1),
             ])
-            ->contentGrid([
-                'sm' => 2,
-                'md' => 3,
-                'lg' => 4,
-                'xl' => 4,
-                '2xl' => 4,
-            ])
+            ->contentGrid(match ($this->viewMode ?? 'grid') {
+                'list' => [
+                    'default' => 1,
+                    'sm' => 1,
+                    'md' => 1,
+                    'lg' => 1,
+                    'xl' => 1,
+                    '2xl' => 1,
+                ],
+                'compact' => [
+                    'default' => 2,
+                    'sm' => 3,
+                    'md' => 4,
+                    'lg' => 5,
+                    'xl' => 5,
+                    '2xl' => 6,
+                ],
+                default => [
+                    'default' => 2,
+                    'sm' => 2,
+                    'md' => 3,
+                    'lg' => 4,
+                    'xl' => 4,
+                    '2xl' => 4,
+                ],
+            })
             ->headerActionsPosition(HeaderActionsPosition::Bottom)
             ->searchPlaceholder(__('Search (SKU, name, barcode)'))
             ->recordAction('insert_amount')

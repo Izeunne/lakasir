@@ -32,6 +32,6 @@ class SellingObserver extends AbstractObserver implements DataAwareRule
         if (Setting::get('cash_drawer_enabled', false)) {
             $selling->cash_drawer_id = CashDrawer::lastOpened()->first()->id;
         }
-        $selling->user()->associate(auth()->user());
+        $selling->user()->associate(pos_user() ?? auth()->user());
     }
 }

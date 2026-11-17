@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
@@ -34,6 +35,7 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName
         'name',
         'email',
         'password',
+        'pin',
         'fcm_token',
         'is_owner',
     ];
@@ -45,6 +47,7 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName
      */
     protected $hidden = [
         'password',
+        'pin',
         'remember_token',
         'fcm_token',
     ];
@@ -145,5 +148,28 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName
         }
 
         return $this->can('create selling') || $this->can('update selling') || $this->can('read selling');
+    }
+
+    public function hasPin(): bool
+    {
+        return filled($this->pin);
+    }
+
+    public function verifyPin(?string $inputPin): bool
+    {
+        if (blank($inputPin) || blank($this->pin)) {
+            return false;
+        }
+
+        if (str_starts_with($this->pin, '$2y$') || str_starts_with($this->pin, '$argon2')) {
+            return Hash::check($inputPin, $this->pin);
+        }
+
+        return hash_equals((string) $this->pin, (string) $inputPin);
+    }
+
+    public function isAdminPanelUser(): bool
+    {
+        return $this->canManageStorePin();
     }
 }

@@ -22,6 +22,13 @@ class Dashboard extends BaseDashboard
 {
     use HasFiltersForm;
 
+    protected static ?string $slug = 'admin-dashboard';
+
+    public static function getRoutePath(): string
+    {
+        return '/admin-dashboard';
+    }
+
     public function getColumns(): int | string | array
     {
         return 12;

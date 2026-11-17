@@ -204,7 +204,7 @@ trait CartInteraction
 
     public function addCartWithVariations(Product $product, int $qty, array $selectedVariations = [])
     {
-        $auth = Filament::auth()->id();
+        $auth = pos_user_id();
 
         if (! $this->validateStock($product, $qty)) {
             return;
@@ -410,7 +410,7 @@ trait CartInteraction
 
     public function addCart(Product $product, ?array $data = null)
     {
-        $auth = Filament::auth()->id();
+        $auth = pos_user_id();
         $product->loadMissing('variations.options');
 
         if ($product->variations->isNotEmpty()) {
@@ -746,7 +746,7 @@ trait CartInteraction
         ])->values()->toArray();
 
         $draftData = [
-            'user_id' => Filament::auth()->id(),
+            'user_id' => pos_user_id(),
             'name' => filled($this->draftName) ? trim($this->draftName) : ('Draft #' . (CartDraft::count() + 1)),
             'order_type' => $this->orderType,
             'member_id' => $this->cartDetail['member_id'] ?? null,
@@ -789,7 +789,7 @@ trait CartInteraction
             return;
         }
 
-        $auth = Filament::auth()->id();
+        $auth = pos_user_id();
 
         CartItem::query()->cashier()->delete();
 
