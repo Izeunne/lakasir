@@ -1051,6 +1051,10 @@
                 wire:click="deleteDraft({{ $draft->id }})">
                 {{ __('Hapus') }}
               </x-filament::button>
+              <x-filament::button color="gray" size="sm" icon="heroicon-o-printer"
+                wire:click="printDraft({{ $draft->id }})">
+                {{ __('Cetak Tiket') }}
+              </x-filament::button>
               <x-filament::button size="sm" icon="heroicon-o-arrow-down-tray" wire:click="loadDraft({{ $draft->id }})">
                 {{ __('Muat & Bayar / Edit') }}
               </x-filament::button>
@@ -1212,6 +1216,14 @@
       }, 500);
     });
 
+    $wire.on('draft-saved', (event) => {
+      if (event && event.draft) {
+        setTimeout(() => {
+          executeDraftPrint(event.draft);
+        }, 300);
+      }
+    });
+
     document.getElementById("pdfReceiptButton")?.addEventListener('click', () => {
       if (selling && selling.id) {
         const printerData = getPrinter();
@@ -1236,6 +1248,7 @@
         'print_all_categories' => (bool) $p->print_all_categories,
         'category_ids' => array_map('intval', $p->category_ids ?? []),
         'show_price' => (bool) $p->show_price,
+        'print_on_draft' => (bool) ($p->print_on_draft ?? !$p->show_price),
         'header' => $p->header,
         'footer' => $p->footer,
         'copies' => (int) ($p->copies ?: 1),
@@ -1480,6 +1493,162 @@
 
           window.open('/member/sellings/' + currentSelling.id + '/receipt-pdf?width=' + defaultPaperWidth, '_blank');
         }
+      }
+    }
+
+    async function executeDraftPrint(draft) {
+      if (!draft || !Array.isArray(draft.items_to_print) || draft.items_to_print.length === 0) {
+        return;
+      }
+
+      const dbPrinters = @js(\App\Models\Tenants\Printer::active()->orderBy('id')->get()->map(fn($p) => [
+        'id' => $p->id,
+        'name' => $p->name,
+        'printerId' => $p->device_id,
+        'device_id' => $p->device_id,
+        'device_name' => $p->device_name,
+        'driver' => $p->connection_type,
+        'paper_width' => $p->paper_width ?: '58mm',
+        'print_all_categories' => (bool) $p->print_all_categories,
+        'category_ids' => array_map('intval', $p->category_ids ?? []),
+        'show_price' => (bool) $p->show_price,
+        'print_on_draft' => (bool) ($p->print_on_draft ?? !$p->show_price),
+        'header' => $p->header,
+        'footer' => $p->footer,
+        'copies' => (int) ($p->copies ?: 1),
+      ])->values());
+
+      const legacyPrinter = getPrinter();
+      const printersList = (Array.isArray(dbPrinters) && dbPrinters.length > 0)
+        ? dbPrinters
+        : ((legacyPrinter && !(legacyPrinter instanceof Error) && (legacyPrinter.printerId || window.LakasirBridge)) ? [{
+          name: legacyPrinter.name || 'Printer Kasir',
+          printerId: legacyPrinter.printerId || 'kasir',
+          device_id: legacyPrinter.printerId || 'kasir',
+          driver: legacyPrinter.driver || 'usb',
+          paper_width: legacyPrinter.paper_width || '58mm',
+          print_all_categories: true,
+          category_ids: [],
+          show_price: false,
+          print_on_draft: true,
+          header: legacyPrinter.header,
+          footer: legacyPrinter.footer,
+          copies: 1,
+        }] : []);
+
+      if (printersList.length === 0) {
+        return;
+      }
+
+      let anyPrinted = false;
+
+      for (const printerData of printersList) {
+        // Hanya cetak ke station printer yang diset untuk mencetak draf (default: printer checker / tanpa harga)
+        const isDraftPrinter = (printerData.print_on_draft !== undefined)
+          ? printerData.print_on_draft
+          : (!printerData.show_price);
+
+        if (!isDraftPrinter) {
+          continue;
+        }
+
+        // Filter item berdasarkan kategori yang ditugaskan ke printer station ini
+        const allItems = draft.items_to_print;
+        const filteredItems = printerData.print_all_categories
+          ? allItems
+          : allItems.filter(item => {
+            const catId = item.product && item.product.category_id ? parseInt(item.product.category_id, 10) : null;
+            return catId !== null && Array.isArray(printerData.category_ids) && printerData.category_ids.includes(catId);
+          });
+
+        if (filteredItems.length === 0) {
+          continue;
+        }
+
+        const paperWidth = printerData.paper_width || '58mm';
+        const dividerLine = paperWidth === '80mm'
+          ? '------------------------------------------------'
+          : '-------------------------------';
+
+        const targetDeviceId = printerData.device_id || printerData.printerId || 'kasir';
+        const numCopies = Math.max(1, parseInt(printerData.copies || 1));
+
+        for (let copyIndex = 1; copyIndex <= numCopies; copyIndex++) {
+          const printer = new Printer(targetDeviceId, paperWidth);
+          let printerAction = printer.font('a');
+
+          let stationTitle = (printerData.name || 'ORDER PESANAN').toUpperCase();
+          if (draft.is_reprint) {
+            stationTitle += ' (SALINAN)';
+          } else if (draft.has_additions) {
+            stationTitle += ' (TAMBAHAN)';
+          }
+
+          printerAction.size(1)
+            .align('center')
+            .text('*** ' + stationTitle + ' ***')
+            .size(0);
+
+          if (printerData.header) {
+            printerAction.text(printerData.header);
+          }
+
+          printerAction.align('left')
+            .text(dividerLine)
+            .table(['Draf / Order', draft.name || ('#' + draft.id)])
+            .table(['Kasir/Waitress', draft.user ? draft.user.name : '-']);
+
+          if (draft.order_type_label && draft.order_type_label !== '-') {
+            printerAction.table(['Tipe', draft.order_type_label]);
+          }
+          if (draft.table && draft.table.number) {
+            printerAction.table(['Meja', String(draft.table.number)]);
+          }
+          printerAction.table(['Waktu', draft.created_at || '']);
+          printerAction.text(dividerLine);
+
+          let totalQty = 0;
+          filteredItems.forEach(item => {
+            totalQty += Number(item.qty || 1);
+            let itemPrefix = item.is_additional ? '[TAMBAHAN] ' : '';
+            printerAction.text(`${itemPrefix}${item.qty}x  ${item.product.name}`);
+
+            if (item.selected_variations && item.selected_variations.length > 0) {
+              item.selected_variations.forEach(v => {
+                printerAction.text(`    - ${v.variation_name}: ${v.option_name}`);
+              });
+            }
+            if (item.note) {
+              printerAction.text(`    * ${item.note}`);
+            }
+            if (printerData.show_price && item.price) {
+              printerAction.align('right').text(moneyFormat(item.price * item.qty)).align('left');
+            }
+          });
+
+          printerAction.text(dividerLine)
+            .table(['TOTAL ITEM', `${totalQty} Porsi/Item`])
+            .align('center')
+            .text('[STATUS: DRAF - SEGERA DISIAPKAN]')
+            .align('center');
+
+          if (printerData.footer) {
+            printerAction.text(printerData.footer);
+          }
+
+          const printSuccess = await printerAction.cut().print(targetDeviceId);
+          if (printSuccess) {
+            anyPrinted = true;
+          }
+        }
+      }
+
+      if (anyPrinted) {
+        new FilamentNotification()
+          .title('@lang('Tiket Draf Otomatis Tercetak')')
+          .body('@lang('Pesanan draf telah otomatis dikirim ke printer station terkait.')')
+          .success()
+          .send();
       }
     }
 
