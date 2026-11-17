@@ -6,9 +6,9 @@ use App\Models\Tenants\Product;
 use App\Models\Tenants\Setting;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\HeaderActionsPosition;
-use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Table;
 
@@ -43,25 +43,18 @@ trait TableProduct
             ->paginationPageOptions([16, 24, 48])
             ->columns([
                 Stack::make([
-                    ImageColumn::make('hero_image')
-                        ->translateLabel()
-                        ->defaultImageUrl(url('/images/food-placeholder.svg'))
+                    ViewColumn::make('hero_image')
+                        ->view('filament.tenant.pages.cashier.product-image')
                         ->extraAttributes([
-                            'class' => 'py-0 w-full block m-0 p-0',
-                        ])
-                        ->extraImgAttributes([
-                            'class' => 'object-cover w-full h-32 rounded-t-xl block',
-                            'onerror' => "this.src='/images/food-placeholder.svg'",
-                        ])
-                        ->height(130)
-                        ->width('100%'),
+                            'class' => 'w-full block',
+                        ]),
                     TextColumn::make('selling_price')
                         ->color('primary')
                         ->money(Setting::get('currency', 'IDR'))
                         ->size('xs')
                         ->weight('extrabold')
                         ->extraAttributes([
-                            'class' => 'font-extrabold text-primary-600 dark:text-primary-400 mt-1 text-xs px-3',
+                            'class' => 'font-extrabold text-primary-600 dark:text-primary-400 mt-1 text-xs',
                         ]),
                     TextColumn::make('name')
                         ->size('xs')
@@ -75,7 +68,7 @@ trait TableProduct
                                 });
                         })
                         ->extraAttributes([
-                            'class' => 'font-bold line-clamp-2 min-h-[2rem] text-gray-900 dark:text-white leading-tight text-xs sm:text-sm px-3',
+                            'class' => 'font-bold line-clamp-2 min-h-[2rem] text-gray-900 dark:text-white leading-tight text-xs sm:text-sm',
                         ]),
                     TextColumn::make('stock')
                         ->hidden(function (Product $product) {
@@ -90,10 +83,7 @@ trait TableProduct
                                 ? 'danger'
                                 : 'success';
                         })
-                        ->formatStateUsing(fn (Product $product) => __('Stock').': '.$product->stock_calculate)
-                        ->extraAttributes([
-                            'class' => 'px-3',
-                        ]),
+                        ->formatStateUsing(fn (Product $product) => __('Stock').': '.$product->stock_calculate),
                 ])
                 ->extraAttributes([
                     'class' => 'w-full !items-stretch',

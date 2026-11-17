@@ -143,6 +143,35 @@
   display: block !important;
 }
 
+.pos-product-img-box {
+  margin-left: -1rem !important;
+  margin-right: -1rem !important;
+  margin-top: -1rem !important;
+  margin-bottom: 0.5rem !important;
+  width: calc(100% + 2rem) !important;
+  height: 130px !important;
+  min-height: 130px !important;
+  max-height: 130px !important;
+  overflow: hidden !important;
+  border-top-left-radius: 0.75rem !important;
+  border-top-right-radius: 0.75rem !important;
+  background-color: #f3f4f6;
+}
+
+.dark .pos-product-img-box {
+  background-color: #374151 !important;
+}
+
+.pos-product-image {
+  width: 100% !important;
+  min-width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+  border-top-left-radius: 0.75rem !important;
+  border-top-right-radius: 0.75rem !important;
+}
+
 /* Kolom teks dan aksi tetap memiliki padding dalam yang nyaman */
 .fi-ta-content-grid .fi-ta-record .fi-ta-text {
   padding-left: 0.75rem !important;
