@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Tenants\About;
+use App\Models\Tenants\CartDraft;
 use App\Models\Tenants\MobilePrinter;
 use App\Models\Tenants\Printer;
 use App\Models\Tenants\PrintQueue;
@@ -160,6 +161,143 @@ class PrintBridgeService
                         ],
                     ]);
                 }
+            }
+        }
+
+        return $queuedJobs;
+    }
+
+    /**
+     * Route a CartDraft to active printers configured for draft printing (station Dapur/Bar).
+     *
+     * @return array<int, PrintQueue>
+     */
+    public static function queueDraftPrints(CartDraft $draft, array $itemsToPrint = [], int $outletId = 1): array
+    {
+        if (empty($itemsToPrint)) {
+            return [];
+        }
+
+        $draft->loadMissing(['table', 'user', 'member']);
+        $activePrinters = Printer::active()->orderBy('id')->get();
+        if ($activePrinters->isEmpty()) {
+            return [];
+        }
+
+        $queuedJobs = [];
+        $itemsCollection = collect($itemsToPrint);
+
+        foreach ($activePrinters as $printer) {
+            $isDraftPrinter = $printer->print_on_draft ?? (! $printer->show_price);
+            if (! $isDraftPrinter) {
+                continue;
+            }
+
+            $filteredItems = $itemsCollection->filter(function ($item) use ($printer) {
+                $categoryId = $item['product']['category_id'] ?? null;
+
+                return $printer->appliesToCategory($categoryId ? (int) $categoryId : null);
+            })->values();
+
+            if ($filteredItems->isEmpty()) {
+                continue;
+            }
+
+            $copies = max(1, min(5, (int) ($printer->copies ?? 1)));
+            $paperWidth = $printer->paper_width ?: '58mm';
+            $targetPrinter = $printer->device_id;
+
+            $metaRows = [
+                ['label' => 'Station', 'value' => strtoupper($printer->name)],
+                ['label' => 'Draf / Order', 'value' => (string) ($draft->name ?? ('#' . $draft->id))],
+                ['label' => 'Waktu', 'value' => now()->format('d/m/Y H:i')],
+                ['label' => 'Kasir', 'value' => (string) ($draft->user?->name ?? 'Kasir')],
+            ];
+
+            if (! empty($draft->order_type_label) && $draft->order_type_label !== '-') {
+                $metaRows[] = ['label' => 'Tipe Pesanan', 'value' => strtoupper((string) $draft->order_type_label)];
+            }
+
+            if (! empty($draft->table?->number)) {
+                $metaRows[] = ['label' => 'Meja', 'value' => (string) $draft->table->number];
+            }
+
+            $layoutItems = [];
+            $ticketItems = [];
+            $totalQty = 0;
+
+            foreach ($filteredItems as $item) {
+                $productName = $item['product']['name'] ?? 'Item';
+                $qty = (float) ($item['qty'] ?? 1);
+                $totalQty += $qty;
+                $isAdditional = ! empty($item['is_additional']);
+                $displayName = ($isAdditional ? '[TAMBAHAN] ' : '') . $productName;
+
+                $modifiers = [];
+                if (! empty($item['selected_variations']) && is_array($item['selected_variations'])) {
+                    foreach ($item['selected_variations'] as $v) {
+                        $modifiers[] = ($v['variation_name'] ?? '') . ': ' . ($v['option_name'] ?? '');
+                    }
+                }
+
+                $notes = [];
+                if (! empty($item['note'])) {
+                    $notes[] = $item['note'];
+                }
+
+                $ticketItems[] = [
+                    'product_name' => $displayName,
+                    'qty' => $qty,
+                    'modifiers' => $modifiers,
+                    'notes' => $notes,
+                ];
+
+                $layoutItems[] = [
+                    'type' => 'item',
+                    'qty' => $qty,
+                    'name' => $displayName,
+                    'modifiers' => $modifiers,
+                    'note' => $item['note'] ?? null,
+                ];
+            }
+
+            for ($i = 0; $i < $copies; $i++) {
+                $queuedJobs[] = PrintQueue::create([
+                    'outlet_id' => $outletId,
+                    'queue_type' => 'kitchen',
+                    'station_id' => (string) $printer->id,
+                    'target_printer' => $targetPrinter,
+                    'selling_id' => null,
+                    'status' => 'queued',
+                    'type' => 'kitchen_ticket',
+                    'paper_width' => $paperWidth,
+                    'layout' => [
+                        'header' => [
+                            'title' => '*** ' . strtoupper($printer->name) . ' (DRAF) ***',
+                            'meta' => $metaRows,
+                        ],
+                        'items' => $layoutItems,
+                        'footer' => [
+                            'total_qty' => $totalQty,
+                            'status' => 'DRAF - SEGERA DISIAPKAN',
+                        ],
+                    ],
+                    'ticket' => [
+                        'title' => strtoupper($printer->name) . ' (DRAF)',
+                        'meta' => $metaRows,
+                        'items' => $ticketItems,
+                        'total_items' => $totalQty,
+                    ],
+                    'payload' => [
+                        'draft_id' => $draft->id,
+                        'printer_id' => $printer->id,
+                        'printer_name' => $printer->name,
+                        'target_printer' => $targetPrinter,
+                        'paper_width' => $paperWidth,
+                        'show_price' => false,
+                        'copy' => $i + 1,
+                    ],
+                ]);
             }
         }
 

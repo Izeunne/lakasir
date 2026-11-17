@@ -735,15 +735,71 @@ trait CartInteraction
             return;
         }
 
-        $itemsPayload = $this->cartItems->map(fn (CartItem $cartItem) => [
-            'product_id' => $cartItem->product_id,
-            'qty' => $cartItem->qty,
-            'price' => $cartItem->price,
-            'discount_price' => $cartItem->discount_price,
-            'price_unit_id' => $cartItem->price_unit_id,
-            'selected_variations' => $cartItem->selected_variations,
-            'note' => $cartItem->note,
-        ])->values()->toArray();
+        $existingDraft = $this->activeDraftId ? CartDraft::find($this->activeDraftId) : null;
+        $existingItems = $existingDraft ? ($existingDraft->items ?? []) : [];
+
+        $buildSignature = function ($item): string {
+            $productId = is_array($item) ? ($item['product_id'] ?? null) : $item->product_id;
+            $variations = is_array($item) ? ($item['selected_variations'] ?? []) : ($item->selected_variations ?? []);
+            $note = is_array($item) ? ($item['note'] ?? '') : ($item->note ?? '');
+            $priceUnitId = is_array($item) ? ($item['price_unit_id'] ?? '') : ($item->price_unit_id ?? '');
+
+            if (is_array($variations)) {
+                usort($variations, fn ($a, $b) => ($a['option_id'] ?? 0) <=> ($b['option_id'] ?? 0));
+            }
+
+            return $productId . '|' . $priceUnitId . '|' . md5(json_encode($variations)) . '|' . trim((string) $note);
+        };
+
+        $existingPrintedQtyMap = [];
+        foreach ($existingItems as $exItem) {
+            $sig = $buildSignature($exItem);
+            $qty = floatval($exItem['printed_qty'] ?? $exItem['qty'] ?? 0);
+            $existingPrintedQtyMap[$sig] = ($existingPrintedQtyMap[$sig] ?? 0) + $qty;
+        }
+
+        $itemsPayload = [];
+        $itemsToPrint = [];
+
+        $productIds = $this->cartItems->pluck('product_id')->unique()->toArray();
+        $products = Product::with('category')->whereIn('id', $productIds)->get()->keyBy('id');
+
+        foreach ($this->cartItems as $cartItem) {
+            $sig = $buildSignature($cartItem);
+            $alreadyPrinted = $existingPrintedQtyMap[$sig] ?? 0;
+            $currentQty = floatval($cartItem->qty);
+            $unprintedQty = max(0, $currentQty - $alreadyPrinted);
+
+            $itemsPayload[] = [
+                'product_id' => $cartItem->product_id,
+                'qty' => $cartItem->qty,
+                'price' => $cartItem->price,
+                'discount_price' => $cartItem->discount_price,
+                'price_unit_id' => $cartItem->price_unit_id,
+                'selected_variations' => $cartItem->selected_variations,
+                'note' => $cartItem->note,
+                'printed_qty' => $currentQty,
+            ];
+
+            if ($unprintedQty > 0) {
+                $product = $products->get($cartItem->product_id);
+                $itemsToPrint[] = [
+                    'product_id' => $cartItem->product_id,
+                    'product' => [
+                        'id' => $product?->id,
+                        'name' => $product?->name ?? 'Item',
+                        'category_id' => $product?->category_id,
+                        'category_name' => $product?->category?->name ?? null,
+                    ],
+                    'qty' => $unprintedQty,
+                    'total_qty' => $currentQty,
+                    'is_additional' => ($alreadyPrinted > 0 || ! empty($existingDraft)),
+                    'price' => $cartItem->price,
+                    'selected_variations' => $cartItem->selected_variations,
+                    'note' => $cartItem->note,
+                ];
+            }
+        }
 
         $draftData = [
             'user_id' => pos_user_id(),
@@ -758,11 +814,25 @@ trait CartInteraction
             'items' => $itemsPayload,
         ];
 
-        if ($this->activeDraftId && ($existingDraft = CartDraft::find($this->activeDraftId))) {
+        if ($existingDraft) {
             $existingDraft->update($draftData);
+            $savedDraft = $existingDraft->fresh(['table', 'member', 'user']);
         } else {
-            CartDraft::create($draftData);
+            $savedDraft = CartDraft::create($draftData)->load(['table', 'member', 'user']);
         }
+
+        $draftPayload = [
+            'id' => $savedDraft->id,
+            'name' => $savedDraft->name,
+            'order_type' => $savedDraft->order_type,
+            'order_type_label' => $savedDraft->order_type_label,
+            'table' => $savedDraft->table ? ['number' => $savedDraft->table->number] : null,
+            'user' => ['name' => Filament::auth()->user()?->name ?? 'Kasir'],
+            'created_at' => now()->format('d/m/Y H:i'),
+            'items_to_print' => $itemsToPrint,
+            'has_additions' => collect($itemsToPrint)->contains('is_additional', true),
+            'is_reprint' => false,
+        ];
 
         CartItem::query()->cashier()->delete();
 
@@ -780,6 +850,78 @@ trait CartInteraction
             ->send();
 
         $this->mount();
+
+        if (! empty($itemsToPrint)) {
+            $this->dispatch('draft-saved', draft: $draftPayload);
+            try {
+                \App\Services\PrintBridgeService::queueDraftPrints($savedDraft, $itemsToPrint);
+            } catch (\Throwable $e) {
+                // Ignore background bridge queue error if not configured
+            }
+        }
+    }
+
+    public function printDraft(int $draftId, bool $forceAll = true): void
+    {
+        $draft = CartDraft::with(['table', 'user', 'member'])->find($draftId);
+        if (! $draft) {
+            return;
+        }
+
+        $items = $draft->items ?? [];
+        if (empty($items)) {
+            return;
+        }
+
+        $productIds = collect($items)->pluck('product_id')->unique()->toArray();
+        $products = Product::with('category')->whereIn('id', $productIds)->get()->keyBy('id');
+
+        $itemsToPrint = [];
+        foreach ($items as $item) {
+            $product = $products->get($item['product_id']);
+            $itemsToPrint[] = [
+                'product_id' => $item['product_id'],
+                'product' => [
+                    'id' => $product?->id,
+                    'name' => $product?->name ?? 'Item',
+                    'category_id' => $product?->category_id,
+                    'category_name' => $product?->category?->name ?? null,
+                ],
+                'qty' => $item['qty'] ?? 1,
+                'total_qty' => $item['qty'] ?? 1,
+                'is_additional' => false,
+                'price' => $item['price'] ?? 0,
+                'selected_variations' => $item['selected_variations'] ?? [],
+                'note' => $item['note'] ?? null,
+            ];
+        }
+
+        $draftPayload = [
+            'id' => $draft->id,
+            'name' => $draft->name,
+            'order_type' => $draft->order_type,
+            'order_type_label' => $draft->order_type_label,
+            'table' => $draft->table ? ['number' => $draft->table->number] : null,
+            'user' => ['name' => $draft->user?->name ?? Filament::auth()->user()?->name ?? 'Kasir'],
+            'created_at' => $draft->created_at?->format('d/m/Y H:i') ?? now()->format('d/m/Y H:i'),
+            'items_to_print' => $itemsToPrint,
+            'has_additions' => false,
+            'is_reprint' => true,
+        ];
+
+        $this->dispatch('draft-saved', draft: $draftPayload);
+
+        try {
+            \App\Services\PrintBridgeService::queueDraftPrints($draft, $itemsToPrint);
+        } catch (\Throwable $e) {
+            // Ignore background bridge queue error if not configured
+        }
+
+        Notification::make()
+            ->title(__('Tiket Draft Dikirim ke Printer'))
+            ->body(__('Tiket draft ":name" berhasil dikirim ke printer station terkait.', ['name' => $draft->name]))
+            ->success()
+            ->send();
     }
 
     public function loadDraft(int $draftId): void

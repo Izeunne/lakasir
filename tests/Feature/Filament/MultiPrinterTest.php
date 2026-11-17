@@ -481,4 +481,90 @@ test('print queue and notification routes are accessible on tenant context and r
     expect($queue->fresh()->status)->toBe('completed');
 });
 
+test('queueDraftPrints routes draft items to beverage station and skips kitchen when draft only has drinks', function () {
+    $user = User::first();
+    actingAs($user);
+
+    $catMakanan = Category::create(['name' => 'Makanan']);
+    $catMinuman = Category::create(['name' => 'Minuman']);
+
+    $esKopi = Product::create([
+        'name' => 'Es Kopi Susu',
+        'category_id' => $catMinuman->id,
+        'selling_price' => 15000,
+        'purchase_price' => 7000,
+        'type' => 'product',
+        'is_non_stock' => true,
+        'show' => true,
+    ]);
+
+    // Station Minuman / Bar (Checker without price)
+    $printerBar = Printer::create([
+        'name' => 'Station Bar Minuman',
+        'driver' => 'bluetooth',
+        'device_id' => 'BAR-01',
+        'device_name' => 'Printer Bar Bluetooth',
+        'connection_type' => 'bluetooth',
+        'paper_width' => '58mm',
+        'print_all_categories' => false,
+        'category_ids' => [$catMinuman->id],
+        'show_price' => false,
+        'print_on_draft' => true,
+        'is_active' => true,
+    ]);
+
+    // Station Dapur (Checker without price)
+    $printerDapur = Printer::create([
+        'name' => 'Station Dapur',
+        'driver' => 'lan',
+        'device_id' => 'KITCHEN-01',
+        'device_name' => 'Printer Dapur LAN',
+        'connection_type' => 'lan',
+        'paper_width' => '80mm',
+        'print_all_categories' => false,
+        'category_ids' => [$catMakanan->id],
+        'show_price' => false,
+        'print_on_draft' => true,
+        'is_active' => true,
+    ]);
+
+    $draft = \App\Models\Tenants\CartDraft::create([
+        'user_id' => $user->id,
+        'name' => 'Meja 08 - Minuman Dulu',
+        'order_type' => 'dine_in',
+        'items' => [
+            [
+                'product_id' => $esKopi->id,
+                'qty' => 2,
+                'price' => 15000,
+                'printed_qty' => 2,
+            ],
+        ],
+    ]);
+
+    $itemsToPrint = [
+        [
+            'product_id' => $esKopi->id,
+            'product' => [
+                'id' => $esKopi->id,
+                'name' => $esKopi->name,
+                'category_id' => $catMinuman->id,
+            ],
+            'qty' => 2,
+            'is_additional' => false,
+            'note' => 'Less ice',
+        ],
+    ];
+
+    $queuedJobs = PrintBridgeService::queueDraftPrints($draft, $itemsToPrint);
+
+    // Only 1 job queued: for Station Bar Minuman! Kitchen is skipped!
+    expect($queuedJobs)->toHaveCount(1)
+        ->and($queuedJobs[0]->target_printer)->toBe('BAR-01')
+        ->and($queuedJobs[0]->queue_type)->toBe('kitchen')
+        ->and($queuedJobs[0]->type)->toBe('kitchen_ticket')
+        ->and($queuedJobs[0]->ticket['items'][0]['product_name'])->toBe('Es Kopi Susu');
+});
+
+
 

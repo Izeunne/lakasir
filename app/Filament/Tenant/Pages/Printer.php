@@ -246,6 +246,12 @@ class Printer extends Page implements HasActions, HasForms, HasTable
                         ->default(true)
                         ->columnSpanFull(),
 
+                    Components\Toggle::make('print_on_draft')
+                        ->label(__('Cetak Saat Simpan Draf (Bar / Dapur)'))
+                        ->helperText(__('Otomatis mencetak tiket pesanan saat kasir menyimpan draf sementara (sangat direkomendasikan untuk Station Minuman / Bar dan Dapur agar pesanan langsung disiapkan).'))
+                        ->default(fn (Get $get): bool => ! (bool) $get('show_price'))
+                        ->columnSpanFull(),
+
                     Components\CheckboxList::make('category_ids')
                         ->label(__('Pilih Kategori Menu yang Dicetak oleh Printer Ini'))
                         ->options(fn () => Category::orderBy('name')->pluck('name', 'id')->toArray())
@@ -340,6 +346,9 @@ class Printer extends Page implements HasActions, HasForms, HasTable
 
                 Tables\Columns\ToggleColumn::make('show_header')
                     ->label(__('Kop Toko')),
+
+                Tables\Columns\ToggleColumn::make('print_on_draft')
+                    ->label(__('Cetak Draf')),
 
                 Tables\Columns\ToggleColumn::make('is_active')
                     ->label(__('Aktif')),

@@ -21,6 +21,7 @@ class Printer extends Model
         'category_ids' => 'array',
         'show_price' => 'boolean',
         'show_header' => 'boolean',
+        'print_on_draft' => 'boolean',
         'copies' => 'integer',
         'is_active' => 'boolean',
     ];
