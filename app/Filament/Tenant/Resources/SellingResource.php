@@ -3,7 +3,6 @@
 namespace App\Filament\Tenant\Resources;
 
 use App\Features\ProductInitialPrice;
-use App\Filament\Tenant\Pages\StorePin;
 use App\Filament\Tenant\Resources\SellingResource\Pages;
 use App\Models\Tenants\Profile;
 use App\Models\Tenants\Selling;
@@ -180,7 +179,7 @@ class SellingResource extends Resource
                     ->icon('heroicon-o-trash')
                     ->color('danger')
                     ->modalHeading(__('Void Riwayat Penjualan'))
-                    ->modalDescription(__('Masukkan PIN Toko untuk me-void riwayat penjualan ini. Data tidak tampil di riwayat maupun laporan, dan stok produk akan dikembalikan.'))
+                    ->modalDescription(__('Masukkan PIN Superadmin / Admin untuk me-void riwayat penjualan ini. Data tidak tampil di riwayat maupun laporan, dan stok produk akan dikembalikan.'))
                     ->modalSubmitActionLabel(__('Verifikasi PIN & Void'))
                     ->visible(function (): bool {
                         /** @var ?User $user */
@@ -200,12 +199,12 @@ class SellingResource extends Resource
     {
         return [
             TextInput::make('pin')
-                ->label(__('PIN Toko'))
+                ->label(__('PIN Superadmin / Admin'))
                 ->password()
                 ->revealable()
                 ->numeric()
                 ->required()
-                ->placeholder(__('Masukkan PIN Toko')),
+                ->placeholder(__('Masukkan PIN Superadmin / Admin')),
             Textarea::make('void_reason')
                 ->label(__('Alasan Void (Opsional)'))
                 ->placeholder(__('Contoh: Salah input item, pelanggan membatalkan pesanan, dll.'))
@@ -216,20 +215,23 @@ class SellingResource extends Resource
 
     public static function handleVoidAction(Selling $record, array $data): bool
     {
-        if (! StorePin::isPinConfigured()) {
+        /** @var ?User $authUser */
+        $authUser = Filament::auth()->user();
+
+        if (! User::hasConfiguredAdminPin($authUser)) {
             Notification::make()
-                ->title(__('PIN Toko Belum Diatur'))
-                ->body(__('Silakan atur PIN Toko terlebih dahulu di menu PIN Toko sebelum melakukan void penjualan.'))
+                ->title(__('PIN Admin Belum Diatur'))
+                ->body(__('Silakan atur PIN Superadmin / Admin terlebih dahulu di menu Pengaturan PIN sebelum melakukan void penjualan.'))
                 ->danger()
                 ->send();
 
             return false;
         }
 
-        if (! StorePin::verify($data['pin'] ?? null)) {
+        if (! User::verifyAdminPin($data['pin'] ?? null, $authUser)) {
             Notification::make()
-                ->title(__('PIN Toko Salah'))
-                ->body(__('PIN Toko yang Anda masukkan tidak sesuai. Void dibatalkan.'))
+                ->title(__('PIN Salah'))
+                ->body(__('PIN Superadmin / Admin yang Anda masukkan tidak sesuai. Void dibatalkan.'))
                 ->danger()
                 ->send();
 

@@ -3,7 +3,6 @@
 namespace App\Filament\Tenant\Resources\SellingResource\Pages;
 
 use App\Features\PrintSellingA5;
-use App\Filament\Tenant\Pages\StorePin;
 use App\Filament\Tenant\Resources\SellingDetailResource\RelationManagers\SellingDetailsRelationManager;
 use App\Filament\Tenant\Resources\SellingResource;
 use App\Models\Tenants\About;
@@ -73,7 +72,7 @@ class ViewSelling extends ViewRecord
                 ->icon('heroicon-o-trash')
                 ->color('danger')
                 ->modalHeading(__('Void Riwayat Penjualan'))
-                ->modalDescription(__('Masukkan PIN Toko untuk me-void riwayat penjualan ini. Data tidak tampil di riwayat maupun laporan, dan stok produk akan dikembalikan.'))
+                ->modalDescription(__('Masukkan PIN Superadmin / Admin untuk me-void riwayat penjualan ini. Data tidak tampil di riwayat maupun laporan, dan stok produk akan dikembalikan.'))
                 ->modalSubmitActionLabel(__('Verifikasi PIN & Void'))
                 ->visible(function (): bool {
                     /** @var ?User $user */

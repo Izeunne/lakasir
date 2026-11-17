@@ -91,7 +91,7 @@
   {{-- POS Modal: Select User + Input PIN --}}
   @if ($activeModal === 'pos')
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div class="w-full max-w-lg rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-2xl overflow-hidden">
+      <div class="w-full max-w-lg rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-2xl">
         <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 px-6 py-4">
           <div>
             <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ __('Masuk ke POS') }}</h3>
@@ -109,32 +109,101 @@
             </div>
           @endif
 
-          <div>
+          @php
+            $cashierOptions = $this->users->map(fn ($user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'role' => $user->is_owner ? 'Owner' : ($user->roles->first()?->name ?? 'User'),
+                'has_pin' => $user->hasPin(),
+            ])->values();
+          @endphp
+
+          <div
+            x-data="{
+              open: false,
+              search: '',
+              users: @js($cashierOptions),
+              get selectedUser() {
+                return this.users.find(u => u.id === $wire.selectedUserId) || null;
+              },
+              get filteredUsers() {
+                if (!this.search.trim()) return this.users;
+                const q = this.search.toLowerCase();
+                return this.users.filter(u => u.name.toLowerCase().includes(q));
+              },
+              choose(user) {
+                $wire.selectUser(user.id);
+                this.open = false;
+                this.search = '';
+              }
+            }"
+            @click.outside="open = false"
+            class="relative"
+          >
             <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
               {{ __('Pilih Kasir') }}
             </label>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-56 overflow-y-auto pr-1">
-              @foreach ($this->users as $user)
-                @php
-                  $isSelected = $selectedUserId === $user->id;
-                  $roleLabel = $user->is_owner ? 'Owner' : ($user->roles->first()?->name ?? 'User');
-                @endphp
-                <button
-                  type="button"
-                  wire:click="selectUser({{ $user->id }})"
-                  class="flex items-center justify-between rounded-xl border p-3 text-left transition {{ $isSelected ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/40 ring-1 ring-primary-500' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600' }}"
-                >
-                  <div class="min-w-0">
-                    <p class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ $user->name }}</p>
-                    <p class="truncate text-xs text-gray-500 dark:text-gray-400">{{ $roleLabel }}</p>
-                  </div>
-                  @if (! $user->hasPin())
-                    <span class="ml-2 shrink-0 rounded-md bg-warning-100 dark:bg-warning-900/40 px-2 py-0.5 text-[10px] font-medium text-warning-700 dark:text-warning-300">
-                      {{ __('No PIN') }}
-                    </span>
-                  @endif
-                </button>
-              @endforeach
+
+            <button
+              type="button"
+              @click="open = !open; if (open) $nextTick(() => $refs.cashierSearch?.focus())"
+              class="flex w-full items-center justify-between rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-left text-sm transition focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            >
+              <div class="min-w-0 flex-1">
+                <div x-show="selectedUser" class="flex items-center gap-2">
+                  <span class="truncate font-semibold text-gray-900 dark:text-white" x-text="selectedUser?.name ?? ''"></span>
+                  <span class="rounded-md bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300" x-text="selectedUser?.role ?? ''"></span>
+                  <span x-show="selectedUser && !selectedUser.has_pin" class="rounded-md bg-warning-100 dark:bg-warning-900/40 px-2 py-0.5 text-[10px] font-medium text-warning-700 dark:text-warning-300">
+                    {{ __('No PIN') }}
+                  </span>
+                </div>
+                <span x-show="!selectedUser" class="text-gray-400 dark:text-gray-500">{{ __('-- Pilih nama kasir --') }}</span>
+              </div>
+              <x-heroicon-o-chevron-up-down class="ml-2 h-5 w-5 shrink-0 text-gray-400" />
+            </button>
+
+            <div
+              x-show="open"
+              x-transition
+              class="absolute left-0 right-0 z-30 mt-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl overflow-hidden"
+            >
+              <div class="border-b border-gray-200 dark:border-gray-700 p-2">
+                <div class="relative">
+                  <x-heroicon-o-magnifying-glass class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
+                    x-ref="cashierSearch"
+                    x-model="search"
+                    type="text"
+                    placeholder="{{ __('Cari nama atau role kasir...') }}"
+                    class="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 py-2 pl-9 pr-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  >
+                </div>
+              </div>
+
+              <div class="max-h-52 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700/60">
+                <template x-for="user in filteredUsers" :key="user.id">
+                  <button
+                    type="button"
+                    @click="choose(user)"
+                    class="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm hover:bg-primary-50 dark:hover:bg-primary-950/40 transition"
+                    :class="{ 'bg-primary-50 dark:bg-primary-950/40': $wire.selectedUserId === user.id }"
+                  >
+                    <div class="min-w-0">
+                      <p class="truncate font-semibold text-gray-900 dark:text-white" x-text="user.name"></p>
+                      <p class="truncate text-xs text-gray-500 dark:text-gray-400" x-text="user.role"></p>
+                    </div>
+                    <div class="ml-2 flex items-center gap-2 shrink-0">
+                      <span x-show="!user.has_pin" class="rounded-md bg-warning-100 dark:bg-warning-900/40 px-2 py-0.5 text-[10px] font-medium text-warning-700 dark:text-warning-300">
+                        {{ __('No PIN') }}
+                      </span>
+                      <x-heroicon-s-check-circle x-show="$wire.selectedUserId === user.id" class="h-4 w-4 text-primary-600" />
+                    </div>
+                  </button>
+                </template>
+                <div x-show="filteredUsers.length === 0" class="px-4 py-4 text-center text-xs text-gray-500 dark:text-gray-400">
+                  {{ __('Kasir tidak ditemukan') }}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -146,9 +215,11 @@
               id="posPinInput"
               type="password"
               inputmode="numeric"
+              autocomplete="one-time-code"
+              readonly
+              onfocus="this.removeAttribute('readonly')"
               wire:model="posPin"
               placeholder="{{ __('Masukkan 4-8 digit PIN') }}"
-              autofocus
               class="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-center text-lg tracking-[0.4em] font-bold text-gray-900 dark:text-white focus:border-primary-500 focus:ring-primary-500"
             >
           </div>
@@ -202,9 +273,11 @@
               id="adminPinInput"
               type="password"
               inputmode="numeric"
+              autocomplete="one-time-code"
+              readonly
+              onfocus="this.removeAttribute('readonly')"
               wire:model="adminPin"
               placeholder="{{ __('Masukkan PIN Admin') }}"
-              autofocus
               class="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-center text-lg tracking-[0.4em] font-bold text-gray-900 dark:text-white focus:border-primary-500 focus:ring-primary-500"
             >
           </div>
