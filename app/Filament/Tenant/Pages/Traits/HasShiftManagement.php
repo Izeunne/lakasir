@@ -9,7 +9,6 @@ use Filament\Notifications\Notification;
 trait HasShiftManagement
 {
     public ?int $activeDrawerId = null;
-    public float|string $startingCashInput = 0;
     public ?array $activeShiftSummary = null;
 
     public function initializeShift(): void
@@ -21,8 +20,7 @@ trait HasShiftManagement
 
     public function openShiftModal(): void
     {
-        $this->startingCashInput = 0;
-        $this->dispatch('open-modal', id: 'open-shift-modal');
+        $this->submitOpenShift();
     }
 
     public function submitOpenShift(): void
@@ -41,12 +39,9 @@ trait HasShiftManagement
         }
 
         $userId = pos_user_id() ?? auth()->id() ?? 1;
-        $startingCash = (float) str_replace(',', '', (string) $this->startingCashInput);
 
-        $drawer = $service->openShift($startingCash, (int) $userId);
+        $drawer = $service->openShift(0, (int) $userId);
         $this->activeDrawerId = $drawer->id;
-
-        $this->dispatch('close-modal', id: 'open-shift-modal');
 
         $openSlipPayload = [
             'type' => 'open_shift',
@@ -55,14 +50,13 @@ trait HasShiftManagement
             'drawer_id' => $drawer->id,
             'cashier_name' => pos_user()?->name ?? auth()->user()?->name ?? 'Kasir',
             'opened_at' => now()->format('d/m/Y H:i'),
-            'starting_cash' => $startingCash,
         ];
 
         $this->dispatch('open-shift-printed', slip: $openSlipPayload);
 
         Notification::make()
             ->title(__('Buka Kasir Berhasil'))
-            ->body(__('Sesi shift baru telah dibuka dengan modal awal :cash.', ['cash' => price_format($startingCash)]))
+            ->body(__('Sesi kasir baru (Shift #:id) telah aktif.', ['id' => $drawer->id]))
             ->success()
             ->send();
     }

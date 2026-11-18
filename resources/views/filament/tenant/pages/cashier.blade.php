@@ -479,7 +479,7 @@
                 </x-filament::dropdown.list.item>
               @else
                 <x-filament::dropdown.list.item wire:click="openShiftModal" icon="heroicon-o-lock-open" color="warning">
-                  {{ __('Buka Kasir (Modal Awal)') }}
+                  {{ __('Buka Kasir') }}
                 </x-filament::dropdown.list.item>
               @endif
 
@@ -1275,53 +1275,6 @@
     </x-slot>
   </x-filament::modal>
 
-  {{-- Modal Buka Kasir (Mulai Shift) --}}
-  <x-filament::modal id="open-shift-modal" width="md">
-    <x-slot name="heading">
-      <div class="flex items-center gap-2">
-        <x-heroicon-o-lock-open class="h-6 w-6 text-amber-500" />
-        <span>{{ __('Buka Kasir / Mulai Shift') }}</span>
-      </div>
-    </x-slot>
-
-    <div class="space-y-4">
-      <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 text-xs text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-300 space-y-1.5">
-        <div class="flex justify-between">
-          <span class="text-gray-500 dark:text-gray-400">{{ __('Kasir Bertugas') }}:</span>
-          <span class="font-bold">{{ pos_user()?->name ?? Filament::auth()->user()->name }}</span>
-        </div>
-        <div class="flex justify-between">
-          <span class="text-gray-500 dark:text-gray-400">{{ __('Waktu Buka') }}:</span>
-          <span class="font-semibold">{{ now()->format('d M Y H:i') }}</span>
-        </div>
-      </div>
-
-      <div class="space-y-1.5">
-        <label class="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-          {{ __('Modal Kas Awal di Laci (Starting Cash)') }}
-        </label>
-        <x-filament::input.wrapper prefix="{{ $currency ?? 'IDR' }}">
-          <x-filament::input type="number" wire:model="startingCashInput" step="1000" min="0"
-            placeholder="0" autofocus class="text-lg font-bold" />
-        </x-filament::input.wrapper>
-        <p class="text-[11px] text-gray-500 dark:text-gray-400">
-          {{ __('Masukkan jumlah uang kembalian yang dimasukkan ke laci kasir saat awal shift.') }}
-        </p>
-      </div>
-    </div>
-
-    <x-slot name="footer">
-      <div class="flex items-center justify-end gap-2">
-        <x-filament::button color="gray" x-on:click="$dispatch('close-modal', {id: 'open-shift-modal'})">
-          {{ __('Batal') }}
-        </x-filament::button>
-        <x-filament::button color="primary" icon="heroicon-o-lock-open" wire:click="submitOpenShift">
-          {{ __('Buka Kasir & Cetak Bukti') }}
-        </x-filament::button>
-      </div>
-    </x-slot>
-  </x-filament::modal>
-
   {{-- Modal Tutup Kasir (Shift Closing Report / Z-Report) --}}
   <x-filament::modal id="close-shift-modal" width="3xl">
     <x-slot name="heading">
@@ -1355,20 +1308,20 @@
           </div>
         </div>
 
-        {{-- Ringkasan Kas Laci --}}
+        {{-- Ringkasan Penjualan & Kas Tunai --}}
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <div class="rounded-xl border border-gray-200 bg-white p-3 text-xs dark:border-gray-800 dark:bg-gray-900">
-            <span class="text-gray-500 dark:text-gray-400">{{ __('Modal Awal Kas') }}</span>
-            <p class="mt-1 text-base font-bold text-gray-800 dark:text-gray-200">{{ price_format($activeShiftSummary['starting_cash']) }}</p>
+            <span class="text-gray-500 dark:text-gray-400">{{ __('Total Penjualan Shift') }}</span>
+            <p class="mt-1 text-base font-bold text-gray-800 dark:text-gray-200">{{ price_format($activeShiftSummary['total_grand_total']) }}</p>
           </div>
           <div class="rounded-xl border border-gray-200 bg-white p-3 text-xs dark:border-gray-800 dark:bg-gray-900">
-            <span class="text-gray-500 dark:text-gray-400">{{ __('Penjualan Tunai (Cash)') }}</span>
-            <p class="mt-1 text-base font-bold text-emerald-600 dark:text-emerald-400">+ {{ price_format($activeShiftSummary['total_cash_sales']) }}</p>
+            <span class="text-gray-500 dark:text-gray-400">{{ __('Total Item Terjual') }}</span>
+            <p class="mt-1 text-base font-bold text-lakasir-primary">{{ $activeShiftSummary['total_qty_sold'] }} {{ __('Porsi/Pcs') }}</p>
           </div>
           <div class="rounded-xl border border-emerald-500/30 bg-emerald-50/60 p-3 text-xs dark:border-emerald-800 dark:bg-emerald-950/30">
-            <span class="text-emerald-800 dark:text-emerald-300 font-semibold">{{ __('Total Uang di Laci Kasir') }}</span>
+            <span class="text-emerald-800 dark:text-emerald-300 font-semibold">{{ __('Total Kas Tunai (Uang di Laci)') }}</span>
             <p class="mt-1 text-lg font-extrabold text-emerald-700 dark:text-emerald-300">{{ price_format($activeShiftSummary['expected_cash_in_drawer']) }}</p>
-            <p class="text-[10px] text-emerald-600/80 dark:text-emerald-400/80">{{ __('Modal Awal + Tunai Masuk') }}</p>
+            <p class="text-[10px] text-emerald-600/80 dark:text-emerald-400/80">{{ __('Total Uang Penjualan Tunai') }}</p>
           </div>
         </div>
 
@@ -2327,8 +2280,6 @@
         .table(['Kasir', slip.cashier_name])
         .table(['Waktu Buka', slip.opened_at])
         .text(dividerLine)
-        .table(['MODAL AWAL KAS', moneyFormat(slip.starting_cash)])
-        .text(dividerLine)
         .align('center')
         .text('[STATUS: SHIFT AKTIF]')
         .text('\n')
@@ -2385,8 +2336,6 @@
         .table(['Waktu Buka', report.opened_at || '-'])
         .table(['Kasir Tutup', report.closed_by || '-'])
         .table(['Waktu Tutup', report.closed_at || '-'])
-        .text(dividerLine)
-        .table(['Modal Awal Kas', moneyFormat(report.starting_cash)])
         .text(dividerLine);
 
       // CETAK REKAP ITEM TERJUAL & JUMLAHNYA
@@ -2429,7 +2378,7 @@
       printerAction.text(dividerLine)
         .table(['TOTAL KAS DI LACI', moneyFormat(report.expected_cash_in_drawer)])
         .align('center')
-        .text('(Modal Awal + Penjualan Tunai)')
+        .text('(Penjualan Tunai)')
         .text(dividerLine)
         .text('\n\nTanda Tangan Kasir,\n\n\n')
         .text('( ' + (report.closed_by || 'Kasir') + ' )')

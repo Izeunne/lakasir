@@ -21,9 +21,9 @@ test('shift report service correctly aggregates sold items and cash drawer total
     $user = User::first();
     $service = app(ShiftReportService::class);
 
-    // 1. Open shift with 200,000 starting cash
-    $drawer = $service->openShift(200000, $user->id);
-    expect($drawer->cash)->toEqual(200000)
+    // 1. Open shift without starting cash (0)
+    $drawer = $service->openShift(0, $user->id);
+    expect($drawer->cash)->toEqual(0)
         ->and($drawer->opened_by)->toBe($user->id)
         ->and($drawer->closed_by)->toBeNull();
 
@@ -104,11 +104,10 @@ test('shift report service correctly aggregates sold items and cash drawer total
     // 3. Generate summary
     $summary = $service->getShiftSummary($drawer);
 
-    expect($summary['starting_cash'])->toEqual(200000)
-        ->and($summary['total_transactions'])->toBe(2)
+    expect($summary['total_transactions'])->toBe(2)
         ->and($summary['total_grand_total'])->toEqual(130000)
         ->and($summary['total_cash_sales'])->toEqual(130000)
-        ->and($summary['expected_cash_in_drawer'])->toEqual(330000) // 200k starting + 130k cash
+        ->and($summary['expected_cash_in_drawer'])->toEqual(130000) // Pure cash sales (no starting cash)
         ->and($summary['total_qty_sold'])->toEqual(7.0) // 5 kopi + 2 toast
         ->and($summary['sold_items'])->toHaveCount(2)
         ->and($summary['sold_items'][0]['name'])->toBe('Kopi Susu Gula Aren')
@@ -129,36 +128,29 @@ test('pos cashier can open shift and close shift with printable events', functio
     $user = User::first();
     actingAs($user);
 
-    // 1. Open shift via Livewire
+    // 1. Open shift directly via Livewire without starting cash input
     Livewire::withQueryParams(['pos_user_id' => $user->id])
         ->test(Cashier::class)
-        ->set('startingCashInput', 150000)
         ->call('submitOpenShift')
         ->assertDispatched('open-shift-printed', function ($event, $params) {
             $slip = $params['slip'];
-            expect($slip['starting_cash'])->toEqual(150000)
-                ->and($slip['type'])->toBe('open_shift');
+            expect($slip['type'])->toBe('open_shift');
             return true;
         });
 
     $activeDrawer = CashDrawer::lastOpened()->first();
     expect($activeDrawer)->not->toBeNull()
-        ->and($activeDrawer->cash)->toEqual(150000);
+        ->and($activeDrawer->cash)->toEqual(0);
 
     // 2. Open close shift modal (populates activeShiftSummary)
     Livewire::test(Cashier::class)
         ->call('openCloseShiftModal')
-        ->assertSet('activeShiftSummary.starting_cash', 150000)
         ->assertDispatched('open-modal', id: 'close-shift-modal');
 
     // 3. Confirm close shift
     Livewire::test(Cashier::class)
         ->call('submitCloseShift')
-        ->assertDispatched('close-shift-printed', function ($event, $params) {
-            $report = $params['report'];
-            expect($report['starting_cash'])->toEqual(150000);
-            return true;
-        });
+        ->assertDispatched('close-shift-printed');
 
     expect(CashDrawer::lastOpened()->first())->toBeNull();
 });

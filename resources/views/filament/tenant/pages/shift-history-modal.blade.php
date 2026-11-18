@@ -9,7 +9,6 @@
         <tr>
           <th class="px-3.5 py-2.5">#</th>
           <th class="px-3.5 py-2.5">{{ __('Kasir Buka') }}</th>
-          <th class="px-3.5 py-2.5">{{ __('Modal Awal') }}</th>
           <th class="px-3.5 py-2.5">{{ __('Waktu Buka') }}</th>
           <th class="px-3.5 py-2.5">{{ __('Kasir Tutup') }}</th>
           <th class="px-3.5 py-2.5">{{ __('Waktu Tutup') }}</th>
@@ -24,7 +23,6 @@
           <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
             <td class="px-3.5 py-2.5 font-bold">#{{ $shift->id }}</td>
             <td class="px-3.5 py-2.5 font-medium">{{ $shift->openedBy?->name ?? '-' }}</td>
-            <td class="px-3.5 py-2.5 font-semibold text-gray-900 dark:text-white">{{ price_format($shift->cash) }}</td>
             <td class="px-3.5 py-2.5 text-gray-500">{{ $shift->created_at?->format('d/m/Y H:i') ?? '-' }}</td>
             <td class="px-3.5 py-2.5 font-medium">{{ $shift->closedBy?->name ?? '-' }}</td>
             <td class="px-3.5 py-2.5 text-gray-500">{{ $shift->closed_by ? ($shift->updated_at?->format('d/m/Y H:i') ?? '-') : '-' }}</td>
@@ -42,7 +40,7 @@
           </tr>
         @empty
           <tr>
-            <td colspan="7" class="px-3.5 py-6 text-center text-gray-400">
+            <td colspan="6" class="px-3.5 py-6 text-center text-gray-400">
               {{ __('Belum ada riwayat shift buka/tutup kasir.') }}
             </td>
           </tr>

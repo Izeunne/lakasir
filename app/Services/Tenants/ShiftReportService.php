@@ -21,7 +21,7 @@ class ShiftReportService
     /**
      * Open a new shift / cash drawer.
      */
-    public function openShift(float $startingCash, int $userId): CashDrawer
+    public function openShift(float $startingCash = 0, int $userId = 1): CashDrawer
     {
         return CashDrawer::create([
             'cash' => $startingCash,
@@ -120,7 +120,7 @@ class ShiftReportService
         $soldItems = array_values($soldItemsMap);
         usort($soldItems, fn ($a, $b) => $b['qty'] <=> $a['qty']);
 
-        $expectedCashInDrawer = $startingCash + $totalCashSales;
+        $expectedCashInDrawer = $totalCashSales;
 
         return [
             'shop_name' => $about?->shop_name ?? 'Lakasir POS',
