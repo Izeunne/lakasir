@@ -102,3 +102,34 @@ test('cashier can lock screen again with lockPos', function () {
 
     expect(session('pos_user_id'))->toBeNull();
 });
+
+test('opening and closing shift requires admin pin when admin pin configured', function () {
+    $admin = User::first();
+    $admin->update(['pin' => '8888', 'is_owner' => true]);
+    actingAs($admin);
+    Filament::setCurrentPanel(Filament::getPanel('tenant'));
+
+    // 1. Calling submitOpenShift prompts for admin pin
+    $component = Livewire::test(Cashier::class)
+        ->call('submitOpenShift')
+        ->assertSet('showAdminModal', true)
+        ->assertSet('adminPinAction', 'open_shift')
+        ->set('adminPin', '8888')
+        ->call('submitAdminPin')
+        ->assertSet('showAdminModal', false)
+        ->assertDispatched('open-shift-printed');
+
+    $activeDrawer = \App\Models\Tenants\CashDrawer::lastOpened()->first();
+    expect($activeDrawer)->not->toBeNull();
+
+    // 2. Calling submitCloseShift prompts for admin pin
+    $component->call('submitCloseShift')
+        ->assertSet('showAdminModal', true)
+        ->assertSet('adminPinAction', 'close_shift')
+        ->set('adminPin', '8888')
+        ->call('submitAdminPin')
+        ->assertSet('showAdminModal', false)
+        ->assertDispatched('close-shift-printed');
+
+    expect(\App\Models\Tenants\CashDrawer::lastOpened()->first())->toBeNull();
+});

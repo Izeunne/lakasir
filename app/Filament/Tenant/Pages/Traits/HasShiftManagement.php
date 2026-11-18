@@ -3,7 +3,9 @@
 namespace App\Filament\Tenant\Pages\Traits;
 
 use App\Models\Tenants\CashDrawer;
+use App\Models\Tenants\User;
 use App\Services\Tenants\ShiftReportService;
+use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 
 trait HasShiftManagement
@@ -24,6 +26,20 @@ trait HasShiftManagement
     }
 
     public function submitOpenShift(): void
+    {
+        /** @var ?User $authUser */
+        $authUser = Filament::auth()->user();
+
+        if (User::hasConfiguredAdminPin($authUser) && method_exists($this, 'requestAdminPin')) {
+            $this->requestAdminPin('open_shift');
+
+            return;
+        }
+
+        $this->executeOpenShift();
+    }
+
+    public function executeOpenShift(): void
     {
         $service = app(ShiftReportService::class);
 
@@ -81,6 +97,20 @@ trait HasShiftManagement
     }
 
     public function submitCloseShift(): void
+    {
+        /** @var ?User $authUser */
+        $authUser = Filament::auth()->user();
+
+        if (User::hasConfiguredAdminPin($authUser) && method_exists($this, 'requestAdminPin')) {
+            $this->requestAdminPin('close_shift');
+
+            return;
+        }
+
+        $this->executeCloseShift();
+    }
+
+    public function executeCloseShift(): void
     {
         $service = app(ShiftReportService::class);
         $drawer = $this->activeDrawerId ? CashDrawer::find($this->activeDrawerId) : $service->getActiveDrawer();

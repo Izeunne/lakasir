@@ -25,6 +25,8 @@ trait HasPosSecurity
 
     public ?string $adminPinError = null;
 
+    public string $adminPinAction = 'admin_panel'; // 'admin_panel', 'open_shift', 'close_shift'
+
     public function initializePosSecurity(): void
     {
         if (request()->boolean('lock_admin')) {
@@ -156,38 +158,57 @@ trait HasPosSecurity
         $this->lockPos();
     }
 
-    public function openAdminPinModal(): void
+    public function requestAdminPin(string $action = 'admin_panel'): void
     {
         /** @var ?User $authUser */
         $authUser = Filament::auth()->user();
 
-        if (! $authUser || ! $authUser->isAdminPanelUser()) {
-            Notification::make()
-                ->title(__('Akses Ditolak'))
-                ->body(__('Akun yang login di perangkat ini tidak memiliki hak akses Admin Panel.'))
-                ->danger()
-                ->send();
+        if ($action === 'admin_panel') {
+            if (! $authUser || ! $authUser->isAdminPanelUser()) {
+                Notification::make()
+                    ->title(__('Akses Ditolak'))
+                    ->body(__('Akun yang login di perangkat ini tidak memiliki hak akses Admin Panel.'))
+                    ->danger()
+                    ->send();
 
-            return;
+                return;
+            }
+
+            if (! User::hasConfiguredAdminPin($authUser)) {
+                session(['admin_unlocked' => true]);
+
+                Notification::make()
+                    ->title(__('PIN Admin Belum Diatur'))
+                    ->body(__('Silakan atur PIN untuk akun Admin di menu User agar Admin Panel terlindungi.'))
+                    ->warning()
+                    ->send();
+
+                $this->redirect(Dashboard::getUrl());
+
+                return;
+            }
+        } else {
+            // For open_shift and close_shift actions:
+            if (! User::hasConfiguredAdminPin($authUser)) {
+                if ($action === 'open_shift' && method_exists($this, 'executeOpenShift')) {
+                    $this->executeOpenShift();
+                } elseif ($action === 'close_shift' && method_exists($this, 'executeCloseShift')) {
+                    $this->executeCloseShift();
+                }
+
+                return;
+            }
         }
 
-        if (! User::hasConfiguredAdminPin($authUser)) {
-            session(['admin_unlocked' => true]);
-
-            Notification::make()
-                ->title(__('PIN Admin Belum Diatur'))
-                ->body(__('Silakan atur PIN untuk akun Admin di menu User agar Admin Panel terlindungi.'))
-                ->warning()
-                ->send();
-
-            $this->redirect(Dashboard::getUrl());
-
-            return;
-        }
-
+        $this->adminPinAction = $action;
         $this->showAdminModal = true;
         $this->adminPin = '';
         $this->adminPinError = null;
+    }
+
+    public function openAdminPinModal(): void
+    {
+        $this->requestAdminPin('admin_panel');
     }
 
     public function closeAdminPinModal(): void
@@ -195,6 +216,7 @@ trait HasPosSecurity
         $this->showAdminModal = false;
         $this->adminPin = '';
         $this->adminPinError = null;
+        $this->adminPinAction = 'admin_panel';
     }
 
     public function appendAdminPin(string $digit): void
@@ -224,12 +246,6 @@ trait HasPosSecurity
         /** @var ?User $authUser */
         $authUser = Filament::auth()->user();
 
-        if (! $authUser || ! $authUser->isAdminPanelUser()) {
-            $this->adminPinError = __('Akses ditolak. Akun perangkat bukan Admin.');
-
-            return;
-        }
-
         if (blank($this->adminPin)) {
             $this->adminPinError = __('Masukkan PIN Admin terlebih dahulu.');
 
@@ -245,10 +261,23 @@ trait HasPosSecurity
             return;
         }
 
-        session(['admin_unlocked' => true]);
         $this->showAdminModal = false;
+        $action = $this->adminPinAction;
+        $this->adminPin = '';
+        $this->adminPinAction = 'admin_panel';
 
-        $this->redirect(Dashboard::getUrl());
+        if ($action === 'open_shift') {
+            if (method_exists($this, 'executeOpenShift')) {
+                $this->executeOpenShift();
+            }
+        } elseif ($action === 'close_shift') {
+            if (method_exists($this, 'executeCloseShift')) {
+                $this->executeCloseShift();
+            }
+        } else {
+            session(['admin_unlocked' => true]);
+            $this->redirect(Dashboard::getUrl());
+        }
     }
 
     public function logoutDevice(): void

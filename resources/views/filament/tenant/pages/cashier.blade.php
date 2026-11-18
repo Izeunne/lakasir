@@ -1541,8 +1541,24 @@
               <x-heroicon-o-shield-check class="h-5 w-5" />
             </div>
             <div>
-              <h3 class="text-sm font-bold text-gray-900 dark:text-white">{{ __('Buka Admin Panel') }}</h3>
-              <p class="text-[11px] text-gray-500 dark:text-gray-400">{{ __('Memerlukan PIN Akun Admin') }}</p>
+              <h3 class="text-sm font-bold text-gray-900 dark:text-white">
+                @if ($adminPinAction === 'open_shift')
+                  {{ __('Otorisasi Buka Kasir') }}
+                @elseif ($adminPinAction === 'close_shift')
+                  {{ __('Otorisasi Tutup Kasir') }}
+                @else
+                  {{ __('Buka Admin Panel') }}
+                @endif
+              </h3>
+              <p class="text-[11px] text-gray-500 dark:text-gray-400">
+                @if ($adminPinAction === 'open_shift')
+                  {{ __('Masukkan PIN Admin untuk membuka sesi shift kasir') }}
+                @elseif ($adminPinAction === 'close_shift')
+                  {{ __('Masukkan PIN Admin untuk menutup shift kasir & cetak Z-Report') }}
+                @else
+                  {{ __('Memerlukan PIN Akun Admin') }}
+                @endif
+              </p>
             </div>
           </div>
           <button
@@ -1622,7 +1638,13 @@
             wire:click="submitAdminPin"
             class="rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-2 text-xs font-bold hover:opacity-90 transition shadow-sm"
           >
-            {{ __('Buka Admin Panel') }}
+            @if ($adminPinAction === 'open_shift')
+              {{ __('Verifikasi & Buka Kasir') }}
+            @elseif ($adminPinAction === 'close_shift')
+              {{ __('Verifikasi & Tutup Kasir') }}
+            @else
+              {{ __('Buka Admin Panel') }}
+            @endif
           </button>
         </div>
       </div>
