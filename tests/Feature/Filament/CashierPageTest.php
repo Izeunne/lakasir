@@ -17,6 +17,7 @@ test('cashier page can be rendered for authenticated user', function () {
     $user = User::first();
 
     actingAs($user)
+        ->withSession(['pos_user_id' => $user->id])
         ->get('/member/cashier')
         ->assertOk();
 });

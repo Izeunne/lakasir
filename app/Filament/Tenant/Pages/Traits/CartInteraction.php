@@ -5,6 +5,7 @@ namespace App\Filament\Tenant\Pages\Traits;
 use App\Models\Tenants\CartDraft;
 use App\Models\Tenants\CartItem;
 use App\Models\Tenants\Product;
+use App\Models\Tenants\Table;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 
@@ -713,10 +714,50 @@ trait CartInteraction
                 'ojek_online' => 'Ojek Online',
                 default => 'Pesanan',
             };
-            $this->draftName = $orderLabel . ' #' . (CartDraft::count() + 1);
+            $tableId = $this->cartDetail['table_id'] ?? null;
+            $table = $tableId ? Table::find($tableId) : null;
+            $tablePart = $table ? (' - Meja ' . $table->number) : '';
+            $this->draftName = $orderLabel . $tablePart . ' #' . (CartDraft::count() + 1);
         }
 
         $this->dispatch('open-modal', id: 'save-draft-modal');
+    }
+
+    public function quickSaveDraft(): void
+    {
+        if (! isset($this->cartItems) || $this->cartItems->isEmpty()) {
+            Notification::make()
+                ->title(__('Keranjang Masih Kosong'))
+                ->body(__('Silakan pilih item pesanan terlebih dahulu sebelum menyimpan draft.'))
+                ->warning()
+                ->send();
+            return;
+        }
+
+        if ($this->hasMissingRequiredVariations()) {
+            $this->notifyMissingVariations();
+            return;
+        }
+
+        if ($this->hasMissingOrderType()) {
+            $this->notifyMissingOrderType();
+            return;
+        }
+
+        if (blank($this->draftName)) {
+            $orderLabel = match ($this->orderType) {
+                'dine_in' => 'Dine In',
+                'take_away' => 'Take Away',
+                'ojek_online' => 'Ojek Online',
+                default => 'Pesanan',
+            };
+            $tableId = $this->cartDetail['table_id'] ?? null;
+            $table = $tableId ? Table::find($tableId) : null;
+            $tablePart = $table ? (' - Meja ' . $table->number) : '';
+            $this->draftName = $orderLabel . $tablePart . ' #' . (CartDraft::count() + 1);
+        }
+
+        $this->saveCartAsDraft();
     }
 
     public function saveCartAsDraft(): void
@@ -733,6 +774,19 @@ trait CartInteraction
         if ($this->hasMissingOrderType()) {
             $this->notifyMissingOrderType();
             return;
+        }
+
+        if (blank($this->draftName)) {
+            $orderLabel = match ($this->orderType) {
+                'dine_in' => 'Dine In',
+                'take_away' => 'Take Away',
+                'ojek_online' => 'Ojek Online',
+                default => 'Pesanan',
+            };
+            $tableId = $this->cartDetail['table_id'] ?? null;
+            $table = $tableId ? Table::find($tableId) : null;
+            $tablePart = $table ? (' - Meja ' . $table->number) : '';
+            $this->draftName = $orderLabel . $tablePart . ' #' . (CartDraft::count() + 1);
         }
 
         $existingDraft = $this->activeDraftId ? CartDraft::find($this->activeDraftId) : null;

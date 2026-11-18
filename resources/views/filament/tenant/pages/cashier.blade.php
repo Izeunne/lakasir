@@ -741,11 +741,18 @@
     <div
       class="p-3 sm:p-4 pr-16 md:pr-16 lg:pr-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 shrink-0">
       <div class="grid grid-cols-3 gap-2">
-        <button type="button" wire:click="openSaveDraftModal"
-          class="col-span-1 flex items-center justify-center gap-1 rounded-lg border border-lakasir-primary bg-white px-1.5 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-lakasir-primary transition hover:bg-lakasir-primary/10 dark:bg-gray-800">
-          <x-heroicon-o-bookmark class="h-4 w-4 shrink-0" />
-          <span class="truncate">{{ $activeDraftId ? __('Update') : __('Draft') }}</span>
-        </button>
+        <div class="col-span-1 flex rounded-lg border border-lakasir-primary bg-white dark:bg-gray-800 overflow-hidden shadow-sm">
+          <button type="button" wire:click="quickSaveDraft"
+            title="{{ __('Simpan draf dan langsung cetak tiket pesanan otomatis') }}"
+            class="flex-1 flex items-center justify-center gap-1 px-1.5 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-lakasir-primary transition hover:bg-lakasir-primary/10">
+            <x-heroicon-o-bookmark class="h-4 w-4 shrink-0" />
+            <span class="truncate">{{ $activeDraftId ? __('Update') : __('Draft') }}</span>
+          </button>
+          <button type="button" wire:click="openSaveDraftModal" title="{{ __('Kustomisasi Keterangan Draft') }}"
+            class="px-1 border-l border-lakasir-primary/20 text-lakasir-primary transition hover:bg-lakasir-primary/10 flex items-center justify-center">
+            <x-heroicon-m-ellipsis-vertical class="h-4 w-4 shrink-0" />
+          </button>
+        </div>
 
         @if ($this->hasMissingRequiredVariations())
           <button type="button" wire:click="notifyMissingVariations"
@@ -1714,19 +1721,25 @@
 
       let anyPrinted = false;
 
+      // Cek apakah ada printer yang diset khusus sebagai printer checker/draf (Bar / Dapur)
+      const hasSpecificDraftPrinter = printersList.some(p => Boolean(p.print_on_draft) || !p.show_price);
+
       for (const printerData of printersList) {
-        // Hanya cetak ke station printer yang diset untuk mencetak draf (default: printer checker / tanpa harga)
-        const isDraftPrinter = (printerData.print_on_draft !== undefined)
-          ? printerData.print_on_draft
-          : (!printerData.show_price);
+        let isDraftPrinter = false;
+        if (hasSpecificDraftPrinter) {
+          isDraftPrinter = Boolean(printerData.print_on_draft) || !printerData.show_price;
+        } else {
+          // Fallback otomatis: jika belum ada printer station khusus Bar/Dapur, otomatis cetak ke printer kasir aktif
+          isDraftPrinter = true;
+        }
 
         if (!isDraftPrinter) {
           continue;
         }
 
-        // Filter item berdasarkan kategori yang ditugaskan ke printer station ini
+        // Filter item berdasarkan kategori printer station
         const allItems = draft.items_to_print;
-        const filteredItems = printerData.print_all_categories
+        const filteredItems = (printerData.print_all_categories || !hasSpecificDraftPrinter)
           ? allItems
           : allItems.filter(item => {
             const catId = item.product && item.product.category_id ? parseInt(item.product.category_id, 10) : null;
