@@ -74,6 +74,17 @@ class CashierReport extends Page implements HasActions, HasForms
         return [
             Action::make(__('Generate'))
                 ->action('generate'),
+            Action::make('shift_history')
+                ->label(__('Riwayat Shift (Buka/Tutup Kasir)'))
+                ->color('success')
+                ->icon('heroicon-o-clock')
+                ->modalHeading(__('Riwayat Sesi Buka & Tutup Kasir (Shift)'))
+                ->modalWidth('4xl')
+                ->modalSubmitAction(false)
+                ->modalCancelActionLabel(__('Tutup'))
+                ->modalContent(fn () => view('filament.tenant.pages.shift-history-modal', [
+                    'shifts' => \App\Models\Tenants\CashDrawer::with(['openedBy', 'closedBy'])->latest()->take(30)->get(),
+                ])),
             Action::make(__('Print'))
                 ->color('warning')
                 ->extraAttributes([

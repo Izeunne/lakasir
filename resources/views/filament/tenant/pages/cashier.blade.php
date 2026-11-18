@@ -2048,6 +2048,162 @@
       }
     }
 
+    async function executeOpenShiftPrint(slip) {
+      if (!slip) return;
+
+      const dbPrinters = @js(\App\Models\Tenants\Printer::active()->orderBy('id')->get()->map(fn($p) => [
+        'id' => $p->id,
+        'device_id' => $p->device_id,
+        'paper_width' => $p->paper_width ?: '58mm',
+        'show_price' => (bool) $p->show_price,
+      ])->values());
+
+      const legacyPrinter = getPrinter();
+      const targetPrinter = (Array.isArray(dbPrinters) && dbPrinters.length > 0)
+        ? (dbPrinters.find(p => p.show_price) || dbPrinters[0])
+        : {
+          device_id: (legacyPrinter && !(legacyPrinter instanceof Error) && legacyPrinter.printerId) ? legacyPrinter.printerId : 'kasir',
+          paper_width: (legacyPrinter && !(legacyPrinter instanceof Error) && legacyPrinter.paper_width) ? legacyPrinter.paper_width : '58mm',
+        };
+
+      const paperWidth = targetPrinter.paper_width || '58mm';
+      const dividerLine = paperWidth === '80mm'
+        ? '------------------------------------------------'
+        : '-------------------------------';
+
+      const printer = new Printer(targetPrinter.device_id || 'kasir', paperWidth);
+      let printerAction = printer.font('a');
+
+      printerAction.size(1)
+        .align('center')
+        .text('*** BUKA KASIR ***')
+        .size(0);
+
+      if (slip.shop_name) {
+        printerAction.align('center').text(slip.shop_name);
+      }
+      if (slip.shop_location) {
+        printerAction.align('center').text(slip.shop_location);
+      }
+
+      printerAction.align('left')
+        .text(dividerLine)
+        .table(['Shift No.', '#' + slip.drawer_id])
+        .table(['Kasir', slip.cashier_name])
+        .table(['Waktu Buka', slip.opened_at])
+        .text(dividerLine)
+        .table(['MODAL AWAL KAS', moneyFormat(slip.starting_cash)])
+        .text(dividerLine)
+        .align('center')
+        .text('[STATUS: SHIFT AKTIF]')
+        .text('\n')
+        .cut();
+
+      await printerAction.print(targetPrinter.device_id || 'kasir');
+    }
+
+    async function executeCloseShiftPrint(report) {
+      if (!report) return;
+
+      const dbPrinters = @js(\App\Models\Tenants\Printer::active()->orderBy('id')->get()->map(fn($p) => [
+        'id' => $p->id,
+        'name' => $p->name,
+        'device_id' => $p->device_id,
+        'paper_width' => $p->paper_width ?: '58mm',
+        'show_price' => (bool) $p->show_price,
+      ])->values());
+
+      const legacyPrinter = getPrinter();
+      const targetPrinter = (Array.isArray(dbPrinters) && dbPrinters.length > 0)
+        ? (dbPrinters.find(p => p.show_price) || dbPrinters[0])
+        : {
+          device_id: (legacyPrinter && !(legacyPrinter instanceof Error) && legacyPrinter.printerId) ? legacyPrinter.printerId : 'kasir',
+          paper_width: (legacyPrinter && !(legacyPrinter instanceof Error) && legacyPrinter.paper_width) ? legacyPrinter.paper_width : '58mm',
+        };
+
+      const paperWidth = targetPrinter.paper_width || '58mm';
+      const dividerLine = paperWidth === '80mm'
+        ? '------------------------------------------------'
+        : '-------------------------------';
+
+      const printer = new Printer(targetPrinter.device_id || 'kasir', paperWidth);
+      let printerAction = printer.font('a');
+
+      let title = report.is_temporary ? 'CEK SHIFT SEMENTARA (X-REPORT)' : 'LAPORAN TUTUP KASIR (Z-REPORT)';
+
+      printerAction.size(1)
+        .align('center')
+        .text('*** ' + title + ' ***')
+        .size(0);
+
+      if (report.shop_name) {
+        printerAction.align('center').text(report.shop_name);
+      }
+      if (report.shop_location) {
+        printerAction.align('center').text(report.shop_location);
+      }
+
+      printerAction.align('left')
+        .text(dividerLine)
+        .table(['Shift No.', '#' + report.drawer_id])
+        .table(['Kasir Buka', report.opened_by || '-'])
+        .table(['Waktu Buka', report.opened_at || '-'])
+        .table(['Kasir Tutup', report.closed_by || '-'])
+        .table(['Waktu Tutup', report.closed_at || '-'])
+        .text(dividerLine)
+        .table(['Modal Awal Kas', moneyFormat(report.starting_cash)])
+        .text(dividerLine);
+
+      // CETAK REKAP ITEM TERJUAL & JUMLAHNYA
+      printerAction.align('center')
+        .text('--- REKAP ITEM TERJUAL ---')
+        .align('left');
+
+      if (Array.isArray(report.sold_items) && report.sold_items.length > 0) {
+        report.sold_items.forEach(item => {
+          printerAction.table([
+            item.name,
+            item.qty + 'x  ' + moneyFormat(item.total)
+          ]);
+        });
+        printerAction.text(dividerLine)
+          .table(['TOTAL ITEM TERJUAL', report.total_qty_sold + ' Porsi/Pcs']);
+      } else {
+        printerAction.align('center').text('Belum ada item terjual').align('left');
+      }
+
+      printerAction.text(dividerLine)
+        .align('center')
+        .text('--- RINGKASAN PEMBAYARAN ---')
+        .align('left');
+
+      if (Array.isArray(report.payment_breakdown)) {
+        report.payment_breakdown.forEach(pay => {
+          printerAction.table([pay.name + ' (' + pay.count + ' tx)', moneyFormat(pay.total)]);
+        });
+      }
+
+      printerAction.text(dividerLine)
+        .table(['Total Transaksi', String(report.total_transactions)])
+        .table(['Total Penjualan', moneyFormat(report.total_grand_total)]);
+
+      if (report.total_discounts > 0) {
+        printerAction.table(['Total Diskon', '(' + moneyFormat(report.total_discounts) + ')']);
+      }
+
+      printerAction.text(dividerLine)
+        .table(['TOTAL KAS DI LACI', moneyFormat(report.expected_cash_in_drawer)])
+        .align('center')
+        .text('(Modal Awal + Penjualan Tunai)')
+        .text(dividerLine)
+        .text('\n\nTanda Tangan Kasir,\n\n\n')
+        .text('( ' + (report.closed_by || 'Kasir') + ' )')
+        .text('\n')
+        .cut();
+
+      await printerAction.print(targetPrinter.device_id || 'kasir');
+    }
+
     document.getElementById("printReceiptButton").addEventListener('click', async (event) => {
       await executeMultiPrinterPrint(selling, false);
     });
