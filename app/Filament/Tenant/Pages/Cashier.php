@@ -5,6 +5,7 @@ namespace App\Filament\Tenant\Pages;
 use App\Features\Member as FeaturesMember;
 use App\Features\Voucher;
 use App\Filament\Tenant\Pages\Traits\CartInteraction;
+use App\Filament\Tenant\Pages\Traits\HasShiftManagement;
 use App\Filament\Tenant\Pages\Traits\TableProduct;
 use App\Filament\Tenant\Resources\Traits\RefreshThePage;
 use App\Models\Tenants\About;
@@ -39,7 +40,7 @@ use App\Models\Tenants\Profile;
 
 class Cashier extends Page implements HasForms, HasTable
 {
-    use CartInteraction, HasTranslatableResource, RefreshThePage, TableProduct;
+    use CartInteraction, HasShiftManagement, HasTranslatableResource, RefreshThePage, TableProduct;
 
     public static ?string $label = 'POS';
 
@@ -107,6 +108,8 @@ class Cashier extends Page implements HasForms, HasTable
     public function mount()
     {
         $this->about = About::first() ?? null;
+
+        $this->initializeShift();
 
         $this->tax = (float) Setting::get('default_tax', 0);
 

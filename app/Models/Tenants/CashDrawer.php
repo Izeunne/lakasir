@@ -25,6 +25,11 @@ class CashDrawer extends Model
         return $this->belongsTo(User::class, 'closed_by');
     }
 
+    public function sellings(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Selling::class);
+    }
+
     public function scopeToday()
     {
         return $this->whereDate('created_at', now());

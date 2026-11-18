@@ -482,6 +482,22 @@
           </button>
         </div>
         <div class="flex items-center gap-x-2">
+          @if ($activeDrawerId)
+            <button type="button" wire:click="openCloseShiftModal"
+              title="{{ __('Shift Kasir Aktif - Klik untuk Tutup Kasir & Cetak Rekap') }}"
+              class="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-600 hover:text-white dark:bg-emerald-950/40 dark:text-emerald-400 shadow-sm">
+              <span class="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>{{ __('Tutup Kasir') }}</span>
+            </button>
+          @else
+            <button type="button" wire:click="openShiftModal"
+              title="{{ __('Buka Kasir & Masukkan Modal Awal') }}"
+              class="flex items-center gap-1 rounded-lg border border-amber-500/40 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700 transition hover:bg-amber-600 hover:text-white dark:bg-amber-950/40 dark:text-amber-400 shadow-sm">
+              <x-heroicon-o-lock-open class="h-3.5 w-3.5" />
+              <span>{{ __('Buka Kasir') }}</span>
+            </button>
+          @endif
+
           <button type="button" x-on:click="$dispatch('open-modal', {id: 'draft-list-modal'})"
             class="flex items-center gap-1 rounded-lg border border-lakasir-primary/40 bg-lakasir-primary/10 px-2.5 py-1 text-xs font-semibold text-lakasir-primary transition hover:bg-lakasir-primary hover:text-white">
             <x-heroicon-o-bookmark-square class="h-3.5 w-3.5" />
@@ -1257,6 +1273,184 @@
     </x-slot>
   </x-filament::modal>
 
+  {{-- Modal Buka Kasir (Mulai Shift) --}}
+  <x-filament::modal id="open-shift-modal" width="md">
+    <x-slot name="heading">
+      <div class="flex items-center gap-2">
+        <x-heroicon-o-lock-open class="h-6 w-6 text-amber-500" />
+        <span>{{ __('Buka Kasir / Mulai Shift') }}</span>
+      </div>
+    </x-slot>
+
+    <div class="space-y-4">
+      <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 text-xs text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-300 space-y-1.5">
+        <div class="flex justify-between">
+          <span class="text-gray-500 dark:text-gray-400">{{ __('Kasir Bertugas') }}:</span>
+          <span class="font-bold">{{ pos_user()?->name ?? Filament::auth()->user()->name }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500 dark:text-gray-400">{{ __('Waktu Buka') }}:</span>
+          <span class="font-semibold">{{ now()->format('d M Y H:i') }}</span>
+        </div>
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+          {{ __('Modal Kas Awal di Laci (Starting Cash)') }}
+        </label>
+        <x-filament::input.wrapper prefix="{{ $currency ?? 'IDR' }}">
+          <x-filament::input type="number" wire:model="startingCashInput" step="1000" min="0"
+            placeholder="0" autofocus class="text-lg font-bold" />
+        </x-filament::input.wrapper>
+        <p class="text-[11px] text-gray-500 dark:text-gray-400">
+          {{ __('Masukkan jumlah uang kembalian yang dimasukkan ke laci kasir saat awal shift.') }}
+        </p>
+      </div>
+    </div>
+
+    <x-slot name="footer">
+      <div class="flex items-center justify-end gap-2">
+        <x-filament::button color="gray" x-on:click="$dispatch('close-modal', {id: 'open-shift-modal'})">
+          {{ __('Batal') }}
+        </x-filament::button>
+        <x-filament::button color="primary" icon="heroicon-o-lock-open" wire:click="submitOpenShift">
+          {{ __('Buka Kasir & Cetak Bukti') }}
+        </x-filament::button>
+      </div>
+    </x-slot>
+  </x-filament::modal>
+
+  {{-- Modal Tutup Kasir (Shift Closing Report / Z-Report) --}}
+  <x-filament::modal id="close-shift-modal" width="3xl">
+    <x-slot name="heading">
+      <div class="flex items-center gap-2">
+        <x-heroicon-o-document-chart-bar class="h-6 w-6 text-lakasir-primary" />
+        <span>{{ __('Laporan Tutup Kasir (Shift Z-Report)') }}</span>
+      </div>
+    </x-slot>
+
+    @if ($activeShiftSummary)
+      <div class="max-h-[70vh] space-y-4 overflow-y-auto pr-1">
+        {{-- Metadata Shift --}}
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs dark:border-gray-800 dark:bg-gray-900">
+          <div>
+            <p class="text-gray-400 text-[11px]">{{ __('Shift ID') }}</p>
+            <p class="font-bold text-gray-800 dark:text-gray-200">#{{ $activeShiftSummary['drawer_id'] }}</p>
+          </div>
+          <div>
+            <p class="text-gray-400 text-[11px]">{{ __('Kasir Buka') }}</p>
+            <p class="font-bold text-gray-800 dark:text-gray-200">{{ $activeShiftSummary['opened_by'] }}</p>
+            <p class="text-[10px] text-gray-400">{{ $activeShiftSummary['opened_at'] }}</p>
+          </div>
+          <div>
+            <p class="text-gray-400 text-[11px]">{{ __('Kasir Tutup') }}</p>
+            <p class="font-bold text-gray-800 dark:text-gray-200">{{ $activeShiftSummary['closed_by'] }}</p>
+            <p class="text-[10px] text-gray-400">{{ $activeShiftSummary['closed_at'] }}</p>
+          </div>
+          <div>
+            <p class="text-gray-400 text-[11px]">{{ __('Total Transaksi') }}</p>
+            <p class="font-bold text-lakasir-primary text-sm">{{ $activeShiftSummary['total_transactions'] }} {{ __('Nota') }}</p>
+          </div>
+        </div>
+
+        {{-- Ringkasan Kas Laci --}}
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div class="rounded-xl border border-gray-200 bg-white p-3 text-xs dark:border-gray-800 dark:bg-gray-900">
+            <span class="text-gray-500 dark:text-gray-400">{{ __('Modal Awal Kas') }}</span>
+            <p class="mt-1 text-base font-bold text-gray-800 dark:text-gray-200">{{ price_format($activeShiftSummary['starting_cash']) }}</p>
+          </div>
+          <div class="rounded-xl border border-gray-200 bg-white p-3 text-xs dark:border-gray-800 dark:bg-gray-900">
+            <span class="text-gray-500 dark:text-gray-400">{{ __('Penjualan Tunai (Cash)') }}</span>
+            <p class="mt-1 text-base font-bold text-emerald-600 dark:text-emerald-400">+ {{ price_format($activeShiftSummary['total_cash_sales']) }}</p>
+          </div>
+          <div class="rounded-xl border border-emerald-500/30 bg-emerald-50/60 p-3 text-xs dark:border-emerald-800 dark:bg-emerald-950/30">
+            <span class="text-emerald-800 dark:text-emerald-300 font-semibold">{{ __('Total Uang di Laci Kasir') }}</span>
+            <p class="mt-1 text-lg font-extrabold text-emerald-700 dark:text-emerald-300">{{ price_format($activeShiftSummary['expected_cash_in_drawer']) }}</p>
+            <p class="text-[10px] text-emerald-600/80 dark:text-emerald-400/80">{{ __('Modal Awal + Tunai Masuk') }}</p>
+          </div>
+        </div>
+
+        {{-- TABEL ITEM-ITEM YANG TERJUAL & JUMLAHNYA --}}
+        <div class="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 overflow-hidden">
+          <div class="flex items-center justify-between border-b border-gray-100 bg-gray-50/80 px-4 py-2.5 dark:border-gray-800 dark:bg-gray-800/60">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+              <x-heroicon-m-shopping-bag class="h-4 w-4 text-lakasir-primary" />
+              <span>{{ __('Daftar Item yang Terjual') }}</span>
+            </h4>
+            <span class="rounded-full bg-lakasir-primary/15 px-2 py-0.5 text-xs font-bold text-lakasir-primary">
+              {{ $activeShiftSummary['total_qty_sold'] }} {{ __('Porsi/Pcs Terjual') }}
+            </span>
+          </div>
+
+          <div class="max-h-56 overflow-y-auto">
+            @if (!empty($activeShiftSummary['sold_items']))
+              <table class="w-full text-left text-xs">
+                <thead class="sticky top-0 bg-gray-100/90 dark:bg-gray-800/90 text-gray-600 dark:text-gray-300 text-[11px] font-semibold">
+                  <tr>
+                    <th class="px-3.5 py-2">{{ __('Nama Menu / Produk') }}</th>
+                    <th class="px-3.5 py-2 text-center" style="width: 80px;">{{ __('Qty') }}</th>
+                    <th class="px-3.5 py-2 text-right" style="width: 130px;">{{ __('Total Penjualan') }}</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                  @foreach ($activeShiftSummary['sold_items'] as $sItem)
+                    <tr class="hover:bg-gray-50/80 dark:hover:bg-gray-800/40 transition">
+                      <td class="px-3.5 py-2 font-medium text-gray-900 dark:text-white">{{ $sItem['name'] }}</td>
+                      <td class="px-3.5 py-2 text-center font-bold text-lakasir-primary">{{ $sItem['qty'] }}</td>
+                      <td class="px-3.5 py-2 text-right font-medium text-gray-700 dark:text-gray-300">{{ price_format($sItem['total']) }}</td>
+                    </tr>
+                  @endforeach
+                </tbody>
+              </table>
+            @else
+              <div class="py-8 text-center text-xs text-gray-400">
+                <x-heroicon-o-shopping-bag class="h-8 w-8 mx-auto mb-1 opacity-40" />
+                <p>{{ __('Belum ada item pesanan yang terjual pada shift ini.') }}</p>
+              </div>
+            @endif
+          </div>
+        </div>
+
+        {{-- Ringkasan Pembayaran Non-Tunai & Omset --}}
+        <div class="rounded-xl border border-gray-200 bg-white p-3.5 text-xs dark:border-gray-800 dark:bg-gray-900 space-y-2">
+          <h4 class="font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider text-[11px] mb-1">
+            {{ __('Ringkasan Metode Pembayaran') }}
+          </h4>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            @foreach ($activeShiftSummary['payment_breakdown'] ?? [] as $pBreak)
+              <div class="rounded-lg border border-gray-100 bg-gray-50/60 p-2 dark:border-gray-800 dark:bg-gray-800/40">
+                <p class="text-[11px] text-gray-500 dark:text-gray-400">{{ $pBreak['name'] }} ({{ $pBreak['count'] }}x)</p>
+                <p class="font-bold text-gray-900 dark:text-white text-xs mt-0.5">{{ price_format($pBreak['total']) }}</p>
+              </div>
+            @endforeach
+          </div>
+          <div class="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800 text-sm">
+            <span class="font-bold text-gray-700 dark:text-gray-300">{{ __('Total Omset Shift') }}:</span>
+            <span class="text-base font-extrabold text-lakasir-primary">{{ price_format($activeShiftSummary['total_grand_total']) }}</span>
+          </div>
+        </div>
+      </div>
+    @endif
+
+    <x-slot name="footer">
+      <div class="flex items-center justify-between gap-2 w-full">
+        <x-filament::button color="gray" x-on:click="$dispatch('close-modal', {id: 'close-shift-modal'})">
+          {{ __('Batal') }}
+        </x-filament::button>
+
+        <div class="flex items-center gap-2">
+          <x-filament::button color="warning" outlined icon="heroicon-o-printer" wire:click="printCurrentShift">
+            {{ __('Cetak Saja (X-Report)') }}
+          </x-filament::button>
+
+          <x-filament::button color="danger" icon="heroicon-o-lock-closed" wire:click="submitCloseShift">
+            {{ __('Tutup Shift & Cetak Laporan') }}
+          </x-filament::button>
+        </div>
+      </div>
+    </x-slot>
+  </x-filament::modal>
+
   <style>
     /* html5-qrcode library button & control styling */
     #qr-reader__dashboard_section_csr button,
@@ -1400,6 +1594,22 @@
       if (event && event.draft) {
         setTimeout(() => {
           executeDraftPrint(event.draft);
+        }, 300);
+      }
+    });
+
+    $wire.on('open-shift-printed', (event) => {
+      if (event && event.slip) {
+        setTimeout(() => {
+          executeOpenShiftPrint(event.slip);
+        }, 300);
+      }
+    });
+
+    $wire.on('close-shift-printed', (event) => {
+      if (event && event.report) {
+        setTimeout(() => {
+          executeCloseShiftPrint(event.report);
         }, 300);
       }
     });
