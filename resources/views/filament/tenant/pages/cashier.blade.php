@@ -25,11 +25,6 @@
         @endif
       </button>
     </div>
-    <button type="button" wire:click="openAdminPinModal"
-      class="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 px-2.5 py-1.5 text-xs font-medium transition">
-      <x-heroicon-o-shield-check class="h-3.5 w-3.5 text-gray-400" />
-      <span>{{ __('Admin') }}</span>
-    </button>
 </div>
 
 <style>
@@ -441,7 +436,7 @@
           </div>
         </div>
 
-        {{-- Sisi Kanan: Hanya Tombol yang Perlu --}}
+        {{-- Sisi Kanan: Hanya Draft (jika ada) dan Menu Titik Tiga --}}
         <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {{-- Draft Pesanan: HANYA MUNCUL JIKA ADA DRAFT --}}
           @if (isset($cartDrafts) && $cartDrafts->count() > 0)
@@ -456,15 +451,7 @@
             </button>
           @endif
 
-          {{-- Tombol ke Admin Panel (Wajib Masuk PIN Admin) --}}
-          <button type="button" wire:click="openAdminPinModal"
-            title="{{ __('Buka Admin Panel (Memerlukan PIN Admin)') }}"
-            class="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 px-2.5 py-1.5 text-xs font-medium transition">
-            <x-heroicon-o-shield-check class="h-4 w-4 text-gray-400" />
-            <span>{{ __('Admin Panel') }}</span>
-          </button>
-
-          {{-- Dropdown Aksi Tambahan (Menu Titik Tiga) --}}
+          {{-- Dropdown Menu (Titik Tiga): Semua Aksi Disembunyikan di Sini --}}
           <x-filament::dropdown placement="bottom-end">
             <x-slot name="trigger">
               <button type="button" class="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition" aria-label="Menu Opsi">
@@ -473,6 +460,9 @@
             </x-slot>
 
             <x-filament::dropdown.list>
+              <x-filament::dropdown.list.item wire:click="openAdminPinModal" icon="heroicon-o-shield-check">
+                {{ __('Admin Panel') }}
+              </x-filament::dropdown.list.item>
               @if ($activeDrawerId)
                 <x-filament::dropdown.list.item wire:click="openCloseShiftModal" icon="heroicon-o-lock-closed" color="danger">
                   {{ __('Tutup Kasir (Shift #' . $activeDrawerId . ')') }}
