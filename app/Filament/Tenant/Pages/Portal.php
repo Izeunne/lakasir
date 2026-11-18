@@ -63,10 +63,10 @@ class Portal extends Page
 
     public function getHasAnyAdminPinProperty(): bool
     {
-        return User::query()
-            ->whereNotNull('pin')
-            ->get()
-            ->contains(fn (User $user): bool => $user->isAdminPanelUser() && $user->hasPin());
+        /** @var ?User $authUser */
+        $authUser = Filament::auth()->user();
+
+        return User::hasConfiguredAdminPin($authUser);
     }
 
     public function openPosModal(): void
@@ -178,10 +178,7 @@ class Portal extends Page
             return;
         }
 
-        $matchedAdmin = User::query()
-            ->whereNotNull('pin')
-            ->get()
-            ->first(fn (User $user): bool => $user->isAdminPanelUser() && $user->verifyPin($this->adminPin));
+        $matchedAdmin = User::verifyAdminPin($this->adminPin, $authUser);
 
         if (! $matchedAdmin) {
             $this->errorMessage = __('PIN Admin salah.');

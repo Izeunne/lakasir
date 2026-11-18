@@ -570,6 +570,7 @@
             </button>
             <x-filament::input.wrapper class="w-20" x-data="cart">
               <x-filament::input type="text" id="{{ $item->product->name }}-{{ $item->id }}-qty"
+                wire:key="cart-qty-{{ $item->id }}-{{ $item->qty }}"
                 data-value="{{ $item->qty }}" value="{{ $item->qty }}"
                 x-on:keyup.debounce.500ms="(e) => add('{{ $item->id }}', e.target.value)" placeholder="{{ __('Qty') }}"
                 class="w-1/2 text-right" inputMode="numeric" />

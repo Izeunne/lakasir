@@ -172,4 +172,34 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName
     {
         return $this->canManageStorePin();
     }
+
+    public static function hasConfiguredAdminPin(?self $preferredUser = null): bool
+    {
+        if ($preferredUser && $preferredUser->isAdminPanelUser() && $preferredUser->hasPin()) {
+            return true;
+        }
+
+        return self::query()
+            ->whereNotNull('pin')
+            ->with('roles')
+            ->get()
+            ->contains(fn (self $user): bool => $user->isAdminPanelUser() && $user->hasPin());
+    }
+
+    public static function verifyAdminPin(?string $inputPin, ?self $preferredUser = null): ?self
+    {
+        if (blank($inputPin)) {
+            return null;
+        }
+
+        if ($preferredUser && $preferredUser->isAdminPanelUser() && $preferredUser->hasPin()) {
+            return $preferredUser->verifyPin($inputPin) ? $preferredUser : null;
+        }
+
+        return self::query()
+            ->whereNotNull('pin')
+            ->with('roles')
+            ->get()
+            ->first(fn (self $user): bool => $user->isAdminPanelUser() && $user->verifyPin($inputPin));
+    }
 }
