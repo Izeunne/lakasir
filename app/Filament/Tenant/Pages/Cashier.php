@@ -5,6 +5,7 @@ namespace App\Filament\Tenant\Pages;
 use App\Features\Member as FeaturesMember;
 use App\Features\Voucher;
 use App\Filament\Tenant\Pages\Traits\CartInteraction;
+use App\Filament\Tenant\Pages\Traits\HasPosSecurity;
 use App\Filament\Tenant\Pages\Traits\HasShiftManagement;
 use App\Filament\Tenant\Pages\Traits\TableProduct;
 use App\Filament\Tenant\Resources\Traits\RefreshThePage;
@@ -40,7 +41,7 @@ use App\Models\Tenants\Profile;
 
 class Cashier extends Page implements HasForms, HasTable
 {
-    use CartInteraction, HasShiftManagement, HasTranslatableResource, RefreshThePage, TableProduct;
+    use CartInteraction, HasPosSecurity, HasShiftManagement, HasTranslatableResource, RefreshThePage, TableProduct;
 
     public static ?string $label = 'POS';
 
@@ -109,6 +110,7 @@ class Cashier extends Page implements HasForms, HasTable
     {
         $this->about = About::first() ?? null;
 
+        $this->initializePosSecurity();
         $this->initializeShift();
 
         $this->tax = (float) Setting::get('default_tax', 0);
@@ -418,12 +420,5 @@ class Cashier extends Page implements HasForms, HasTable
         });
 
         $this->total_price = $this->sub_total + ($this->sub_total * $this->tax / 100) - $this->discount_price;
-    }
-
-    public function switchCashier(): void
-    {
-        session()->forget('pos_user_id');
-
-        $this->redirect(Portal::getUrl(['open_pos' => 1]));
     }
 }

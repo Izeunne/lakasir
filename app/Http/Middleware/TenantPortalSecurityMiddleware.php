@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Filament\Tenant\Pages\Portal;
+use App\Filament\Tenant\Pages\Cashier;
 use App\Models\Tenants\User;
 use Closure;
 use Filament\Facades\Filament;
@@ -24,7 +24,6 @@ class TenantPortalSecurityMiddleware
         }
 
         $allowedWithoutGate = [
-            'filament.tenant.pages.portal',
             'filament.tenant.auth.logout',
         ];
 
@@ -32,20 +31,18 @@ class TenantPortalSecurityMiddleware
             return $next($request);
         }
 
+        // Direct user away from old portal page to Cashier POS
+        if ($routeName === 'filament.tenant.pages.portal') {
+            return redirect()->to(Cashier::getUrl());
+        }
+
         $posRoutes = [
             'filament.tenant.pages.cashier',
             'filament.tenant.pages.p-o-s',
         ];
 
+        // Cashier page manages its own lockscreen / PIN gate directly on the page
         if (in_array($routeName, $posRoutes, true)) {
-            $posUserId = session('pos_user_id');
-
-            if (! $posUserId || ! User::query()->whereKey($posUserId)->exists()) {
-                session()->forget('pos_user_id');
-
-                return redirect()->to(Portal::getUrl(['open_pos' => 1]));
-            }
-
             return $next($request);
         }
 
@@ -55,11 +52,11 @@ class TenantPortalSecurityMiddleware
         if (! $authUser || ! $authUser->isAdminPanelUser()) {
             session()->forget('admin_unlocked');
 
-            return redirect()->to(Portal::getUrl());
+            return redirect()->to(Cashier::getUrl());
         }
 
         if (session('admin_unlocked') !== true) {
-            return redirect()->to(Portal::getUrl(['open_admin' => 1]));
+            return redirect()->to(Cashier::getUrl(['open_admin_modal' => 1]));
         }
 
         return $next($request);

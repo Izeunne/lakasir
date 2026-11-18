@@ -153,7 +153,7 @@ class TenantPanelProvider extends PanelProvider
             ->spa(config('app.spa_mode'))
             ->authGuard('web')
             ->path('/member')
-            ->homeUrl(fn (): string => Portal::getUrl())
+            ->homeUrl(fn (): string => Cashier::getUrl())
             ->login(TenantLogin::class)
             ->navigation(fn (NavigationBuilder $navigationBuilder) => $this->buildNavigation($navigationBuilder))
             ->discoverResources(in: app_path('Filament/Tenant/Resources'), for: 'App\\Filament\\Tenant\\Resources')
@@ -181,9 +181,9 @@ class TenantPanelProvider extends PanelProvider
     private function getNavigationItems(): array
     {
         return [
-            NavigationItem::make(__('Portal / Kunci Admin'))
-                ->icon('heroicon-o-squares-2x2')
-                ->url(fn (): string => Portal::getUrl()),
+            NavigationItem::make(__('Buka POS (Kasir)'))
+                ->icon('heroicon-o-shopping-cart')
+                ->url(fn (): string => Cashier::getUrl(['lock_admin' => 1])),
             ...Dashboard::getNavigationItems(),
             $this->generateNavigationItem(SellingResource::class),
             $this->generateNavigationItem(VoidedSellings::class),

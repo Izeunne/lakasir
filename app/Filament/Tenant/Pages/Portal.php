@@ -40,17 +40,7 @@ class Portal extends Page
 
     public function mount(): void
     {
-        session()->forget('admin_unlocked');
-
-        $about = About::first();
-        $this->shopName = $about?->shop_name ?? config('app.name', 'Lakasir');
-        $this->shopLogo = $about?->logo_url ?? $about?->photo ?? null;
-
-        if (request()->boolean('open_pos')) {
-            $this->openPosModal();
-        } elseif (request()->boolean('open_admin')) {
-            $this->openAdminModal();
-        }
+        $this->redirect(Cashier::getUrl());
     }
 
     public function getUsersProperty(): Collection

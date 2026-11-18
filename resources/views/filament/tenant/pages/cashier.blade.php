@@ -25,11 +25,11 @@
         @endif
       </button>
     </div>
-    <a href="{{ \App\Filament\Tenant\Pages\Portal::getUrl() }}"
-      class="flex items-center gap-1 rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300">
-      <x-heroicon-o-arrow-left class="h-3.5 w-3.5" />
-      <span>{{ __('Kembali') }}</span>
-    </a>
+    <button type="button" wire:click="openAdminPinModal"
+      class="flex items-center gap-1.5 rounded-lg bg-gray-900 text-white dark:bg-white dark:text-gray-900 px-3 py-1.5 text-xs font-semibold hover:opacity-90 transition shadow-sm">
+      <x-heroicon-o-shield-check class="h-3.5 w-3.5" />
+      <span>{{ __('Admin') }}</span>
+    </button>
 </div>
 
 <style>
@@ -428,11 +428,12 @@
         </div>
         <div class="flex items-center">
           <div class="hidden min-[480px]:flex items-center gap-x-1.5 lg:gap-x-2">
-            <a href="{{ \App\Filament\Tenant\Pages\Portal::getUrl() }}"
-              class="flex items-center justify-center gap-x-1 rounded-lg bg-gray-100 px-2.5 lg:px-4 py-1 text-xs lg:text-sm text-gray-500">
-              <x-heroicon-o-arrow-left class="h-4 w-4 text-gray-500" />
-              <p class="hidden lg:block">{{ __('Back') }} </p>
-            </a>
+            <button type="button" wire:click="openAdminPinModal"
+              title="{{ __('Buka Admin Panel (Memerlukan PIN Admin)') }}"
+              class="flex items-center justify-center gap-x-1.5 rounded-lg bg-gray-900 text-white dark:bg-white dark:text-gray-900 px-2.5 lg:px-3.5 py-1.5 text-xs lg:text-sm font-semibold hover:opacity-90 transition shadow-sm">
+              <x-heroicon-o-shield-check class="h-4 w-4" />
+              <p class="hidden lg:block">{{ __('Admin Panel') }} </p>
+            </button>
 
             <button x-on:click="$dispatch('open-modal', {id: 'qr-scanner-modal'})" type="button"
               class="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Scan with camera">
@@ -476,9 +477,11 @@
       <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
         <div class="flex items-center gap-2">
           <p class="font-medium text-gray-700 dark:text-gray-300">{{ pos_user()?->cashier_name ?? Filament::auth()->user()->cashier_name }}</p>
-          <button type="button" wire:click="switchCashier"
-            class="rounded-md border border-gray-200 dark:border-gray-700 px-2 py-0.5 text-[11px] font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-            {{ __('Ganti Kasir') }}
+          <button type="button" wire:click="lockPos"
+            title="{{ __('Kunci Layar Kasir / Ganti Pengguna') }}"
+            class="flex items-center gap-1 rounded-md border border-gray-200 dark:border-gray-700 px-2 py-0.5 text-[11px] font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+            <x-heroicon-o-lock-closed class="h-3 w-3" />
+            <span>{{ __('Kunci / Ganti Kasir') }}</span>
           </button>
         </div>
         <div class="flex items-center gap-x-2">
@@ -1450,6 +1453,239 @@
       </div>
     </x-slot>
   </x-filament::modal>
+
+  {{-- ======================================================== --}}
+  {{-- POS LOCKSCREEN OVERLAY (Wajib Masukkan PIN Kasir)       --}}
+  {{-- ======================================================== --}}
+  @if ($isPosLocked)
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/80 backdrop-blur-md p-4">
+      <div class="w-full max-w-sm sm:max-w-md rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-2xl p-6 sm:p-7 space-y-5">
+        {{-- Store Branding --}}
+        <div class="text-center space-y-1.5">
+          @if ($about?->photo || $about?->logo_url)
+            <img src="{{ $about?->logo_url ?? $about?->photo }}" alt="{{ $about?->shop_name ?? 'POS' }}" class="h-12 w-12 rounded-xl mx-auto object-cover shadow-sm">
+          @else
+            <div class="h-12 w-12 rounded-xl bg-primary-600 text-white flex items-center justify-center mx-auto text-lg font-bold shadow-sm">
+              {{ strtoupper(substr($about?->shop_name ?? 'L', 0, 1)) }}
+            </div>
+          @endif
+          <h2 class="text-lg font-bold text-gray-900 dark:text-white">
+            {{ $about?->shop_name ?? config('app.name', 'Lakasir') }}
+          </h2>
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            {{ __('Pilih akun kasir dan masukkan PIN untuk mulai melayani pesanan.') }}
+          </p>
+        </div>
+
+        {{-- Error Alert --}}
+        @if ($posPinError)
+          <div class="rounded-xl bg-danger-50 dark:bg-danger-950/50 border border-danger-200 dark:border-danger-800 p-2.5 text-xs font-semibold text-danger-700 dark:text-danger-400 text-center animate-pulse">
+            {{ $posPinError }}
+          </div>
+        @endif
+
+        {{-- Cashier Selection --}}
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+            {{ __('Pilih Akun Kasir') }}
+          </label>
+          <select
+            wire:model.live="selectedCashierId"
+            class="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3.5 py-2.5 text-sm font-medium text-gray-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+          >
+            <option value="">{{ __('-- Pilih Kasir --') }}</option>
+            @foreach ($this->cashiers as $cUser)
+              <option value="{{ $cUser->id }}">
+                {{ $cUser->name }} ({{ $cUser->is_owner ? 'Owner' : ($cUser->roles->first()?->name ?? 'Kasir') }}) {{ $cUser->hasPin() ? '' : '⚠️ No PIN' }}
+              </option>
+            @endforeach
+          </select>
+        </div>
+
+        {{-- PIN Input --}}
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5 text-center">
+            {{ __('PIN Kasir') }}
+          </label>
+          <input
+            type="password"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            wire:model="posPin"
+            wire:keydown.enter="unlockPos"
+            placeholder="••••"
+            class="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 px-4 py-2.5 text-center text-xl tracking-[0.4em] font-bold text-gray-900 dark:text-white focus:border-primary-500 focus:bg-white dark:focus:bg-gray-800 focus:ring-1 focus:ring-primary-500"
+          >
+        </div>
+
+        {{-- Numeric Touch Keypad --}}
+        <div class="grid grid-cols-3 gap-1.5 sm:gap-2">
+          @foreach (range(1, 9) as $digit)
+            <button
+              type="button"
+              wire:click="appendPosPin('{{ $digit }}')"
+              class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700/80 py-2.5 text-base font-bold text-gray-800 dark:text-gray-200 shadow-sm active:scale-95 transition"
+            >
+              {{ $digit }}
+            </button>
+          @endforeach
+          <button
+            type="button"
+            wire:click="clearPosPin"
+            class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800/60 dark:hover:bg-gray-700 py-2.5 text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 shadow-sm active:scale-95 transition"
+          >
+            {{ __('Clear') }}
+          </button>
+          <button
+            type="button"
+            wire:click="appendPosPin('0')"
+            class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700/80 py-2.5 text-base font-bold text-gray-800 dark:text-gray-200 shadow-sm active:scale-95 transition"
+          >
+            0
+          </button>
+          <button
+            type="button"
+            wire:click="backspacePosPin"
+            class="flex items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800/60 dark:hover:bg-gray-700 py-2.5 text-gray-600 dark:text-gray-400 shadow-sm active:scale-95 transition"
+          >
+            <x-heroicon-o-backspace class="h-5 w-5" />
+          </button>
+        </div>
+
+        {{-- Unlock Action --}}
+        <button
+          type="button"
+          wire:click="unlockPos"
+          class="w-full rounded-xl bg-primary-600 hover:bg-primary-500 py-2.5 text-sm font-bold text-white shadow-md shadow-primary-500/20 active:scale-98 transition flex items-center justify-center gap-2"
+        >
+          <x-heroicon-o-lock-open class="h-4 w-4" />
+          <span>{{ __('Buka POS (Masuk)') }}</span>
+        </button>
+
+        {{-- Bottom Links: Admin Panel & Logout --}}
+        <div class="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 pt-3 text-xs">
+          <button
+            type="button"
+            wire:click="openAdminPinModal"
+            class="inline-flex items-center gap-1.5 font-semibold text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition"
+          >
+            <x-heroicon-o-shield-check class="h-4 w-4 text-primary-600" />
+            <span>{{ __('Admin Panel') }}</span>
+          </button>
+
+          <button
+            type="button"
+            wire:click="logoutDevice"
+            wire:confirm="{{ __('Yakin ingin logout perangkat?') }}"
+            class="inline-flex items-center gap-1 text-gray-500 hover:text-danger-600 dark:hover:text-danger-400 transition"
+          >
+            <x-heroicon-o-arrow-right-on-rectangle class="h-4 w-4" />
+            <span>{{ __('Logout') }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  @endif
+
+  {{-- ======================================================== --}}
+  {{-- ADMIN PIN MODAL (Verifikasi PIN untuk Masuk Admin Panel) --}}
+  {{-- ======================================================== --}}
+  @if ($showAdminModal)
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/80 backdrop-blur-md p-4">
+      <div class="w-full max-w-sm rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-2xl p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
+          <div class="flex items-center gap-2">
+            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-sm">
+              <x-heroicon-o-shield-check class="h-5 w-5" />
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-gray-900 dark:text-white">{{ __('Buka Admin Panel') }}</h3>
+              <p class="text-[11px] text-gray-500 dark:text-gray-400">{{ __('Memerlukan PIN Akun Admin') }}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            wire:click="closeAdminPinModal"
+            class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600"
+          >
+            <x-heroicon-o-x-mark class="h-5 w-5" />
+          </button>
+        </div>
+
+        @if ($adminPinError)
+          <div class="rounded-xl bg-danger-50 dark:bg-danger-950/50 border border-danger-200 dark:border-danger-800 p-2.5 text-xs font-semibold text-danger-700 dark:text-danger-400 text-center animate-pulse">
+            {{ $adminPinError }}
+          </div>
+        @endif
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5 text-center">
+            {{ __('PIN Admin') }}
+          </label>
+          <input
+            type="password"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            wire:model="adminPin"
+            wire:keydown.enter="submitAdminPin"
+            placeholder="••••"
+            class="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 px-4 py-2.5 text-center text-xl tracking-[0.4em] font-bold text-gray-900 dark:text-white focus:border-primary-500 focus:bg-white dark:focus:bg-gray-800 focus:ring-1 focus:ring-primary-500"
+          >
+        </div>
+
+        {{-- Numeric Touch Keypad for Admin PIN --}}
+        <div class="grid grid-cols-3 gap-1.5 sm:gap-2">
+          @foreach (range(1, 9) as $digit)
+            <button
+              type="button"
+              wire:click="appendAdminPin('{{ $digit }}')"
+              class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700/80 py-2 text-base font-bold text-gray-800 dark:text-gray-200 shadow-sm active:scale-95 transition"
+            >
+              {{ $digit }}
+            </button>
+          @endforeach
+          <button
+            type="button"
+            wire:click="clearAdminPin"
+            class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800/60 dark:hover:bg-gray-700 py-2 text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 shadow-sm active:scale-95 transition"
+          >
+            {{ __('Clear') }}
+          </button>
+          <button
+            type="button"
+            wire:click="appendAdminPin('0')"
+            class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700/80 py-2 text-base font-bold text-gray-800 dark:text-gray-200 shadow-sm active:scale-95 transition"
+          >
+            0
+          </button>
+          <button
+            type="button"
+            wire:click="backspaceAdminPin"
+            class="flex items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800/60 dark:hover:bg-gray-700 py-2 text-gray-600 dark:text-gray-400 shadow-sm active:scale-95 transition"
+          >
+            <x-heroicon-o-backspace class="h-5 w-5" />
+          </button>
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-gray-100 dark:border-gray-800">
+          <button
+            type="button"
+            wire:click="closeAdminPinModal"
+            class="rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+          >
+            {{ __('Batal') }}
+          </button>
+          <button
+            type="button"
+            wire:click="submitAdminPin"
+            class="rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-2 text-xs font-bold hover:opacity-90 transition shadow-sm"
+          >
+            {{ __('Buka Admin Panel') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  @endif
 
   <style>
     /* html5-qrcode library button & control styling */
