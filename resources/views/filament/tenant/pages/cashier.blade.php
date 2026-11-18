@@ -26,8 +26,8 @@
       </button>
     </div>
     <button type="button" wire:click="openAdminPinModal"
-      class="flex items-center gap-1.5 rounded-lg bg-gray-900 text-white dark:bg-white dark:text-gray-900 px-3 py-1.5 text-xs font-semibold hover:opacity-90 transition shadow-sm">
-      <x-heroicon-o-shield-check class="h-3.5 w-3.5" />
+      class="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 px-2.5 py-1.5 text-xs font-medium transition">
+      <x-heroicon-o-shield-check class="h-3.5 w-3.5 text-gray-400" />
       <span>{{ __('Admin') }}</span>
     </button>
 </div>
@@ -459,8 +459,8 @@
           {{-- Tombol ke Admin Panel (Wajib Masuk PIN Admin) --}}
           <button type="button" wire:click="openAdminPinModal"
             title="{{ __('Buka Admin Panel (Memerlukan PIN Admin)') }}"
-            class="flex items-center gap-1.5 rounded-lg bg-gray-900 text-white dark:bg-white dark:text-gray-900 px-3 py-1.5 text-xs font-semibold hover:opacity-90 transition shadow-sm">
-            <x-heroicon-o-shield-check class="h-4 w-4" />
+            class="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 px-2.5 py-1.5 text-xs font-medium transition">
+            <x-heroicon-o-shield-check class="h-4 w-4 text-gray-400" />
             <span>{{ __('Admin Panel') }}</span>
           </button>
 
