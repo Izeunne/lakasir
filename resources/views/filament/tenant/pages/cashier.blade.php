@@ -415,102 +415,101 @@
     class="pos-cart-col w-full md:w-[44%] lg:w-[38%] xl:w-1/3 shrink-0 md:sticky md:top-2 self-start rounded-xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 md:max-h-[calc(100vh-1rem)] flex flex-col overflow-hidden"
     :class="mobileTab === 'products' ? 'hidden md:flex' : 'flex'">
 
-    {{-- Header Sidebar --}}
-    <div class="p-3 sm:p-4 border-b border-gray-100 dark:border-gray-800 shrink-0 space-y-2">
-      <div class="flex items-center justify-between" x-data="fullscreen">
-        <div class="flex items-center gap-2">
+    {{-- Header Sidebar (Sederhana & Ringkas) --}}
+    <div class="p-3 sm:p-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
+      <div class="flex items-center justify-between gap-2" x-data="fullscreen">
+        {{-- Sisi Kiri: Judul & Nama Kasir --}}
+        <div class="flex items-center gap-2 min-w-0">
           <button type="button" @click="mobileTab = 'products'"
             class="md:hidden flex items-center justify-center rounded-lg bg-gray-100 p-1.5 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
             title="{{ __('Kembali ke Menu') }}">
             <x-heroicon-o-arrow-left class="h-4 w-4" />
           </button>
-          <p class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">{{ __('Orders details') }}</p>
-        </div>
-        <div class="flex items-center">
-          <div class="hidden min-[480px]:flex items-center gap-x-1.5 lg:gap-x-2">
-            <button type="button" wire:click="openAdminPinModal"
-              title="{{ __('Buka Admin Panel (Memerlukan PIN Admin)') }}"
-              class="flex items-center justify-center gap-x-1.5 rounded-lg bg-gray-900 text-white dark:bg-white dark:text-gray-900 px-2.5 lg:px-3.5 py-1.5 text-xs lg:text-sm font-semibold hover:opacity-90 transition shadow-sm">
-              <x-heroicon-o-shield-check class="h-4 w-4" />
-              <p class="hidden lg:block">{{ __('Admin Panel') }} </p>
-            </button>
-
-            <button x-on:click="$dispatch('open-modal', {id: 'qr-scanner-modal'})" type="button"
-              class="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Scan with camera">
-              <x-heroicon-o-qr-code class="h-8 w-8 text-gray-900 dark:text-gray-300" />
-            </button>
-
-          </div>
-          <div class="gap-x-2">
-            <x-filament::dropdown placement="top-start">
-              <x-slot name="trigger">
-                <x-heroicon-o-ellipsis-vertical class="h-8 w-8 cursor-pointer text-gray-900 dark:text-gray-300" />
-              </x-slot>
-
-              <x-filament::dropdown.list>
-                <x-filament::dropdown.list.item x-on:mousedown="document.location.reload()">
-                  <div class="flex gap-x-2">
-                    <x-heroicon-m-arrow-path class="h-5 w-5 cursor-pointer text-gray-900 dark:text-gray-300" />
-                    <p>{{ __('Reload') }} </p>
-                  </div>
-                </x-filament::dropdown.list.item>
-
-                <x-filament::dropdown.list.item x-on:mousedown="requestFullscreen">
-                  <div class="flex gap-x-2">
-                    <x-heroicon-o-arrows-pointing-out class="h-5 w-5 cursor-pointer text-gray-900 dark:text-gray-300" />
-                    <p>{{ __('Fullscreen') }} </p>
-                  </div>
-                </x-filament::dropdown.list.item>
-                <x-filament::dropdown.list.item>
-                  <p class="flex gap-x-2" wire:confirm="Are you sure you want to clear all of the items?"
-                    wire:click.prevent="clearCart">
-                    <x-heroicon-o-trash class="h-5 w-5 cursor-pointer text-gray-900 dark:text-gray-300" />
-                    <span>{{ __('Clear') }} </span>
-                  </p>
-                </x-filament::dropdown.list.item>
-
-              </x-filament::dropdown.list>
-            </x-filament::dropdown>
+          <div class="min-w-0">
+            <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-tight">
+              {{ __('Orders details') }}
+            </h3>
+            <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+              <span class="truncate font-medium">{{ pos_user()?->cashier_name ?? Filament::auth()->user()->cashier_name }}</span>
+              @if ($activeDrawerId)
+                <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                  <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span class="hidden sm:inline">{{ __('Shift Aktif') }}</span>
+                </span>
+              @endif
+            </div>
           </div>
         </div>
-      </div>
-      <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-        <div class="flex items-center gap-2">
-          <p class="font-medium text-gray-700 dark:text-gray-300">{{ pos_user()?->cashier_name ?? Filament::auth()->user()->cashier_name }}</p>
-          <button type="button" wire:click="lockPos"
-            title="{{ __('Kunci Layar Kasir / Ganti Pengguna') }}"
-            class="flex items-center gap-1 rounded-md border border-gray-200 dark:border-gray-700 px-2 py-0.5 text-[11px] font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-            <x-heroicon-o-lock-closed class="h-3 w-3" />
-            <span>{{ __('Kunci / Ganti Kasir') }}</span>
-          </button>
-        </div>
-        <div class="flex items-center gap-x-2">
-          @if ($activeDrawerId)
-            <button type="button" wire:click="openCloseShiftModal"
-              title="{{ __('Shift Kasir Aktif - Klik untuk Tutup Kasir & Cetak Rekap') }}"
-              class="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-600 hover:text-white dark:bg-emerald-950/40 dark:text-emerald-400 shadow-sm">
-              <span class="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>{{ __('Tutup Kasir') }}</span>
-            </button>
-          @else
-            <button type="button" wire:click="openShiftModal"
-              title="{{ __('Buka Kasir & Masukkan Modal Awal') }}"
-              class="flex items-center gap-1 rounded-lg border border-amber-500/40 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700 transition hover:bg-amber-600 hover:text-white dark:bg-amber-950/40 dark:text-amber-400 shadow-sm">
-              <x-heroicon-o-lock-open class="h-3.5 w-3.5" />
-              <span>{{ __('Buka Kasir') }}</span>
+
+        {{-- Sisi Kanan: Hanya Tombol yang Perlu --}}
+        <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {{-- Draft Pesanan: HANYA MUNCUL JIKA ADA DRAFT --}}
+          @if (isset($cartDrafts) && $cartDrafts->count() > 0)
+            <button type="button" x-on:click="$dispatch('open-modal', {id: 'draft-list-modal'})"
+              title="{{ __('Lihat Draft Pesanan') }}"
+              class="flex items-center gap-1 rounded-lg border border-lakasir-primary/40 bg-lakasir-primary/10 px-2.5 py-1.5 text-xs font-semibold text-lakasir-primary hover:bg-lakasir-primary hover:text-white transition">
+              <x-heroicon-o-bookmark-square class="h-3.5 w-3.5" />
+              <span class="hidden sm:inline">{{ __('Draft') }}</span>
+              <span class="rounded-full bg-lakasir-primary px-1.5 text-[10px] font-bold text-white leading-tight">
+                {{ $cartDrafts->count() }}
+              </span>
             </button>
           @endif
 
-          <button type="button" x-on:click="$dispatch('open-modal', {id: 'draft-list-modal'})"
-            class="flex items-center gap-1 rounded-lg border border-lakasir-primary/40 bg-lakasir-primary/10 px-2.5 py-1 text-xs font-semibold text-lakasir-primary transition hover:bg-lakasir-primary hover:text-white">
-            <x-heroicon-o-bookmark-square class="h-3.5 w-3.5" />
-            <span>{{ __('Draft Pesanan') }}</span>
-            @if (isset($cartDrafts) && $cartDrafts->count() > 0)
-              <span class="rounded-full bg-lakasir-primary px-1.5 py-0.2 text-[10px] font-bold text-white leading-none">
-                {{ $cartDrafts->count() }}
-              </span>
-            @endif
+          {{-- Tombol ke Admin Panel (Wajib Masuk PIN Admin) --}}
+          <button type="button" wire:click="openAdminPinModal"
+            title="{{ __('Buka Admin Panel (Memerlukan PIN Admin)') }}"
+            class="flex items-center gap-1.5 rounded-lg bg-gray-900 text-white dark:bg-white dark:text-gray-900 px-3 py-1.5 text-xs font-semibold hover:opacity-90 transition shadow-sm">
+            <x-heroicon-o-shield-check class="h-4 w-4" />
+            <span>{{ __('Admin Panel') }}</span>
           </button>
+
+          {{-- Dropdown Aksi Tambahan (Menu Titik Tiga) --}}
+          <x-filament::dropdown placement="bottom-end">
+            <x-slot name="trigger">
+              <button type="button" class="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition" aria-label="Menu Opsi">
+                <x-heroicon-o-ellipsis-vertical class="h-5 w-5" />
+              </button>
+            </x-slot>
+
+            <x-filament::dropdown.list>
+              @if ($activeDrawerId)
+                <x-filament::dropdown.list.item wire:click="openCloseShiftModal" icon="heroicon-o-lock-closed" color="danger">
+                  {{ __('Tutup Kasir (Shift #' . $activeDrawerId . ')') }}
+                </x-filament::dropdown.list.item>
+              @else
+                <x-filament::dropdown.list.item wire:click="openShiftModal" icon="heroicon-o-lock-open" color="warning">
+                  {{ __('Buka Kasir (Modal Awal)') }}
+                </x-filament::dropdown.list.item>
+              @endif
+
+              <x-filament::dropdown.list.item wire:click="lockPos" icon="heroicon-o-user">
+                {{ __('Kunci / Ganti Kasir') }}
+              </x-filament::dropdown.list.item>
+
+              <x-filament::dropdown.list.item x-on:click="$dispatch('open-modal', {id: 'qr-scanner-modal'})" icon="heroicon-o-qr-code">
+                {{ __('Scan Barcode / Kamera') }}
+              </x-filament::dropdown.list.item>
+
+              <x-filament::dropdown.list.item x-on:mousedown="requestFullscreen" icon="heroicon-o-arrows-pointing-out">
+                {{ __('Fullscreen') }}
+              </x-filament::dropdown.list.item>
+
+              <x-filament::dropdown.list.item x-on:mousedown="document.location.reload()" icon="heroicon-m-arrow-path">
+                {{ __('Reload') }}
+              </x-filament::dropdown.list.item>
+
+              @if (isset($cartItems) && $cartItems->count() > 0)
+                <x-filament::dropdown.list.item
+                  wire:click.prevent="clearCart"
+                  wire:confirm="{{ __('Yakin ingin mengosongkan keranjang?') }}"
+                  icon="heroicon-o-trash"
+                  color="danger">
+                  {{ __('Kosongkan Keranjang') }}
+                </x-filament::dropdown.list.item>
+              @endif
+            </x-filament::dropdown.list>
+          </x-filament::dropdown>
         </div>
       </div>
     </div>
