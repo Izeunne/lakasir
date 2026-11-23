@@ -12,8 +12,10 @@ use App\Filament\Tenant\Resources\Traits\RefreshThePage;
 use App\Models\Tenants\About;
 use App\Models\Tenants\CartDraft;
 use App\Models\Tenants\CartItem;
+use App\Models\Tenants\Category;
 use App\Models\Tenants\Member;
 use App\Models\Tenants\PaymentMethod;
+use App\Models\Tenants\Product;
 use App\Models\Tenants\Selling;
 use App\Models\Tenants\Setting;
 use App\Models\Tenants\Table;
@@ -106,6 +108,20 @@ class Cashier extends Page implements HasForms, HasTable
 
     private float $discount_price = 0;
 
+    public array $posProducts = [];
+
+    public array $posCategories = [];
+
+    public array $posVouchers = [];
+
+    public array $posMembers = [];
+
+    public array $posTables = [];
+
+    public array $posDrafts = [];
+
+    public array $posFeatures = [];
+
     public function mount()
     {
         $this->about = About::first() ?? null;
@@ -174,6 +190,188 @@ class Cashier extends Page implements HasForms, HasTable
         $this->cartDetail['order_type'] = $this->orderType;
 
         $this->fillPayemntMethod();
+        $this->loadPosBootstrapData();
+    }
+
+    public function loadPosBootstrapData(): void
+    {
+        $this->refreshPosProducts();
+
+        $this->posCategories = Category::query()
+            ->withCount(['products' => fn ($q) => $q->where('show', true)])
+            ->having('products_count', '>', 0)
+            ->get()
+            ->map(fn (Category $cat) => [
+                'id' => $cat->id,
+                'name' => $cat->name,
+                'products_count' => (int) $cat->products_count,
+            ])
+            ->values()
+            ->all();
+
+        $this->posVouchers = TenantsVoucher::query()
+            ->where('start_date', '<=', today()->format('Y-m-d'))
+            ->where('expired', '>=', today()->format('Y-m-d'))
+            ->where('kuota', '>', 0)
+            ->get()
+            ->map(fn (TenantsVoucher $v) => [
+                'id' => $v->id,
+                'code' => $v->code,
+                'type' => $v->type,
+                'nominal' => (float) $v->nominal,
+                'minimal_buying' => (float) $v->minimal_buying,
+                'kuota' => (int) $v->kuota,
+            ])
+            ->values()
+            ->all();
+
+        $this->posMembers = Member::query()
+            ->select('id', 'name', 'email', 'code')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Member $m) => [
+                'id' => $m->id,
+                'name' => $m->name,
+                'email' => $m->email,
+                'code' => $m->code,
+            ])
+            ->values()
+            ->all();
+
+        $this->posTables = Table::query()
+            ->select('id', 'number')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Table $t) => [
+                'id' => $t->id,
+                'number' => $t->number,
+            ])
+            ->values()
+            ->all();
+
+        $this->refreshPosDrafts();
+
+        $this->posFeatures = [
+            'member' => (bool) hasFeatureAndPermission(FeaturesMember::class),
+            'voucher' => (bool) hasFeatureAndPermission(Voucher::class),
+            'discount' => (bool) feature(\App\Features\Discount::class),
+            'selling_tax' => (bool) feature(\App\Features\SellingTax::class),
+            'payment_shortcut' => (bool) feature(\App\Features\PaymentShortcutButton::class),
+            'fnb' => ($this->about?->business_type === 'fnb'),
+        ];
+    }
+
+    public function refreshPosProducts(): void
+    {
+        $products = Product::query()
+            ->with(['variations.options', 'category', 'stocks', 'barcodes', 'priceUnits'])
+            ->where(function ($query) {
+                $query->where('type', 'product')
+                    ->where(function ($query) {
+                        $query->whereHas('stocks', function ($query) {
+                            $query->where('is_ready', 1)
+                                ->where('type', 'in')
+                                ->where('stock', '>', 0);
+                        })
+                            ->orWhere('is_non_stock', true);
+                    })
+                    ->orWhere('type', 'service');
+            })
+            ->where('show', true)
+            ->orderBy('name')
+            ->get();
+
+        $this->posProducts = $products->map(function (Product $product) {
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'selling_price' => (float) $product->selling_price,
+                'hero_image' => $product->hero_image,
+                'category_id' => $product->category_id,
+                'category_name' => $product->category?->name,
+                'is_non_stock' => (bool) $product->is_non_stock,
+                'stock' => (float) $product->stock_calculate,
+                'unit' => $product->unit,
+                'barcodes' => $product->barcodes
+                    ->where('is_active', true)
+                    ->pluck('code')
+                    ->values()
+                    ->all(),
+                'price_units' => $product->priceUnits
+                    ->map(fn ($pu) => [
+                        'id' => $pu->id,
+                        'unit' => $pu->unit,
+                        'selling_price' => (float) $pu->selling_price,
+                        'stock' => (float) $pu->stock,
+                    ])
+                    ->values()
+                    ->all(),
+                'variations' => $product->variations
+                    ->map(fn ($var) => [
+                        'id' => $var->id,
+                        'name' => $var->name,
+                        'type' => $var->type,
+                        'is_required' => (bool) $var->is_required,
+                        'min' => (int) ($var->min ?? 0),
+                        'max' => $var->max ? (int) $var->max : null,
+                        'options' => $var->options
+                            ->map(fn ($opt) => [
+                                'id' => $opt->id,
+                                'name' => $opt->name,
+                                'price' => (float) $opt->price,
+                                'is_default' => (bool) $opt->is_default,
+                            ])
+                            ->values()
+                            ->all(),
+                    ])
+                    ->values()
+                    ->all(),
+            ];
+        })->values()->all();
+    }
+
+    public function refreshPosDrafts(): void
+    {
+        $drafts = CartDraft::query()
+            ->with(['member', 'table', 'user'])
+            ->latest()
+            ->get();
+
+        $this->cartDrafts = $drafts;
+
+        $productIds = $drafts->flatMap(fn ($d) => collect($d->items ?? [])->pluck('product_id'))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+        $productNames = Product::whereIn('id', $productIds)->pluck('name', 'id');
+
+        $this->posDrafts = $drafts->map(function (CartDraft $draft) use ($productNames) {
+            $items = collect($draft->items ?? [])->map(function ($item) use ($productNames) {
+                $item['product_name'] = $productNames->get($item['product_id']) ?? 'Item';
+                return $item;
+            })->values()->all();
+
+            return [
+                'id' => $draft->id,
+                'name' => $draft->name,
+                'order_type' => $draft->order_type,
+                'order_type_label' => $draft->order_type_label,
+                'member_id' => $draft->member_id,
+                'member_name' => $draft->member?->name,
+                'table_id' => $draft->table_id,
+                'table_number' => $draft->table?->number,
+                'voucher' => $draft->voucher,
+                'discount_price' => (float) $draft->discount_price,
+                'note' => $draft->note,
+                'total_price' => (float) $draft->total_price,
+                'is_kitchen_printed' => (bool) $draft->is_kitchen_printed,
+                'kitchen_printed_at' => $draft->kitchen_printed_at?->format('d M Y H:i'),
+                'updated_at' => $draft->updated_at?->format('d M Y H:i'),
+                'items' => $items,
+            ];
+        })->values()->all();
     }
 
     protected function getForms(): array
@@ -364,6 +562,153 @@ class Cashier extends Page implements HasForms, HasTable
         $this->mount();
 
         $this->dispatch('selling-created', selling: $selling->load('sellingDetails.product.category', 'paymentMethod', 'member', 'table', 'user'));
+    }
+
+    public function proceedFrontendPayment(array $payload, SellingService $sellingService): array
+    {
+        $items = $payload['items'] ?? [];
+        if (empty($items)) {
+            Notification::make()
+                ->title(__('Keranjang Masih Kosong'))
+                ->body(__('Silakan pilih item pesanan terlebih dahulu.'))
+                ->warning()
+                ->send();
+
+            return ['ok' => false];
+        }
+
+        $productIds = collect($items)->pluck('product_id')->unique()->filter()->all();
+        $productsMap = Product::with('variations')->whereIn('id', $productIds)->get()->keyBy('id');
+
+        foreach ($items as $item) {
+            $product = $productsMap->get($item['product_id'] ?? null);
+            if (! $product) {
+                continue;
+            }
+            $selected = collect($item['selected_variations'] ?? []);
+            foreach ($product->variations as $var) {
+                if ($var->is_required) {
+                    $count = $selected->where('variation_id', $var->id)->count();
+                    if ($count < max(1, $var->min ?? 1)) {
+                        $this->notifyMissingVariations();
+                        return ['ok' => false];
+                    }
+                }
+            }
+        }
+
+        $orderType = $payload['order_type'] ?? null;
+        if (empty($orderType)) {
+            $this->notifyMissingOrderType();
+            return ['ok' => false];
+        }
+
+        $activeDraftId = ! empty($payload['active_draft_id']) ? (int) $payload['active_draft_id'] : null;
+        $activeDraft = $activeDraftId ? CartDraft::find($activeDraftId) : null;
+        $skipKitchenPrint = (bool) ($activeDraft?->is_kitchen_printed ?? false);
+
+        $paymentMethodId = $payload['payment_method_id'] ?? ($this->paymentMethods[0]['id'] ?? 1);
+        $pMethod = PaymentMethod::find($paymentMethodId);
+        if (! $pMethod) {
+            $pMethod = PaymentMethod::create([
+                'name' => 'Cash',
+                'is_cash' => true,
+                'is_debit' => false,
+                'is_credit' => false,
+                'is_wallet' => false,
+                'icon' => 'assets/images/payment-methods/cash.png',
+            ]);
+        }
+
+        $mappedProducts = collect($items)->map(function ($item) {
+            return [
+                'product_id' => $item['product_id'],
+                'qty' => (float) ($item['qty'] ?? 1),
+                'price' => (float) ($item['price'] ?? 0),
+                'discount_price' => (float) ($item['discount_price'] ?? 0),
+                'price_unit_id' => $item['price_unit_id'] ?? null,
+                'selected_variations' => $item['selected_variations'] ?? [],
+                'note' => $item['note'] ?? null,
+            ];
+        })->values()->all();
+
+        $totalPrice = (float) ($payload['total_price'] ?? 0);
+        $totalQty = collect($mappedProducts)->sum('qty');
+        $payedMoney = (float) ($payload['payed_money'] ?? 0);
+
+        $request = [
+            'payment_method_id' => $pMethod->id,
+            'member_id' => $payload['member_id'] ?? null,
+            'table_id' => $payload['table_id'] ?? null,
+            'voucher' => $payload['voucher'] ?? null,
+            'discount_price' => (float) ($payload['discount_price'] ?? 0),
+            'note' => $payload['note'] ?? null,
+            'due_date' => $payload['due_date'] ?? null,
+            'payed_money' => $payedMoney,
+            'money_changes' => $payedMoney - $totalPrice,
+            'friend_price' => (bool) ($payload['friend_price'] ?? false),
+            'total_price' => $totalPrice,
+            'total_qty' => $totalQty,
+            'order_type' => $orderType,
+            'skip_kitchen_print' => $skipKitchenPrint,
+            'products' => $mappedProducts,
+        ];
+
+        $validator = Validator::make($request, [
+            'fee' => ['numeric'],
+            'payment_method_id' => ['required'],
+            'member_id' => Rule::requiredIf(fn () => $pMethod->is_credit),
+            'due_date' => Rule::requiredIf(fn () => $pMethod->is_credit),
+            'payed_money' => [
+                ! $pMethod->is_credit ? 'gte:total_price' : null,
+                Rule::requiredIf(fn () => ! $pMethod->is_credit),
+            ],
+            'total_price' => ['required_if:friend_price,true', 'numeric'],
+            'total_qty' => ['required_if:friend_price,true', 'numeric', new ShouldSameWithSellingDetail('qty', $request['products'])],
+            'friend_price' => ['required', 'boolean'],
+            'products' => ['required', 'array'],
+            'products.*.product_id' => ['required', 'exists:products,id'],
+            'products.*.price' => ['required_if:friend_price,true', 'numeric'],
+            'products.*.qty' => ['required', 'numeric', 'min:1', new CheckProductStock],
+        ]);
+
+        if ($validator->fails()) {
+            throw ValidationException::withMessages($validator->messages()->toArray());
+        }
+
+        $data = array_merge($request, $sellingService->mapProductRequest($request));
+        $selling = $sellingService->create($data);
+
+        CartItem::query()->cashier()->delete();
+
+        if ($activeDraftId) {
+            CartDraft::whereKey($activeDraftId)->delete();
+        }
+
+        $this->activeDraftId = null;
+        $this->draftName = '';
+        $this->orderType = null;
+        $this->cartDetail = [];
+
+        Notification::make()
+            ->title(__('Transaction created'))
+            ->success()
+            ->send();
+
+        $this->refreshPosProducts();
+        $this->refreshPosDrafts();
+
+        $loadedSelling = $selling->load('sellingDetails.product.category', 'paymentMethod', 'member', 'table', 'user');
+
+        $this->dispatch('selling-created', selling: $loadedSelling, skipKitchenPrint: $skipKitchenPrint);
+
+        return [
+            'ok' => true,
+            'selling' => $loadedSelling->toArray(),
+            'skip_kitchen_print' => $skipKitchenPrint,
+            'products' => $this->posProducts,
+            'drafts' => $this->posDrafts,
+        ];
     }
 
     public function assignVoucher(string $code)

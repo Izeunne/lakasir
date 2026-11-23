@@ -14,7 +14,8 @@ class QueuePrintBridgeReceipt
     public function handle(SellingCreated $event): void
     {
         try {
-            PrintBridgeService::queueSellingPrints($event->selling);
+            $skipKitchenPrint = (bool) ($event->data['skip_kitchen_print'] ?? false);
+            PrintBridgeService::queueSellingPrints($event->selling, 1, $skipKitchenPrint);
         } catch (\Throwable $e) {
             Log::warning('Failed to queue print bridge receipts: ' . $e->getMessage());
         }

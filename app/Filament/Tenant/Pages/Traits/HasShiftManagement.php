@@ -12,12 +12,73 @@ trait HasShiftManagement
 {
     public ?int $activeDrawerId = null;
     public ?array $activeShiftSummary = null;
+    public bool $showOpenStoreModal = false;
+    public bool $hasStaleOpenDrawer = false;
+    public ?string $staleDrawerOpenedAt = null;
 
     public function initializeShift(): void
     {
         $service = app(ShiftReportService::class);
         $drawer = $service->getActiveDrawer();
         $this->activeDrawerId = $drawer?->id;
+
+        if (! $drawer) {
+            $this->showOpenStoreModal = true;
+            $this->hasStaleOpenDrawer = false;
+            $this->staleDrawerOpenedAt = null;
+        } elseif ($drawer->opened_at && ! $drawer->opened_at->isToday()) {
+            $this->showOpenStoreModal = true;
+            $this->hasStaleOpenDrawer = true;
+            $this->staleDrawerOpenedAt = $drawer->opened_at->format('d/m/Y H:i');
+        } else {
+            $this->showOpenStoreModal = false;
+            $this->hasStaleOpenDrawer = false;
+            $this->staleDrawerOpenedAt = null;
+        }
+    }
+
+    public function openStoreFromModal(): void
+    {
+        $service = app(ShiftReportService::class);
+        $userId = (int) (pos_user_id() ?? auth()->id() ?? 1);
+        $activeDrawer = $service->getActiveDrawer();
+
+        // Jika masih ada shift terbuka dari hari sebelumnya (lupa tutup toko),
+        // otomatis tutup dan cetak laporan tutup toko dulu sebelum buka toko baru.
+        if ($activeDrawer && $activeDrawer->opened_at && ! $activeDrawer->opened_at->isToday()) {
+            $summary = $service->getShiftSummary($activeDrawer);
+            $service->closeShift($activeDrawer, $userId);
+            $this->activeDrawerId = null;
+            $this->activeShiftSummary = null;
+            $this->dispatch('close-shift-printed', report: $summary);
+            $activeDrawer = null;
+        }
+
+        if (! $activeDrawer) {
+            $drawer = $service->openShift(0, $userId);
+            $this->activeDrawerId = $drawer->id;
+
+            $openSlipPayload = [
+                'type' => 'open_shift',
+                'shop_name' => $this->about?->shop_name ?? 'Lakasir POS',
+                'shop_location' => $this->about?->shop_location,
+                'drawer_id' => $drawer->id,
+                'cashier_name' => pos_user()?->name ?? auth()->user()?->name ?? 'Kasir',
+                'opened_at' => now()->format('d/m/Y H:i'),
+            ];
+
+            $this->dispatch('open-shift-printed', slip: $openSlipPayload);
+        }
+
+        $this->showOpenStoreModal = false;
+        $this->hasStaleOpenDrawer = false;
+        $this->staleDrawerOpenedAt = null;
+
+        Notification::make()
+            ->title(__('Toko Berhasil Dibuka'))
+            ->body(__('Sesi kasir hari ini (Shift #:id) telah aktif dan laporan buka toko sedang dicetak.', ['id' => $this->activeDrawerId]))
+            ->success()
+            ->send();
     }
 
     public function openShiftModal(): void

@@ -84,15 +84,17 @@ test('cashier can filter by category', function () {
     ]);
 
     Livewire::test(Cashier::class)
-        ->call('setCategory', $cat1->id)
-        ->assertSee('Nasi Bakar')
-        ->assertDontSee('Es Cincau')
-        ->call('setCategory', $cat2->id)
-        ->assertSee('Es Cincau')
-        ->assertDontSee('Nasi Bakar')
-        ->call('setCategory', null)
-        ->assertSee('Nasi Bakar')
-        ->assertSee('Es Cincau');
+        ->assertSet('posCategories', function ($categories) use ($cat1, $cat2) {
+            $ids = collect($categories)->pluck('id')->all();
+            return in_array($cat1->id, $ids) && in_array($cat2->id, $ids);
+        })
+        ->assertSet('posProducts', function ($products) use ($p1, $p2, $cat1, $cat2) {
+            $collection = collect($products);
+            $prod1 = $collection->firstWhere('id', $p1->id);
+            $prod2 = $collection->firstWhere('id', $p2->id);
+            return $prod1 && $prod1['category_id'] === $cat1->id
+                && $prod2 && $prod2['category_id'] === $cat2->id;
+        });
 });
 
 test('saving cart as draft dispatches draft-saved event with printable items and delta tracking', function () {
@@ -167,6 +169,70 @@ test('saving cart as draft dispatches draft-saved event with printable items and
                 ->and($draft['items_to_print'])->toHaveCount(2);
             return true;
         });
+});
+
+test('saveFrontendDraft for Simpan dan Bayar prints kitchen once and skips duplicate print on reload', function () {
+    Filament::setCurrentPanel(Filament::getPanel('tenant'));
+    $user = User::first();
+    actingAs($user);
+
+    $catMakanan = Category::create(['name' => 'Makanan']);
+    $mie = Product::create([
+        'name' => 'Mie Goreng',
+        'selling_price' => 18000,
+        'purchase_price' => 9000,
+        'category_id' => $catMakanan->id,
+        'type' => 'product',
+        'is_non_stock' => true,
+        'show' => true,
+    ]);
+
+    $payload = [
+        'active_draft_id' => null,
+        'draft_name' => 'Meja 01',
+        'order_type' => 'dine_in',
+        'member_id' => null,
+        'table_id' => null,
+        'voucher' => null,
+        'discount_price' => 0,
+        'note' => null,
+        'total_price' => 18000,
+        'items' => [
+            [
+                'product_id' => $mie->id,
+                'qty' => 1,
+                'price' => 18000,
+                'discount_price' => 0,
+                'price_unit_id' => null,
+                'selected_variations' => [],
+                'note' => null,
+            ],
+        ],
+    ];
+
+    // Step 1: Simpan dan Bayar (clearCartAfter = false) -> creates draft & prints to kitchen
+    Livewire::test(Cashier::class)
+        ->call('saveFrontendDraft', $payload, false)
+        ->assertDispatched('draft-saved');
+
+    $draft = \App\Models\Tenants\CartDraft::first();
+    expect($draft)->not->toBeNull()
+        ->and($draft->is_kitchen_printed)->toBeTrue()
+        ->and($draft->kitchen_printed_at)->not->toBeNull();
+
+    // Step 2: Load draft back and click Simpan dan Bayar again without new items -> MUST NOT print again
+    $payload['active_draft_id'] = $draft->id;
+    Livewire::test(Cashier::class)
+        ->call('saveFrontendDraft', $payload, false)
+        ->assertNotDispatched('draft-saved');
+
+    // Step 3: Unprinted draft (is_kitchen_printed = false) -> MUST print when Simpan dan Bayar is clicked
+    $draft->update(['is_kitchen_printed' => false, 'kitchen_printed_at' => null]);
+    Livewire::test(Cashier::class)
+        ->call('saveFrontendDraft', $payload, false)
+        ->assertDispatched('draft-saved');
+
+    expect($draft->fresh()->is_kitchen_printed)->toBeTrue();
 });
 
 

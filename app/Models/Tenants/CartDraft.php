@@ -15,6 +15,8 @@ class CartDraft extends Model
 
     protected $casts = [
         'items' => 'array',
+        'is_kitchen_printed' => 'boolean',
+        'kitchen_printed_at' => 'datetime',
     ];
 
     protected $appends = [

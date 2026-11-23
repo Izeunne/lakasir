@@ -164,6 +164,18 @@ trait HasPosSecurity
         $authUser = Filament::auth()->user();
 
         if ($action === 'admin_panel') {
+            $posUserId = session('pos_user_id');
+            $posUser = $posUserId ? User::with('roles')->find($posUserId) : null;
+
+            // Jika kasir yang sedang aktif di POS sudah merupakan Admin / Superadmin,
+            // langsung arahkan ke Admin Panel tanpa perlu input PIN lagi.
+            if (! $this->isPosLocked && $posUser && $posUser->isAdminPanelUser()) {
+                session(['admin_unlocked' => true]);
+                $this->redirect(Dashboard::getUrl());
+
+                return;
+            }
+
             if (! $authUser || ! $authUser->isAdminPanelUser()) {
                 Notification::make()
                     ->title(__('Akses Ditolak'))

@@ -866,6 +866,8 @@ trait CartInteraction
             'note' => $this->cartDetail['note'] ?? null,
             'total_price' => $this->total_price,
             'items' => $itemsPayload,
+            'is_kitchen_printed' => ! empty($itemsToPrint) ? true : (bool) ($existingDraft?->is_kitchen_printed ?? false),
+            'kitchen_printed_at' => ! empty($itemsToPrint) ? now() : $existingDraft?->kitchen_printed_at,
         ];
 
         if ($existingDraft) {
@@ -971,11 +973,255 @@ trait CartInteraction
             // Ignore background bridge queue error if not configured
         }
 
+        $draft->update([
+            'is_kitchen_printed' => true,
+            'kitchen_printed_at' => $draft->kitchen_printed_at ?? now(),
+        ]);
+
+        if (method_exists($this, 'refreshPosDrafts')) {
+            $this->refreshPosDrafts();
+        }
+
         Notification::make()
             ->title(__('Tiket Draft Dikirim ke Printer'))
             ->body(__('Tiket draft ":name" berhasil dikirim ke printer station terkait.', ['name' => $draft->name]))
             ->success()
             ->send();
+    }
+
+    public function saveFrontendDraft(array $payload, bool $clearCartAfter = true): array
+    {
+        $items = $payload['items'] ?? [];
+        if (empty($items)) {
+            Notification::make()
+                ->title(__('Keranjang Masih Kosong'))
+                ->body(__('Silakan pilih item pesanan terlebih dahulu sebelum menyimpan draft.'))
+                ->warning()
+                ->send();
+
+            return ['ok' => false];
+        }
+
+        $orderType = $payload['order_type'] ?? null;
+        if (empty($orderType) || ! in_array($orderType, ['dine_in', 'take_away', 'ojek_online'], true)) {
+            $this->notifyMissingOrderType();
+
+            return ['ok' => false];
+        }
+
+        $productIds = collect($items)->pluck('product_id')->unique()->filter()->all();
+        $products = Product::with(['category', 'variations'])->whereIn('id', $productIds)->get()->keyBy('id');
+
+        foreach ($items as $item) {
+            $product = $products->get($item['product_id'] ?? null);
+            if (! $product) {
+                continue;
+            }
+            $selected = collect($item['selected_variations'] ?? []);
+            foreach ($product->variations as $var) {
+                if ($var->is_required) {
+                    $count = $selected->where('variation_id', $var->id)->count();
+                    if ($count < max(1, $var->min ?? 1)) {
+                        $this->notifyMissingVariations();
+
+                        return ['ok' => false];
+                    }
+                }
+            }
+        }
+
+        $draftName = trim((string) ($payload['draft_name'] ?? ''));
+        $tableId = ! empty($payload['table_id']) ? (int) $payload['table_id'] : null;
+
+        if (blank($draftName)) {
+            $orderLabel = match ($orderType) {
+                'dine_in' => 'Dine In',
+                'take_away' => 'Take Away',
+                'ojek_online' => 'Ojek Online',
+                default => 'Pesanan',
+            };
+            $table = $tableId ? Table::find($tableId) : null;
+            $tablePart = $table ? (' - Meja ' . $table->number) : '';
+            $draftName = $orderLabel . $tablePart . ' #' . (CartDraft::count() + 1);
+        }
+
+        $activeDraftId = ! empty($payload['active_draft_id']) ? (int) $payload['active_draft_id'] : null;
+        $existingDraft = $activeDraftId ? CartDraft::find($activeDraftId) : null;
+        $existingItems = $existingDraft ? ($existingDraft->items ?? []) : [];
+        $alreadyKitchenPrinted = (bool) ($existingDraft?->is_kitchen_printed ?? false);
+
+        $buildSignature = function ($item): string {
+            $productId = is_array($item) ? ($item['product_id'] ?? null) : $item->product_id;
+            $variations = is_array($item) ? ($item['selected_variations'] ?? []) : ($item->selected_variations ?? []);
+            $note = is_array($item) ? ($item['note'] ?? '') : ($item->note ?? '');
+            $priceUnitId = is_array($item) ? ($item['price_unit_id'] ?? '') : ($item->price_unit_id ?? '');
+
+            if (is_array($variations)) {
+                usort($variations, fn ($a, $b) => ($a['option_id'] ?? 0) <=> ($b['option_id'] ?? 0));
+            }
+
+            return $productId . '|' . $priceUnitId . '|' . md5(json_encode($variations)) . '|' . trim((string) $note);
+        };
+
+        $existingPrintedQtyMap = [];
+        if ($alreadyKitchenPrinted) {
+            foreach ($existingItems as $exItem) {
+                $sig = $buildSignature($exItem);
+                $qty = floatval($exItem['printed_qty'] ?? $exItem['qty'] ?? 0);
+                $existingPrintedQtyMap[$sig] = ($existingPrintedQtyMap[$sig] ?? 0) + $qty;
+            }
+        }
+
+        $itemsPayload = [];
+        $itemsToPrint = [];
+
+        foreach ($items as $item) {
+            $sig = $buildSignature($item);
+            $alreadyPrinted = $alreadyKitchenPrinted ? ($existingPrintedQtyMap[$sig] ?? 0) : 0;
+            $currentQty = floatval($item['qty'] ?? 1);
+            $unprintedQty = max(0, $currentQty - $alreadyPrinted);
+
+            $itemsPayload[] = [
+                'product_id' => $item['product_id'],
+                'qty' => $currentQty,
+                'price' => floatval($item['price'] ?? 0),
+                'discount_price' => floatval($item['discount_price'] ?? 0),
+                'price_unit_id' => $item['price_unit_id'] ?? null,
+                'selected_variations' => $item['selected_variations'] ?? [],
+                'note' => $item['note'] ?? null,
+                'printed_qty' => $currentQty,
+            ];
+
+            if ($unprintedQty > 0) {
+                $product = $products->get($item['product_id']);
+                $itemsToPrint[] = [
+                    'product_id' => $item['product_id'],
+                    'product' => [
+                        'id' => $product?->id,
+                        'name' => $product?->name ?? 'Item',
+                        'category_id' => $product?->category_id,
+                        'category_name' => $product?->category?->name ?? null,
+                    ],
+                    'qty' => $unprintedQty,
+                    'total_qty' => $currentQty,
+                    'is_additional' => ($alreadyPrinted > 0 || ($alreadyKitchenPrinted && ! empty($existingDraft))),
+                    'price' => floatval($item['price'] ?? 0),
+                    'selected_variations' => $item['selected_variations'] ?? [],
+                    'note' => $item['note'] ?? null,
+                ];
+            }
+        }
+
+        $didPrint = ! empty($itemsToPrint);
+
+        $draftData = [
+            'user_id' => pos_user_id(),
+            'name' => $draftName,
+            'order_type' => $orderType,
+            'member_id' => ! empty($payload['member_id']) ? (int) $payload['member_id'] : null,
+            'table_id' => $tableId,
+            'voucher' => $payload['voucher'] ?? null,
+            'discount_price' => floatval($payload['discount_price'] ?? 0),
+            'note' => $payload['note'] ?? null,
+            'total_price' => floatval($payload['total_price'] ?? 0),
+            'items' => $itemsPayload,
+            'is_kitchen_printed' => $didPrint ? true : $alreadyKitchenPrinted,
+            'kitchen_printed_at' => $didPrint ? now() : $existingDraft?->kitchen_printed_at,
+        ];
+
+        if ($existingDraft) {
+            $existingDraft->update($draftData);
+            $savedDraft = $existingDraft->fresh(['table', 'member', 'user']);
+        } else {
+            $savedDraft = CartDraft::create($draftData)->load(['table', 'member', 'user']);
+        }
+
+        if ($didPrint) {
+            $draftPayload = [
+                'id' => $savedDraft->id,
+                'name' => $savedDraft->name,
+                'order_type' => $savedDraft->order_type,
+                'order_type_label' => $savedDraft->order_type_label,
+                'table' => $savedDraft->table ? ['number' => $savedDraft->table->number] : null,
+                'user' => ['name' => Filament::auth()->user()?->name ?? 'Kasir'],
+                'created_at' => now()->format('d/m/Y H:i'),
+                'items_to_print' => $itemsToPrint,
+                'has_additions' => collect($itemsToPrint)->contains('is_additional', true),
+                'is_reprint' => false,
+            ];
+
+            $this->dispatch('draft-saved', draft: $draftPayload);
+            try {
+                \App\Services\PrintBridgeService::queueDraftPrints($savedDraft, $itemsToPrint);
+            } catch (\Throwable $e) {
+                // Ignore background bridge queue error if not configured
+            }
+        }
+
+        if ($clearCartAfter) {
+            CartItem::query()->cashier()->delete();
+            $this->activeDraftId = null;
+            $this->draftName = '';
+            $this->orderType = null;
+            $this->cartDetail = [];
+
+            Notification::make()
+                ->title(__('Draft Pesanan Disimpan'))
+                ->body(__('Pesanan berhasil disimpan ke daftar draft sementara.'))
+                ->success()
+                ->send();
+        } else {
+            $this->activeDraftId = $savedDraft->id;
+            $this->draftName = $savedDraft->name ?? '';
+        }
+
+        if (method_exists($this, 'refreshPosDrafts')) {
+            $this->refreshPosDrafts();
+        }
+
+        return [
+            'ok' => true,
+            'clear_cart' => $clearCartAfter,
+            'active_draft_id' => $savedDraft->id,
+            'draft_name' => $savedDraft->name,
+            'is_kitchen_printed' => (bool) $savedDraft->is_kitchen_printed,
+            'printed_to_kitchen' => $didPrint,
+            'drafts' => $this->posDrafts ?? [],
+        ];
+    }
+
+    public function deleteFrontendDraft(int $draftId): array
+    {
+        CartDraft::whereKey($draftId)->delete();
+
+        if ($this->activeDraftId === $draftId) {
+            $this->activeDraftId = null;
+            $this->draftName = '';
+        }
+
+        if (method_exists($this, 'refreshPosDrafts')) {
+            $this->refreshPosDrafts();
+        }
+
+        Notification::make()
+            ->title(__('Draft Dihapus'))
+            ->success()
+            ->send();
+
+        return [
+            'ok' => true,
+            'drafts' => $this->posDrafts ?? [],
+        ];
+    }
+
+    public function printFrontendDraft(int $draftId): array
+    {
+        $this->printDraft($draftId, true);
+
+        return [
+            'ok' => true,
+            'drafts' => $this->posDrafts ?? [],
+        ];
     }
 
     public function loadDraft(int $draftId): void

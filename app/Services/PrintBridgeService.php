@@ -80,7 +80,7 @@ class PrintBridgeService
      *
      * @return array<int, PrintQueue>
      */
-    public static function queueSellingPrints(Selling $selling, int $outletId = 1): array
+    public static function queueSellingPrints(Selling $selling, int $outletId = 1, bool $skipKitchenPrint = false): array
     {
         $selling->load(['sellingDetails.product.category', 'paymentMethod', 'member', 'user', 'table']);
 
@@ -96,6 +96,9 @@ class PrintBridgeService
         $queuedJobs = [];
 
         foreach ($activePrinters as $printer) {
+            if ($skipKitchenPrint && ! $printer->show_price) {
+                continue;
+            }
             $filteredDetails = $selling->sellingDetails->filter(function ($detail) use ($printer) {
                 $categoryId = $detail->product?->category_id;
 
