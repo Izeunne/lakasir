@@ -33,9 +33,9 @@
     <div class="card">
         <div class="header">
             <div>
-                <span class="badge">POS MATAVERSE x LAKASIR</span>
+                <span class="badge">POS MATAVERSE</span>
                 <h1>Print Bridge Client Setup</h1>
-                <p class="subtitle">Hubungkan aplikasi Android Print Bridge ke server POS Lakasir ini</p>
+                <p class="subtitle">Hubungkan aplikasi Android Print Bridge ke server POS Mataverse ini</p>
             </div>
         </div>
 
@@ -76,7 +76,7 @@
         </div>
 
         <div class="footer">
-            POS Mataverse • Lakasir Thermal Print Bridge System &copy; 2026
+            POS Mataverse • Thermal Print Bridge System &copy; 2026
         </div>
     </div>
 

@@ -112,7 +112,7 @@ class PosNotificationController extends Controller
     {
         $this->validateToken($request);
 
-        $title = (string) ($request->input('title') ?? '🔔 Notifikasi Lakasir POS');
+        $title = (string) ($request->input('title') ?? '🔔 Notifikasi Mataverse POS');
         $message = (string) ($request->input('message') ?? 'Tes notifikasi realtime dari backend berhasil diterima!');
         $outletId = (int) ($request->input('outlet_id') ?? 1);
         $type = (string) ($request->input('type') ?? 'info');

@@ -535,7 +535,7 @@ class PrintBridgeService
             'paper_width' => '58mm',
             'layout' => [
                 'meta_rows' => [
-                    ['label' => 'Test', 'value' => 'POS Mataverse x Lakasir'],
+                    ['label' => 'Test', 'value' => 'POS Mataverse'],
                     ['label' => 'Target Printer', 'value' => $targetPrinter ?: 'Default (Auto)'],
                     ['label' => 'Waktu', 'value' => $now],
                     ['label' => 'Status', 'value' => 'Koneksi Berhasil'],
@@ -555,7 +555,7 @@ class PrintBridgeService
                 'payments' => [],
                 'footer_lines' => [
                     'Multi-Printer Routing Berhasil!',
-                    'Lakasir POS Web Print Bridge',
+                    'Mataverse POS Web Print Bridge',
                 ],
             ],
             'transaction' => [

@@ -33,6 +33,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="lakasir" />
                 <data android:scheme="webprint" />
+                <data android:scheme="mataverse" />
             </intent-filter>
         </activity>
 
