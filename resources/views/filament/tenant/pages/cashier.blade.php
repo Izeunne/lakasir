@@ -2247,6 +2247,21 @@
           return;
         }
 
+        // Jika pencetakan otomatis dan background print bridge sedang aktif:
+        // Picu polling instan agar background service mencetak ke printer yang sesuai tanpa double-print.
+        if (isAutomatic && window.LakasirBridge && typeof window.LakasirBridge.isServiceRunning === 'function' && window.LakasirBridge.isServiceRunning()) {
+          console.log('Background Print Bridge aktif; memicu pencetakan otomatis via server queue...');
+          if (typeof window.LakasirBridge.triggerPoll === 'function') {
+            window.LakasirBridge.triggerPoll();
+          }
+          new FilamentNotification()
+            .title('@lang('Pencetakan Otomatis Diproses')')
+            .body('@lang('Struk kasir dan nota pesanan otomatis dicetak sesuai routing printer.')')
+            .success()
+            .send();
+          return;
+        }
+
         let anyPrinted = false;
 
         for (const printerData of printersList) {
@@ -2500,6 +2515,15 @@
         }] : []);
 
       if (printersList.length === 0) {
+        return;
+      }
+
+      // Jika background service print bridge sedang aktif, server queue sudah menangani cetak draf:
+      if (window.LakasirBridge && typeof window.LakasirBridge.isServiceRunning === 'function' && window.LakasirBridge.isServiceRunning()) {
+        console.log('Background Print Bridge aktif; memicu pencetakan otomatis draf via server queue...');
+        if (typeof window.LakasirBridge.triggerPoll === 'function') {
+          window.LakasirBridge.triggerPoll();
+        }
         return;
       }
 
