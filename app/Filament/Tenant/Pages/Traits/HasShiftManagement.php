@@ -60,7 +60,7 @@ trait HasShiftManagement
 
             $openSlipPayload = [
                 'type' => 'open_shift',
-                'shop_name' => $this->about?->shop_name ?? 'Lakasir POS',
+                'shop_name' => $this->about?->shop_name ?? 'Mataverse POS',
                 'shop_location' => $this->about?->shop_location,
                 'drawer_id' => $drawer->id,
                 'cashier_name' => pos_user()?->name ?? auth()->user()?->name ?? 'Kasir',
@@ -122,7 +122,7 @@ trait HasShiftManagement
 
         $openSlipPayload = [
             'type' => 'open_shift',
-            'shop_name' => $this->about?->shop_name ?? 'Lakasir POS',
+            'shop_name' => $this->about?->shop_name ?? 'Mataverse POS',
             'shop_location' => $this->about?->shop_location,
             'drawer_id' => $drawer->id,
             'cashier_name' => pos_user()?->name ?? auth()->user()?->name ?? 'Kasir',

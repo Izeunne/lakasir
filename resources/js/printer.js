@@ -78,7 +78,7 @@ class Printer {
         console.warn('WebUSB tidak didukung di browser ini.');
         if (typeof FilamentNotification !== 'undefined') {
           new FilamentNotification()
-            .title('Perangkat/browser tidak mendukung cetak USB. Silakan gunakan Aplikasi Android Lakasir.')
+            .title('Perangkat/browser tidak mendukung cetak USB. Silakan gunakan Aplikasi Android Mataverse.')
             .danger()
             .send();
         }

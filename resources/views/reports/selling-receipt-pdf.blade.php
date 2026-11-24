@@ -173,7 +173,7 @@
         <img src="{{ $logoBase64 }}" style="max-height: 40px; max-width: 120px; object-fit: contain;">
       </div>
     @endif
-    <div class="store-name uppercase">{{ $about->shop_name ?? config('app.name', 'Lakasir POS') }}</div>
+    <div class="store-name uppercase">{{ $about->shop_name ?? config('app.name', 'Mataverse POS') }}</div>
     
     @if(!empty($about->shop_location))
       <div class="store-meta">{{ $about->shop_location }}</div>

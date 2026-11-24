@@ -164,7 +164,7 @@ class MainActivity : AppCompatActivity() {
 
                 AlertDialog.Builder(this@MainActivity)
                     .setTitle("Keluar Aplikasi?")
-                    .setMessage("Apakah Anda yakin ingin keluar dari POS Lakasir?")
+                    .setMessage("Apakah Anda yakin ingin keluar dari POS Mataverse?")
                     .setPositiveButton("Keluar") { _, _ -> finish() }
                     .setNegativeButton("Batal", null)
                     .show()

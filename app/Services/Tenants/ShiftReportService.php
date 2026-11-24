@@ -123,7 +123,7 @@ class ShiftReportService
         $expectedCashInDrawer = $totalCashSales;
 
         return [
-            'shop_name' => $about?->shop_name ?? 'Lakasir POS',
+            'shop_name' => $about?->shop_name ?? 'Mataverse POS',
             'shop_location' => $about?->shop_location,
             'drawer_id' => $drawer->id,
             'is_closed' => ! empty($drawer->closed_by),

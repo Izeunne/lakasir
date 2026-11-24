@@ -123,7 +123,7 @@ class Printer extends Page implements HasActions, HasForms, HasTable
                             'bluetooth' => '📶 Bluetooth Thermal Printer',
                             'lan' => '🌐 LAN / Network Thermal Printer (IP Address)',
                             'usb' => '🔌 USB Thermal Printer (PC Kasir)',
-                            'mobile' => '📱 Terhubung via Lakasir Mobile Bridge',
+                            'mobile' => '📱 Terhubung via Mataverse Mobile Bridge',
                         ])
                         ->default($hasMobilePrinters ? 'mobile' : 'bluetooth')
                         ->native(false)
@@ -147,8 +147,8 @@ class Printer extends Page implements HasActions, HasForms, HasTable
                         ->visible(fn (Get $get): bool => $get('connection_type') === 'mobile')
                         ->required(fn (Get $get): bool => $get('connection_type') === 'mobile')
                         ->helperText(fn () => MobilePrinter::where('is_connected', true)->exists()
-                            ? __('Pilih printer yang sedang terhubung aktif pada Aplikasi Mobile Lakasir.')
-                            : __('Belum ada printer mobile terdeteksi. Hubungkan printer di aplikasi mobile Lakasir terlebih dahulu atau pilih jenis koneksi lain (Bluetooth / LAN / USB).'))
+                            ? __('Pilih printer yang sedang terhubung aktif pada Aplikasi Mobile Mataverse.')
+                            : __('Belum ada printer mobile terdeteksi. Hubungkan printer di aplikasi mobile Mataverse terlebih dahulu atau pilih jenis koneksi lain (Bluetooth / LAN / USB).'))
                         ->live()
                         ->afterStateUpdated(function (?string $state, Set $set) {
                             $mobile = MobilePrinter::where('device_id', $state)->first();
@@ -506,7 +506,7 @@ class Printer extends Page implements HasActions, HasForms, HasTable
     /**
      * Called from JS when Android WebView LakasirBridge reports connected printers.
      */
-    public function syncFromMobileBridge(array $printers, ?string $deviceModel = 'Lakasir Android App'): void
+    public function syncFromMobileBridge(array $printers, ?string $deviceModel = 'Mataverse Android App'): void
     {
         $synced = PrintBridgeService::syncMobilePrinters($printers, 1, $deviceModel, true);
 
@@ -532,7 +532,7 @@ class Printer extends Page implements HasActions, HasForms, HasTable
         } else {
             Notification::make()
                 ->title(__('Tidak Ada Printer Mobile Baru'))
-                ->body(__('Belum ada printer yang terhubung dari Aplikasi Mobile Lakasir. Pastikan printer telah terhubung pada aplikasi mobile Lakasir.'))
+                ->body(__('Belum ada printer yang terhubung dari Aplikasi Mobile Mataverse. Pastikan printer telah terhubung pada aplikasi mobile Mataverse.'))
                 ->info()
                 ->send();
         }

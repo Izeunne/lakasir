@@ -1801,7 +1801,7 @@
             </div>
           @endif
           <h2 class="text-lg font-bold text-gray-900 dark:text-white">
-            {{ $about?->shop_name ?? config('app.name', 'Lakasir') }}
+            {{ $about?->shop_name ?? config('app.name', 'Mataverse POS') }}
           </h2>
           <p class="text-xs text-gray-500 dark:text-gray-400">
             {{ __('Pilih akun kasir dan masukkan PIN untuk mulai melayani pesanan.') }}

@@ -90,7 +90,7 @@ class PrinterDiagnostics(
                 timeoutMs = 5000,
                 lines = listOf(
                     PrintLine("TEST PRINTER ROUTE", "center", true, 0, null),
-                    PrintLine("POS Mataverse x Lakasir", "center", false, 1, null),
+                    PrintLine("POS Mataverse", "center", false, 1, null),
                     PrintLine("Alias ID : ${device.id}", "left", false, 0, null),
                     PrintLine("Nama     : ${device.name}", "left", false, 0, null),
                     PrintLine("Koneksi  : ${if (device.mode == PrinterMode.TCP.value) "TCP/LAN (${device.host}:${device.port})" else "Bluetooth (${device.bluetoothPrinterName.ifBlank { device.bluetoothMacAddress }})"}", "left", false, 0, null),

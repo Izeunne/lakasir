@@ -14,7 +14,7 @@
         <div>
           <div class="flex items-center gap-2 flex-wrap">
             <h3 class="text-sm font-bold text-gray-900 dark:text-white">
-              {{ __('Lakasir Mobile Print Bridge') }}
+              {{ __('Mataverse Mobile Print Bridge') }}
             </h3>
             @if ($connectedMobilePrinters->isNotEmpty())
               <span class="inline-flex items-center gap-1.5 rounded-full bg-success-50 dark:bg-success-950/40 px-2 py-0.5 text-[11px] font-bold text-success-700 dark:text-success-400">
@@ -128,7 +128,7 @@
         const raw = window.LakasirBridge.getConnectedPrinters();
         const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
         if (Array.isArray(parsed) && parsed.length > 0) {
-          $wire.syncFromMobileBridge(parsed, 'Lakasir Android WebView');
+          $wire.syncFromMobileBridge(parsed, 'Mataverse Android WebView');
         }
       } catch (e) {
         console.warn('Gagal membaca getConnectedPrinters dari LakasirBridge:', e);
