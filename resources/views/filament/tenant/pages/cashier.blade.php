@@ -111,7 +111,7 @@
     background-color: #1f2937 !important;
   }
 
-  .fi-ta-content-grid .fi-ta-record > div {
+  .fi-ta-content-grid .fi-ta-record>div {
     width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
@@ -127,9 +127,9 @@
     width: 100% !important;
   }
 
-  .fi-ta-content-grid .fi-ta-record .flex-1 > button,
-  .fi-ta-content-grid .fi-ta-record .flex-1 > a,
-  .fi-ta-content-grid .fi-ta-record .flex-1 > div {
+  .fi-ta-content-grid .fi-ta-record .flex-1>button,
+  .fi-ta-content-grid .fi-ta-record .flex-1>a,
+  .fi-ta-content-grid .fi-ta-record .flex-1>div {
     padding-left: 0 !important;
     padding-right: 0 !important;
     padding-top: 0 !important;
@@ -154,7 +154,7 @@
     overflow: hidden !important;
   }
 
-  .fi-ta-content-grid .fi-ta-record .fi-ta-image > div,
+  .fi-ta-content-grid .fi-ta-record .fi-ta-image>div,
   .fi-ta-content-grid .fi-ta-record .fi-ta-image .flex {
     width: 100% !important;
     display: block !important;
@@ -247,14 +247,14 @@
     padding: 0.5rem 0.75rem !important;
   }
 
-  .pos-view-list .fi-ta-content-grid .fi-ta-record > div {
+  .pos-view-list .fi-ta-content-grid .fi-ta-record>div {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
     gap: 0.75rem !important;
   }
 
-  .pos-view-list .fi-ta-content-grid .fi-ta-record > div > div:first-child {
+  .pos-view-list .fi-ta-content-grid .fi-ta-record>div>div:first-child {
     flex: 1 1 0% !important;
     min-width: 0 !important;
     display: flex !important;
@@ -352,7 +352,7 @@
     justify-content: center !important;
   }
 
-  .pos-view-compact .fi-ta-content-grid .fi-ta-record .fi-ta-actions > div {
+  .pos-view-compact .fi-ta-content-grid .fi-ta-record .fi-ta-actions>div {
     justify-content: center !important;
     width: 100% !important;
   }
@@ -367,11 +367,13 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.75rem;
   }
+
   @media (min-width: 768px) {
     .pos-grid-large {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
+
   @media (min-width: 1024px) {
     .pos-grid-large {
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -383,16 +385,19 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.5rem;
   }
+
   @media (min-width: 768px) {
     .pos-grid-compact {
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
+
   @media (min-width: 1024px) {
     .pos-grid-compact {
       grid-template-columns: repeat(5, minmax(0, 1fr));
     }
   }
+
   @media (min-width: 1280px) {
     .pos-grid-compact {
       grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -410,11 +415,13 @@
     width: 100%;
     overflow: hidden;
   }
+
   .pos-img-compact {
     height: 76px;
     width: 100%;
     overflow: hidden;
   }
+
   .pos-img-list {
     height: 52px;
     width: 52px;
@@ -430,12 +437,14 @@
     gap: 0.75rem;
     padding: 0.75rem;
   }
+
   .pos-card-grid {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     overflow: hidden;
   }
+
   .pos-card-body-large {
     padding: 0.75rem;
     flex: 1 1 0%;
@@ -444,6 +453,7 @@
     justify-content: space-between;
     gap: 0.375rem;
   }
+
   .pos-card-body-compact {
     padding: 0.625rem;
     flex: 1 1 0%;
@@ -452,6 +462,7 @@
     justify-content: space-between;
     gap: 0.25rem;
   }
+
   .pos-card-body-list {
     flex: 1 1 0%;
     min-width: 0;
@@ -472,8 +483,7 @@
         <span>🌟 {{ __('Semua Menu') }}</span>
         <span
           :class="selectedCategoryId === null ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'"
-          class="rounded-full px-1.5 py-0.5 text-xs font-bold"
-          x-text="products.length">
+          class="rounded-full px-1.5 py-0.5 text-xs font-bold" x-text="products.length">
         </span>
       </button>
 
@@ -484,19 +494,19 @@
           <span x-text="categoryEmoji(cat.name) + ' ' + cat.name"></span>
           <span
             :class="selectedCategoryId === cat.id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'"
-            class="rounded-full px-1.5 py-0.5 text-xs font-bold"
-            x-text="cat.products_count">
+            class="rounded-full px-1.5 py-0.5 text-xs font-bold" x-text="cat.products_count">
           </span>
         </button>
       </template>
     </div>
 
     {{-- Search Bar & View Mode Switcher --}}
-    <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-200/80 bg-white p-2.5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+    <div
+      class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-200/80 bg-white p-2.5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
       <div class="relative flex-1 min-w-[200px]">
-        <x-heroicon-o-magnifying-glass class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-        <input type="text" x-model="searchQuery"
-          placeholder="{{ __('Search (SKU, name, barcode)') }}"
+        <x-heroicon-o-magnifying-glass
+          class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <input type="text" x-model="searchQuery" placeholder="{{ __('Search (SKU, name, barcode)') }}"
           class="w-full rounded-lg border border-gray-200 bg-gray-50/70 py-2 pl-9 pr-8 text-xs sm:text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:bg-gray-900" />
         <button type="button" x-show="searchQuery.length > 0" @click="searchQuery = ''"
           class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
@@ -530,21 +540,17 @@
         'pos-grid-list': viewMode === 'list'
       }">
       <template x-for="product in filteredProducts" :key="product.id">
-        <div @click="selectProduct(product)"
-          :class="[
+        <div @click="selectProduct(product)" :class="[
             getProductCartQty(product.id) > 0 ? 'ring-2 ring-primary-500 border-primary-500 bg-primary-50/30 dark:bg-primary-950/20' : 'border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900',
             viewMode === 'list' ? 'pos-card-list' : 'pos-card-grid'
-          ]"
-          class="rounded-xl border shadow-xs cursor-pointer select-none hover:shadow-md transition-all">
+          ]" class="rounded-xl border shadow-xs cursor-pointer select-none hover:shadow-md transition-all">
           {{-- Image --}}
-          <div class="bg-gray-100 dark:bg-gray-800"
-            :class="{
+          <div class="bg-gray-100 dark:bg-gray-800" :class="{
               'pos-img-list': viewMode === 'list',
               'pos-img-compact': viewMode === 'compact',
               'pos-img-large': viewMode === 'grid'
             }">
-            <img :src="product.hero_image" :alt="product.name" loading="lazy"
-              class="h-full w-full object-cover" />
+            <img :src="product.hero_image" :alt="product.name" loading="lazy" class="h-full w-full object-cover" />
           </div>
 
           {{-- Info --}}
@@ -555,25 +561,21 @@
             }">
             <div>
               <p class="font-extrabold text-primary-600 dark:text-primary-400"
-                :class="viewMode === 'compact' ? 'text-[11px]' : 'text-xs'"
-                x-text="formatMoney(product.selling_price)"></p>
+                :class="viewMode === 'compact' ? 'text-[11px]' : 'text-xs'" x-text="formatMoney(product.selling_price)">
+              </p>
               <p class="font-bold text-gray-900 dark:text-white leading-tight line-clamp-2 mt-0.5"
-                :class="viewMode === 'compact' ? 'text-[11px]' : 'text-xs sm:text-sm'"
-                x-text="product.name"></p>
+                :class="viewMode === 'compact' ? 'text-[11px]' : 'text-xs sm:text-sm'" x-text="product.name"></p>
               <template x-if="!product.is_non_stock">
-                <p class="font-medium mt-0.5"
-                  :class="[
+                <p class="font-medium mt-0.5" :class="[
                     viewMode === 'compact' ? 'text-[10px]' : 'text-[11px]',
                     product.stock < minimumStock ? 'text-danger-600 dark:text-danger-400' : 'text-emerald-600 dark:text-emerald-400'
-                  ]"
-                  x-text="'{{ __('Stock') }}: ' + product.stock"></p>
+                  ]" x-text="'{{ __('Stock') }}: ' + product.stock"></p>
               </template>
             </div>
 
             {{-- Card Footer Actions (Grid / Compact) --}}
             <div x-show="viewMode !== 'list'" class="mt-1.5 flex items-center justify-between gap-1">
-              <span
-                :class="viewMode === 'compact' ? 'h-6 w-6' : 'h-7 w-7'"
+              <span :class="viewMode === 'compact' ? 'h-6 w-6' : 'h-7 w-7'"
                 class="inline-flex items-center justify-center rounded-lg bg-primary-600 text-white shadow-xs">
                 <x-heroicon-o-plus class="h-3.5 w-3.5" />
               </span>
@@ -593,7 +595,8 @@
               <x-heroicon-s-shopping-bag class="h-3.5 w-3.5" />
               <span x-text="getProductCartQty(product.id)"></span>
             </span>
-            <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary-600 text-white shadow-xs">
+            <span
+              class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary-600 text-white shadow-xs">
               <x-heroicon-o-plus class="h-4 w-4" />
             </span>
           </div>
@@ -629,9 +632,11 @@
               {{ __('Orders details') }}
             </h3>
             <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-              <span class="truncate font-medium">{{ pos_user()?->cashier_name ?? Filament::auth()->user()->cashier_name }}</span>
+              <span
+                class="truncate font-medium">{{ pos_user()?->cashier_name ?? Filament::auth()->user()->cashier_name }}</span>
               @if ($activeDrawerId)
-                <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                <span
+                  class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                   <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                   <span class="hidden sm:inline">{{ __('Shift Aktif') }}</span>
                 </span>
@@ -644,8 +649,7 @@
         <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {{-- Draft Pesanan: HANYA MUNCUL JIKA ADA DRAFT --}}
           <button type="button" x-show="drafts.length > 0" x-cloak
-            x-on:click="$dispatch('open-modal', {id: 'draft-list-modal'})"
-            title="{{ __('Lihat Draft Pesanan') }}"
+            x-on:click="$dispatch('open-modal', {id: 'draft-list-modal'})" title="{{ __('Lihat Draft Pesanan') }}"
             class="flex items-center gap-1 rounded-lg border border-lakasir-primary/40 bg-lakasir-primary/10 px-2.5 py-1.5 text-xs font-semibold text-lakasir-primary hover:bg-lakasir-primary hover:text-white transition">
             <x-heroicon-o-bookmark-square class="h-3.5 w-3.5" />
             <span class="hidden sm:inline">{{ __('Draft') }}</span>
@@ -657,7 +661,9 @@
           {{-- Dropdown Menu (Titik Tiga): Semua Aksi Disembunyikan di Sini --}}
           <x-filament::dropdown placement="bottom-end">
             <x-slot name="trigger">
-              <button type="button" class="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition" aria-label="Menu Opsi">
+              <button type="button"
+                class="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition"
+                aria-label="Menu Opsi">
                 <x-heroicon-o-ellipsis-vertical class="h-5 w-5" />
               </button>
             </x-slot>
@@ -671,7 +677,8 @@
                 {{ __('Kunci / Ganti Kasir') }}
               </x-filament::dropdown.list.item>
 
-              <x-filament::dropdown.list.item x-on:click="$dispatch('open-modal', {id: 'qr-scanner-modal'})" icon="heroicon-o-qr-code">
+              <x-filament::dropdown.list.item x-on:click="$dispatch('open-modal', {id: 'qr-scanner-modal'})"
+                icon="heroicon-o-qr-code">
                 {{ __('Scan Barcode / Kamera') }}
               </x-filament::dropdown.list.item>
 
@@ -686,14 +693,14 @@
               <template x-if="cart.length > 0">
                 <x-filament::dropdown.list.item
                   x-on:click="if (confirm('{{ __('Yakin ingin mengosongkan keranjang?') }}')) { clearCart(); }"
-                  icon="heroicon-o-trash"
-                  color="danger">
+                  icon="heroicon-o-trash" color="danger">
                   {{ __('Kosongkan Keranjang') }}
                 </x-filament::dropdown.list.item>
               </template>
 
               @if ($activeDrawerId)
-                <x-filament::dropdown.list.item wire:click="openCloseShiftModal" icon="heroicon-o-lock-closed" color="danger">
+                <x-filament::dropdown.list.item wire:click="openCloseShiftModal" icon="heroicon-o-lock-closed"
+                  color="danger">
                   {{ __('Tutup Kasir (Shift #' . $activeDrawerId . ')') }}
                 </x-filament::dropdown.list.item>
               @endif
@@ -719,7 +726,8 @@
 
       <div class="max-h-[30vh] sm:max-h-[35vh] space-y-2 overflow-y-auto pr-0.5">
         <template x-for="item in cart" :key="item.uid">
-          <div class="mb-3 rounded-xl border border-gray-200/90 bg-white px-3.5 py-2.5 shadow-2xs dark:border-gray-800 dark:bg-gray-800/80">
+          <div
+            class="mb-3 rounded-xl border border-gray-200/90 bg-white px-3.5 py-2.5 shadow-2xs dark:border-gray-800 dark:bg-gray-800/80">
             <div class="grid items-center space-x-3">
               <div class="flex items-start justify-between gap-2">
                 <div>
@@ -728,10 +736,12 @@
                     <div class="mt-1 space-y-0.5 text-xs text-gray-500 dark:text-gray-400">
                       <template x-for="(v, vIdx) in item.selected_variations" :key="vIdx">
                         <div class="flex items-center gap-x-1">
-                          <span class="font-medium text-gray-700 dark:text-gray-300" x-text="v.variation_name + ':'"></span>
+                          <span class="font-medium text-gray-700 dark:text-gray-300"
+                            x-text="v.variation_name + ':'"></span>
                           <span x-text="v.option_name"></span>
                           <template x-if="v.price > 0">
-                            <span class="font-semibold text-lakasir-primary" x-text="'(+' + formatMoney(v.price) + ')'"></span>
+                            <span class="font-semibold text-lakasir-primary"
+                              x-text="'(+' + formatMoney(v.price) + ')'"></span>
                           </template>
                         </div>
                       </template>
@@ -747,10 +757,9 @@
                 <div class="col-span-2">
                   <div class="mb-1 flex justify-end">
                     <x-filament::input.wrapper class="w-1/2">
-                      <x-filament::input type="number" min="0"
-                        x-model="item.discount_price"
-                        @input="recalculateCartItem(item)"
-                        placeholder="{{ __('Discount') }}" class="w-1/2 text-right" inputMode="numeric" />
+                      <x-filament::input type="number" min="0" x-model="item.discount_price"
+                        @input="recalculateCartItem(item)" placeholder="{{ __('Discount') }}" class="w-1/2 text-right"
+                        inputMode="numeric" />
                     </x-filament::input.wrapper>
                   </div>
                   <template x-if="item.discount_price && parseFloat(item.discount_price) > 0">
@@ -766,10 +775,9 @@
                 <x-heroicon-o-minus-small class="h-4 w-4 !text-green-900" />
               </button>
               <x-filament::input.wrapper class="w-20">
-                <x-filament::input type="number" min="1"
-                  x-bind:value="item.qty"
-                  @change="setItemQty(item.uid, $event.target.value)"
-                  placeholder="{{ __('Qty') }}" class="w-1/2 text-right" inputMode="numeric" />
+                <x-filament::input type="number" min="1" x-bind:value="item.qty"
+                  @change="setItemQty(item.uid, $event.target.value)" placeholder="{{ __('Qty') }}"
+                  class="w-1/2 text-right" inputMode="numeric" />
               </x-filament::input.wrapper>
               <button type="button" class="rounded-lg !bg-lakasir-primary px-2 py-1" @click="increaseItem(item.uid)">
                 <x-heroicon-o-plus-small class="h-4 w-4 !text-white" />
@@ -791,8 +799,8 @@
                 <x-slot name="prefix">
                   <x-heroicon-o-pencil-square class="h-4 w-4 text-gray-400" />
                 </x-slot>
-                <x-filament::input type="text" x-model="item.note"
-                  placeholder="{{ __('Catatan item (opsional)...') }}" class="text-xs" />
+                <x-filament::input type="text" x-model="item.note" placeholder="{{ __('Catatan item (opsional)...') }}"
+                  class="text-xs" />
               </x-filament::input.wrapper>
             </div>
 
@@ -802,22 +810,26 @@
                 <div class="flex items-center justify-between">
                   <button type="button" @click="item.expanded = !item.expanded"
                     class="flex items-center gap-1.5 text-xs font-semibold text-lakasir-primary hover:opacity-80">
-                    <span x-text="item.expanded ? '{{ __('Tutup Variasi') }}' : '{{ __('Atur / Ubah Variasi') }}'"></span>
+                    <span
+                      x-text="item.expanded ? '{{ __('Tutup Variasi') }}' : '{{ __('Atur / Ubah Variasi') }}'"></span>
                     <x-heroicon-m-chevron-down class="h-3.5 w-3.5 transition-transform duration-200"
                       ::class="item.expanded ? 'rotate-180' : ''" />
                   </button>
 
                   <template x-if="itemHasMissingRequired(item)">
-                    <span class="text-sm font-bold text-danger-600 dark:text-danger-400" title="{{ __('Wajib Dipilih') }}">*</span>
+                    <span class="text-sm font-bold text-danger-600 dark:text-danger-400"
+                      title="{{ __('Wajib Dipilih') }}">*</span>
                   </template>
-                  <template x-if="!itemHasMissingRequired(item) && item.selected_variations && item.selected_variations.length > 0">
+                  <template
+                    x-if="!itemHasMissingRequired(item) && item.selected_variations && item.selected_variations.length > 0">
                     <span class="text-[11px] text-gray-500 dark:text-gray-400"
                       x-text="item.selected_variations.length + ' {{ __('terpilih') }}'">
                     </span>
                   </template>
                 </div>
 
-                <div x-show="item.expanded" x-collapse class="mt-2 space-y-2.5 rounded-lg bg-gray-50 p-2.5 dark:bg-gray-800/60">
+                <div x-show="item.expanded" x-collapse
+                  class="mt-2 space-y-2.5 rounded-lg bg-gray-50 p-2.5 dark:bg-gray-800/60">
                   <template x-for="variation in item.variations" :key="variation.id">
                     <div
                       :class="isVariationMissingOnItem(item, variation) ? 'border-danger-300 bg-danger-50/40 dark:border-danger-800 dark:bg-danger-950/20' : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'"
@@ -827,23 +839,25 @@
                         <span x-show="variation.is_required"
                           :class="isVariationMissingOnItem(item, variation) ? 'text-danger-600 dark:text-danger-400' : 'text-gray-400'"
                           class="text-xs font-bold">*</span>
-                        <span x-show="!variation.is_required" class="text-[10px] text-gray-400">{{ __('Opsional') }}</span>
+                        <span x-show="!variation.is_required"
+                          class="text-[10px] text-gray-400">{{ __('Opsional') }}</span>
                       </div>
 
                       <div class="flex flex-wrap gap-1.5">
                         <template x-for="option in variation.options" :key="option.id">
-                          <button type="button"
-                            @click="toggleInlineVariationOption(item.uid, variation, option)"
+                          <button type="button" @click="toggleInlineVariationOption(item.uid, variation, option)"
                             :class="isOptionSelectedOnItem(item, variation.id, option.id) ? 'bg-lakasir-primary text-white font-semibold shadow-sm' : 'bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200'"
                             class="flex items-center gap-1 rounded-md px-2.5 py-1 text-xs transition-all">
                             <span x-text="option.name"></span>
                             <template x-if="option.price > 0">
-                              <span class="text-[10px] opacity-80" x-text="'(+' + formatMoney(option.price) + ')'"></span>
+                              <span class="text-[10px] opacity-80"
+                                x-text="'(+' + formatMoney(option.price) + ')'"></span>
                             </template>
                           </button>
                         </template>
 
-                        <template x-if="!variation.is_required && variation.type === 'single' && hasSelectedForVariation(item, variation.id)">
+                        <template
+                          x-if="!variation.is_required && variation.type === 'single' && hasSelectedForVariation(item, variation.id)">
                           <button type="button" @click="clearInlineVariation(item.uid, variation.id)"
                             class="rounded-md border border-gray-300 px-2 py-1 text-[11px] text-gray-500 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-400">
                             {{ __('Kosongkan') }}
@@ -870,7 +884,8 @@
           class="flex h-36 flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/60 p-4 text-center dark:border-gray-800 dark:bg-gray-800/40">
           <x-heroicon-o-shopping-bag class="h-8 w-8 mb-1.5 text-gray-300 dark:text-gray-600" />
           <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ __('Belum ada pesanan') }}</p>
-          <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ __('Pilih menu di sebelah kiri untuk menambahkan') }}</p>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+            {{ __('Pilih menu di sebelah kiri untuk menambahkan') }}</p>
         </div>
       </div>
 
@@ -881,10 +896,10 @@
           class="w-full rounded-xl border px-3.5 py-2.5 transition-colors shadow-2xs">
           <div class="mb-2 flex items-center justify-between">
             <span class="text-xs font-bold text-gray-800 dark:text-gray-200">{{ __('Kategori Pesanan') }}</span>
-            <span
-              :class="!orderType ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500'"
-              class="text-[10px] font-bold">
-              * {{ __('Wajib Dipilih') }}
+            <span :class="!orderType ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500'"
+              class="text-xs font-bold"
+              title="{{ __('Wajib Dipilih') }}">
+              *
             </span>
           </div>
           <div class="grid grid-cols-3 gap-1.5">
@@ -915,7 +930,8 @@
             <div class="flex items-center justify-between hover:underline cursor-pointer py-0.5"
               @click="$dispatch('open-modal', { id: 'modal-selected-member' })">
               <p class="text-gray-600 dark:text-gray-300 font-medium">{{ __('Member') }}</p>
-              <p class="font-bold text-gray-800 dark:text-gray-100" x-text="memberLabel || '{{ __('No Member Selected') }}'"></p>
+              <p class="font-bold text-gray-800 dark:text-gray-100"
+                x-text="memberLabel || '{{ __('No Member Selected') }}'"></p>
             </div>
           </template>
           <template x-if="features.fnb">
@@ -944,7 +960,8 @@
               <div class="flex items-center gap-x-2 font-bold text-gray-800 dark:text-gray-100 text-right">
                 <template x-if="voucherCode">
                   <div class="flex flex-col items-end">
-                    <span x-text="voucherCode + (activeVoucher ? ' (' + voucherBadgeLabel(activeVoucher) + ')' : '')"></span>
+                    <span
+                      x-text="voucherCode + (activeVoucher ? ' (' + voucherBadgeLabel(activeVoucher) + ')' : '')"></span>
                     <span class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400"
                       x-text="'-' + formatMoney(voucherDiscount)"></span>
                   </div>
@@ -987,8 +1004,10 @@
           <template x-if="voucherCode && voucherDiscount > 0">
             <div class="flex items-center justify-between py-0.5">
               <p class="text-gray-600 dark:text-gray-300 font-medium"
-                x-text="'{{ __('Voucher') }} (' + voucherCode + (activeVoucher ? ' • ' + voucherBadgeLabel(activeVoucher) : '') + ')'"></p>
-              <p class="font-bold text-emerald-600 dark:text-emerald-400" x-text="'-' + formatMoney(voucherDiscount)"></p>
+                x-text="'{{ __('Voucher') }} (' + voucherCode + (activeVoucher ? ' • ' + voucherBadgeLabel(activeVoucher) : '') + ')'">
+              </p>
+              <p class="font-bold text-emerald-600 dark:text-emerald-400" x-text="'-' + formatMoney(voucherDiscount)">
+              </p>
             </div>
           </template>
           <template x-if="features.discount || totalDiscount > 0">
@@ -1010,7 +1029,8 @@
     <div
       class="p-3 sm:p-4 pr-16 md:pr-16 lg:pr-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 shrink-0">
       <div class="grid grid-cols-3 gap-2">
-        <div class="col-span-1 flex rounded-lg border border-lakasir-primary bg-white dark:bg-gray-800 overflow-hidden shadow-sm">
+        <div
+          class="col-span-1 flex rounded-lg border border-lakasir-primary bg-white dark:bg-gray-800 overflow-hidden shadow-sm">
           <button type="button" @click="quickSaveDraft()" :disabled="isSubmitting"
             title="{{ __('Simpan draf untuk nanti dan cetak ke dapur') }}"
             class="flex-1 flex items-center justify-center gap-1 px-1.5 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-lakasir-primary transition hover:bg-lakasir-primary/10 disabled:opacity-50">
@@ -1029,7 +1049,8 @@
           <span class="truncate">{{ __('Pilih Variasi Wajib') }}</span>
         </button>
 
-        <button type="button" x-show="!hasMissingRequiredVariations && hasMissingOrderType" x-cloak @click="notifyMissingOrderType()"
+        <button type="button" x-show="!hasMissingRequiredVariations && hasMissingOrderType" x-cloak
+          @click="notifyMissingOrderType()"
           class="col-span-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-gray-400 px-2 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white cursor-not-allowed">
           <x-heroicon-m-exclamation-triangle class="h-4 w-4 text-amber-300 shrink-0" />
           <span class="truncate">{{ __('Pilih Kategori Pesanan') }}</span>
@@ -1038,7 +1059,8 @@
         <button type="button" x-show="!hasMissingRequiredVariations && !hasMissingOrderType"
           @click="saveAndProceedToPayment()" :disabled="isSubmitting"
           class="col-span-2 w-full rounded-lg bg-lakasir-primary px-2 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white transition hover:opacity-90 flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-60">
-          <span x-show="isSubmitting" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+          <span x-show="isSubmitting"
+            class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
           <span class="truncate">{{ __('Simpan dan Bayar') }}</span>
         </button>
       </div>
@@ -1046,8 +1068,7 @@
   </div>
 </div>
 
-{{-- Sticky Floating Mobile Cart Bar (< 768px) --}}
-<div class="fixed bottom-3 left-3 right-3 z-30 md:hidden"
+{{-- Sticky Floating Mobile Cart Bar (< 768px) --}} <div class="fixed bottom-3 left-3 right-3 z-30 md:hidden"
   x-show="mobileTab === 'products' && cart.length > 0" x-cloak>
   <button type="button" @click="mobileTab = 'cart'"
     class="w-full flex items-center justify-between bg-lakasir-primary text-white rounded-xl px-4 py-3 shadow-lg hover:opacity-95 transition">
@@ -1060,7 +1081,7 @@
       {{ __('Lihat Pesanan') }} &rarr;
     </span>
   </button>
-</div>
+  </div>
   {{-- modal --}}
   {{-- Modal Pilih Member (100% Frontend) --}}
   <x-filament::modal id="modal-selected-member" width="lg">
@@ -1104,8 +1125,7 @@
       <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ __('Discount') }}</label>
       <x-filament::input.wrapper>
         <x-slot name="prefix">{{ $currency }}</x-slot>
-        <x-filament::input type="number" min="0" x-model="manualDiscountInput"
-          placeholder="0" />
+        <x-filament::input type="number" min="0" x-model="manualDiscountInput" placeholder="0" />
       </x-filament::input.wrapper>
     </div>
     <x-slot name="footer">
@@ -1156,8 +1176,7 @@
           <div class="rounded-lg">
             <div class="mb-4 grid grid-cols-4 gap-1">
               <template x-for="pm in paymentMethods" :key="pm.id">
-                <div
-                  @click="paymentMethodId = pm.id"
+                <div @click="paymentMethodId = pm.id"
                   class="flex cursor-pointer justify-center rounded-md border-none px-4 py-2 text-sm hover:scale-105 dark:text-white"
                   :class="paymentMethodId == pm.id ? 'bg-lakasir-primary text-white' : 'dark:bg-gray-900 bg-gray-300'"
                   x-text="pm.name.substring(0, 8)">
@@ -1165,15 +1184,15 @@
               </template>
             </div>
             <x-filament::input.wrapper
-              x-show="paymentMethods.filter((pm) => pm.is_credit).some((pm) => pm.id == paymentMethodId)"
-              class="mb-2">
+              x-show="paymentMethods.filter((pm) => pm.is_credit).some((pm) => pm.id == paymentMethodId)" class="mb-2">
               <x-slot name="prefix">
                 {{ __('Due date') }}
               </x-slot>
               <x-filament::input type="date" x-model="dueDate" />
             </x-filament::input.wrapper>
 
-            <div class="mb-4 rounded-xl border border-gray-200/90 bg-white px-3.5 py-2.5 text-xs text-gray-700 shadow-2xs dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-200 space-y-2">
+            <div
+              class="mb-4 rounded-xl border border-gray-200/90 bg-white px-3.5 py-2.5 text-xs text-gray-700 shadow-2xs dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-200 space-y-2">
               <div class="flex items-center justify-between py-0.5">
                 <p class="text-gray-600 dark:text-gray-300 font-medium">{{ __('Sub total') }}</p>
                 <p class="font-bold text-lakasir-primary" x-text="formatMoney(subTotal)"></p>
@@ -1187,8 +1206,10 @@
               <template x-if="voucherCode && voucherDiscount > 0">
                 <div class="flex items-center justify-between py-0.5">
                   <p class="text-gray-600 dark:text-gray-300 font-medium"
-                    x-text="'{{ __('Voucher') }} (' + voucherCode + (activeVoucher ? ' • ' + voucherBadgeLabel(activeVoucher) : '') + ')'"></p>
-                  <p class="font-bold text-emerald-600 dark:text-emerald-400" x-text="'-' + formatMoney(voucherDiscount)"></p>
+                    x-text="'{{ __('Voucher') }} (' + voucherCode + (activeVoucher ? ' • ' + voucherBadgeLabel(activeVoucher) : '') + ')'">
+                  </p>
+                  <p class="font-bold text-emerald-600 dark:text-emerald-400"
+                    x-text="'-' + formatMoney(voucherDiscount)"></p>
                 </div>
               </template>
               <template x-if="features.discount || totalDiscount > 0">
@@ -1263,7 +1284,8 @@
               <div class="col-span-3 flex gap-x-2">
                 <button :disabled="isSubmitting" type="submit"
                   class="flex w-full items-center justify-center gap-x-2 rounded-md bg-lakasir-primary p-2 text-lg text-white hover:bg-[#ff6611] disabled:opacity-60">
-                  <span x-show="isSubmitting" class="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                  <span x-show="isSubmitting"
+                    class="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
                   <span>{{ __('Pay it') }}</span>
                 </button>
                 <button @click="$dispatch('close-modal', {id: 'proceed-the-payment'})" type="button"
@@ -1286,14 +1308,16 @@
                         <div>
                           <span x-text="'- ' + v.variation_name + ': ' + v.option_name"></span>
                           <template x-if="v.price > 0">
-                            <span class="font-medium text-lakasir-primary" x-text="' (+' + formatMoney(v.price) + ')'"></span>
+                            <span class="font-medium text-lakasir-primary"
+                              x-text="' (+' + formatMoney(v.price) + ')'"></span>
                           </template>
                         </div>
                       </template>
                     </div>
                   </template>
                   <template x-if="item.note">
-                    <div class="text-xs italic text-gray-500 dark:text-gray-400" x-text="'{{ __('Note') }}: ' + item.note"></div>
+                    <div class="text-xs italic text-gray-500 dark:text-gray-400"
+                      x-text="'{{ __('Note') }}: ' + item.note"></div>
                   </template>
                   <div class="flex space-x-3 text-xs text-gray-400">
                     <p x-text="formatMoney(item.qty > 0 ? item.price / item.qty : item.price) + ' x ' + item.qty"></p>
@@ -1317,18 +1341,21 @@
         @lang('Change'):
         <span id="changes" class="text-lakasir-primary"></span>
       </p>
-      <div id="printStatusSuccess" class="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+      <div id="printStatusSuccess"
+        class="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
         <x-heroicon-s-check-circle class="h-4 w-4" />
         <span>{{ __('Struk sudah otomatis dicetak ke printer') }}</span>
       </div>
-      <div id="printStatusWarning" class="mt-3 hidden inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+      <div id="printStatusWarning"
+        class="mt-3 hidden inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
         <x-heroicon-s-exclamation-triangle class="h-4 w-4" />
         <span>{{ __('Printer belum disetting di menu Pengaturan Printer') }}</span>
       </div>
     </div>
     <x-slot name="footer">
       <div class="grid grid-cols-3 gap-x-2">
-        <x-filament::button color="gray" outlined icon="heroicon-m-printer" id="printReceiptButton" title="{{ __('Cetak ulang struk jika dibutuhkan lembar ekstra') }}">
+        <x-filament::button color="gray" outlined icon="heroicon-m-printer" id="printReceiptButton"
+          title="{{ __('Cetak ulang struk jika dibutuhkan lembar ekstra') }}">
           {{ __('Cetak Ulang') }}
         </x-filament::button>
         <x-filament::button icon="heroicon-m-document-arrow-down" color="info" outlined id="pdfReceiptButton">
@@ -1380,8 +1407,7 @@
           </div>
           <template x-if="variationModalProduct.hero_image">
             <img :src="variationModalProduct.hero_image"
-              class="h-14 w-14 rounded-lg border object-cover dark:border-gray-700"
-              :alt="variationModalProduct.name">
+              class="h-14 w-14 rounded-lg border object-cover dark:border-gray-700" :alt="variationModalProduct.name">
           </template>
         </div>
       </template>
@@ -1390,7 +1416,8 @@
     <template x-if="variationModalProduct">
       <div class="max-h-[60vh] space-y-5 overflow-y-auto px-1 py-2">
         <template x-for="variation in variationModalProduct.variations" :key="variation.id">
-          <div class="space-y-3 rounded-xl border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-800 dark:bg-gray-900/40">
+          <div
+            class="space-y-3 rounded-xl border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-800 dark:bg-gray-900/40">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <span class="text-base font-bold text-gray-900 dark:text-white" x-text="variation.name"></span>
@@ -1410,17 +1437,14 @@
 
             <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               <template x-for="option in variation.options" :key="option.id">
-                <button type="button"
-                  @click="selectModalVariationOption(variation.id, option.id, variation.type)"
+                <button type="button" @click="selectModalVariationOption(variation.id, option.id, variation.type)"
                   :class="isModalOptionSelected(variation.id, option.id, variation.type) ? 'border-lakasir-primary bg-lakasir-primary/10 font-semibold text-lakasir-primary ring-1 ring-lakasir-primary' : 'border-gray-200 bg-white text-gray-800 hover:border-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200'"
                   class="flex items-center justify-between rounded-lg border p-3 text-left transition-all duration-150">
                   <div class="flex items-center gap-2">
-                    <div
-                      :class="[
+                    <div :class="[
                         variation.type === 'single' ? 'rounded-full' : 'rounded-md',
                         isModalOptionSelected(variation.id, option.id, variation.type) ? 'border-lakasir-primary bg-lakasir-primary text-white' : 'border-gray-400 bg-white dark:bg-gray-700'
-                      ]"
-                      class="flex h-4 w-4 items-center justify-center border">
+                      ]" class="flex h-4 w-4 items-center justify-center border">
                       <template x-if="isModalOptionSelected(variation.id, option.id, variation.type)">
                         <div class="h-1.5 w-1.5 rounded-full bg-white"></div>
                       </template>
@@ -1438,7 +1462,8 @@
         </template>
 
         {{-- Jumlah Pesanan --}}
-        <div class="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900">
+        <div
+          class="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900">
           <div>
             <span class="text-sm font-bold text-gray-800 dark:text-gray-200">{{ __('Jumlah') }}</span>
             <p class="text-xs text-gray-500">{{ __('Tentukan jumlah porsi/item') }}</p>
@@ -1518,7 +1543,8 @@
   {{-- Modal Simpan Draft Pesanan --}}
   <x-filament::modal id="save-draft-modal" width="md">
     <x-slot name="heading">
-      <span x-text="activeDraftId ? '{{ __('Perbarui Draft Pesanan') }}' : '{{ __('Simpan Pesanan ke Draft') }}'"></span>
+      <span
+        x-text="activeDraftId ? '{{ __('Perbarui Draft Pesanan') }}' : '{{ __('Simpan Pesanan ke Draft') }}'"></span>
     </x-slot>
 
     <form @submit.prevent="submitCustomDraft()" class="space-y-4">
@@ -1568,16 +1594,19 @@
       <template x-if="drafts.length > 0">
         <div>
           <template x-for="draft in drafts" :key="draft.id">
-            <div class="rounded-lg border bg-white p-4 dark:border-gray-800 dark:bg-gray-900" style="margin-bottom: 10px;">
+            <div class="rounded-lg border bg-white p-4 dark:border-gray-800 dark:bg-gray-900"
+              style="margin-bottom: 10px;">
               <div class="flex items-start justify-between gap-2">
                 <div>
                   <div class="flex flex-wrap items-center gap-2">
                     <p class="text-base font-bold text-gray-900 dark:text-white" x-text="draft.name"></p>
-                    <span class="rounded-full bg-lakasir-primary/15 px-2.5 py-0.5 text-xs font-bold text-lakasir-primary"
+                    <span
+                      class="rounded-full bg-lakasir-primary/15 px-2.5 py-0.5 text-xs font-bold text-lakasir-primary"
                       x-text="draft.order_type_label">
                     </span>
                     <template x-if="draft.table_number">
-                      <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                      <span
+                        class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300"
                         x-text="'{{ __('Meja') }}: ' + draft.table_number">
                       </span>
                     </template>
@@ -1597,8 +1626,11 @@
                 <p class="text-base font-bold text-lakasir-primary" x-text="formatMoney(draft.total_price)"></p>
               </div>
 
-              <div class="mt-2 rounded-md bg-gray-50 p-2.5 text-xs text-gray-600 dark:bg-gray-800/60 dark:text-gray-300">
-                <p class="font-semibold mb-1" x-text="draft.items.reduce((s, i) => s + parseFloat(i.qty || 0), 0) + ' {{ __('item pesanan') }}'"></p>
+              <div
+                class="mt-2 rounded-md bg-gray-50 p-2.5 text-xs text-gray-600 dark:bg-gray-800/60 dark:text-gray-300">
+                <p class="font-semibold mb-1"
+                  x-text="draft.items.reduce((s, i) => s + parseFloat(i.qty || 0), 0) + ' {{ __('item pesanan') }}'">
+                </p>
                 <template x-for="(dItem, idx) in draft.items" :key="idx">
                   <div class="flex justify-between py-0.5">
                     <div>
@@ -1637,7 +1669,8 @@
       </template>
 
       <template x-if="drafts.length === 0">
-        <div class="flex h-36 flex-col items-center justify-center rounded-lg border border-dashed text-gray-400 dark:border-gray-800">
+        <div
+          class="flex h-36 flex-col items-center justify-center rounded-lg border border-dashed text-gray-400 dark:border-gray-800">
           <x-heroicon-o-bookmark-slash class="h-8 w-8 mb-1" />
           <p class="text-sm">{{ __('Belum ada draft pesanan yang disimpan.') }}</p>
         </div>
@@ -1663,7 +1696,8 @@
     @if ($activeShiftSummary)
       <div class="max-h-[70vh] space-y-4 overflow-y-auto pr-1">
         {{-- Metadata Shift --}}
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs dark:border-gray-800 dark:bg-gray-900">
+        <div
+          class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs dark:border-gray-800 dark:bg-gray-900">
           <div>
             <p class="text-gray-400 text-[11px]">{{ __('Shift ID') }}</p>
             <p class="font-bold text-gray-800 dark:text-gray-200">#{{ $activeShiftSummary['drawer_id'] }}</p>
@@ -1680,7 +1714,8 @@
           </div>
           <div>
             <p class="text-gray-400 text-[11px]">{{ __('Total Transaksi') }}</p>
-            <p class="font-bold text-lakasir-primary text-sm">{{ $activeShiftSummary['total_transactions'] }} {{ __('Nota') }}</p>
+            <p class="font-bold text-lakasir-primary text-sm">{{ $activeShiftSummary['total_transactions'] }}
+              {{ __('Nota') }}</p>
           </div>
         </div>
 
@@ -1688,23 +1723,30 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <div class="rounded-xl border border-gray-200 bg-white p-3 text-xs dark:border-gray-800 dark:bg-gray-900">
             <span class="text-gray-500 dark:text-gray-400">{{ __('Total Penjualan Shift') }}</span>
-            <p class="mt-1 text-base font-bold text-gray-800 dark:text-gray-200">{{ price_format($activeShiftSummary['total_grand_total']) }}</p>
+            <p class="mt-1 text-base font-bold text-gray-800 dark:text-gray-200">
+              {{ price_format($activeShiftSummary['total_grand_total']) }}</p>
           </div>
           <div class="rounded-xl border border-gray-200 bg-white p-3 text-xs dark:border-gray-800 dark:bg-gray-900">
             <span class="text-gray-500 dark:text-gray-400">{{ __('Total Item Terjual') }}</span>
-            <p class="mt-1 text-base font-bold text-lakasir-primary">{{ $activeShiftSummary['total_qty_sold'] }} {{ __('Porsi/Pcs') }}</p>
+            <p class="mt-1 text-base font-bold text-lakasir-primary">{{ $activeShiftSummary['total_qty_sold'] }}
+              {{ __('Porsi/Pcs') }}</p>
           </div>
-          <div class="rounded-xl border border-emerald-500/30 bg-emerald-50/60 p-3 text-xs dark:border-emerald-800 dark:bg-emerald-950/30">
-            <span class="text-emerald-800 dark:text-emerald-300 font-semibold">{{ __('Total Kas Tunai (Uang di Laci)') }}</span>
-            <p class="mt-1 text-lg font-extrabold text-emerald-700 dark:text-emerald-300">{{ price_format($activeShiftSummary['expected_cash_in_drawer']) }}</p>
+          <div
+            class="rounded-xl border border-emerald-500/30 bg-emerald-50/60 p-3 text-xs dark:border-emerald-800 dark:bg-emerald-950/30">
+            <span
+              class="text-emerald-800 dark:text-emerald-300 font-semibold">{{ __('Total Kas Tunai (Uang di Laci)') }}</span>
+            <p class="mt-1 text-lg font-extrabold text-emerald-700 dark:text-emerald-300">
+              {{ price_format($activeShiftSummary['expected_cash_in_drawer']) }}</p>
             <p class="text-[10px] text-emerald-600/80 dark:text-emerald-400/80">{{ __('Total Uang Penjualan Tunai') }}</p>
           </div>
         </div>
 
         {{-- TABEL ITEM-ITEM YANG TERJUAL & JUMLAHNYA --}}
         <div class="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 overflow-hidden">
-          <div class="flex items-center justify-between border-b border-gray-100 bg-gray-50/80 px-4 py-2.5 dark:border-gray-800 dark:bg-gray-800/60">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+          <div
+            class="flex items-center justify-between border-b border-gray-100 bg-gray-50/80 px-4 py-2.5 dark:border-gray-800 dark:bg-gray-800/60">
+            <h4
+              class="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
               <x-heroicon-m-shopping-bag class="h-4 w-4 text-lakasir-primary" />
               <span>{{ __('Daftar Item yang Terjual') }}</span>
             </h4>
@@ -1716,7 +1758,8 @@
           <div class="max-h-56 overflow-y-auto">
             @if (!empty($activeShiftSummary['sold_items']))
               <table class="w-full text-left text-xs">
-                <thead class="sticky top-0 bg-gray-100/90 dark:bg-gray-800/90 text-gray-600 dark:text-gray-300 text-[11px] font-semibold">
+                <thead
+                  class="sticky top-0 bg-gray-100/90 dark:bg-gray-800/90 text-gray-600 dark:text-gray-300 text-[11px] font-semibold">
                   <tr>
                     <th class="px-3.5 py-2">{{ __('Nama Menu / Produk') }}</th>
                     <th class="px-3.5 py-2 text-center" style="width: 80px;">{{ __('Qty') }}</th>
@@ -1728,7 +1771,8 @@
                     <tr class="hover:bg-gray-50/80 dark:hover:bg-gray-800/40 transition">
                       <td class="px-3.5 py-2 font-medium text-gray-900 dark:text-white">{{ $sItem['name'] }}</td>
                       <td class="px-3.5 py-2 text-center font-bold text-lakasir-primary">{{ $sItem['qty'] }}</td>
-                      <td class="px-3.5 py-2 text-right font-medium text-gray-700 dark:text-gray-300">{{ price_format($sItem['total']) }}</td>
+                      <td class="px-3.5 py-2 text-right font-medium text-gray-700 dark:text-gray-300">
+                        {{ price_format($sItem['total']) }}</td>
                     </tr>
                   @endforeach
                 </tbody>
@@ -1743,7 +1787,8 @@
         </div>
 
         {{-- Ringkasan Pembayaran Non-Tunai & Omset --}}
-        <div class="rounded-xl border border-gray-200 bg-white p-3.5 text-xs dark:border-gray-800 dark:bg-gray-900 space-y-2">
+        <div
+          class="rounded-xl border border-gray-200 bg-white p-3.5 text-xs dark:border-gray-800 dark:bg-gray-900 space-y-2">
           <h4 class="font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider text-[11px] mb-1">
             {{ __('Ringkasan Metode Pembayaran') }}
           </h4>
@@ -1757,7 +1802,8 @@
           </div>
           <div class="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800 text-sm">
             <span class="font-bold text-gray-700 dark:text-gray-300">{{ __('Total Omset Shift') }}:</span>
-            <span class="text-base font-extrabold text-lakasir-primary">{{ price_format($activeShiftSummary['total_grand_total']) }}</span>
+            <span
+              class="text-base font-extrabold text-lakasir-primary">{{ price_format($activeShiftSummary['total_grand_total']) }}</span>
           </div>
         </div>
       </div>
@@ -1783,18 +1829,21 @@
   </x-filament::modal>
 
   {{-- ======================================================== --}}
-  {{-- POS LOCKSCREEN OVERLAY (Wajib Masukkan PIN Kasir)       --}}
+  {{-- POS LOCKSCREEN OVERLAY (Wajib Masukkan PIN Kasir) --}}
   {{-- ======================================================== --}}
   @if ($isPosLocked)
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
       style="background-color: rgba(15, 23, 42, 0.68); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);">
-      <div class="w-full max-w-sm sm:max-w-md rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-2xl p-6 sm:p-7 space-y-5">
+      <div
+        class="w-full max-w-sm sm:max-w-md rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-2xl p-6 sm:p-7 space-y-5">
         {{-- Store Branding --}}
         <div class="text-center space-y-1.5">
           @if ($about?->photo || $about?->logo_url)
-            <img src="{{ $about?->logo_url ?? $about?->photo }}" alt="{{ $about?->shop_name ?? 'POS' }}" class="h-12 w-12 rounded-xl mx-auto object-cover shadow-sm">
+            <img src="{{ $about?->logo_url ?? $about?->photo }}" alt="{{ $about?->shop_name ?? 'POS' }}"
+              class="h-12 w-12 rounded-xl mx-auto object-cover shadow-sm">
           @else
-            <div class="h-12 w-12 rounded-xl bg-primary-600 text-white flex items-center justify-center mx-auto text-lg font-bold shadow-sm">
+            <div
+              class="h-12 w-12 rounded-xl bg-primary-600 text-white flex items-center justify-center mx-auto text-lg font-bold shadow-sm">
               {{ strtoupper(substr($about?->shop_name ?? 'L', 0, 1)) }}
             </div>
           @endif
@@ -1808,7 +1857,8 @@
 
         {{-- Error Alert --}}
         @if ($posPinError)
-          <div class="rounded-xl bg-danger-50 dark:bg-danger-950/50 border border-danger-200 dark:border-danger-800 p-2.5 text-xs font-semibold text-danger-700 dark:text-danger-400 text-center animate-pulse">
+          <div
+            class="rounded-xl bg-danger-50 dark:bg-danger-950/50 border border-danger-200 dark:border-danger-800 p-2.5 text-xs font-semibold text-danger-700 dark:text-danger-400 text-center animate-pulse">
             {{ $posPinError }}
           </div>
         @endif
@@ -1818,14 +1868,13 @@
           <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
             {{ __('Pilih Akun Kasir') }}
           </label>
-          <select
-            wire:model.live="selectedCashierId"
-            class="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3.5 py-2.5 text-sm font-medium text-gray-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-          >
+          <select wire:model.live="selectedCashierId"
+            class="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3.5 py-2.5 text-sm font-medium text-gray-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
             <option value="">{{ __('-- Pilih Kasir --') }}</option>
             @foreach ($this->cashiers as $cUser)
               <option value="{{ $cUser->id }}">
-                {{ $cUser->name }} ({{ $cUser->is_owner ? 'Owner' : ($cUser->roles->first()?->name ?? 'Kasir') }}) {{ $cUser->hasPin() ? '' : '⚠️ No PIN' }}
+                {{ $cUser->name }} ({{ $cUser->is_owner ? 'Owner' : ($cUser->roles->first()?->name ?? 'Kasir') }})
+                {{ $cUser->hasPin() ? '' : '⚠️ No PIN' }}
               </option>
             @endforeach
           </select>
@@ -1833,47 +1882,32 @@
 
         {{-- PIN Input --}}
         <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5 text-center">
+          <label
+            class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5 text-center">
             {{ __('PIN Kasir') }}
           </label>
-          <input
-            type="password"
-            inputmode="numeric"
-            autocomplete="one-time-code"
-            wire:model="posPin"
-            wire:keydown.enter="unlockPos"
-            placeholder="••••"
-            class="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 px-4 py-2.5 text-center text-xl tracking-[0.4em] font-bold text-gray-900 dark:text-white focus:border-primary-500 focus:bg-white dark:focus:bg-gray-800 focus:ring-1 focus:ring-primary-500"
-          >
+          <input type="password" inputmode="numeric" autocomplete="one-time-code" wire:model="posPin"
+            wire:keydown.enter="unlockPos" placeholder="••••"
+            class="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 px-4 py-2.5 text-center text-xl tracking-[0.4em] font-bold text-gray-900 dark:text-white focus:border-primary-500 focus:bg-white dark:focus:bg-gray-800 focus:ring-1 focus:ring-primary-500">
         </div>
 
         {{-- Unlock Action --}}
-        <button
-          type="button"
-          wire:click="unlockPos"
-          class="w-full rounded-xl bg-primary-600 hover:bg-primary-500 py-2.5 text-sm font-bold text-white shadow-md shadow-primary-500/20 active:scale-98 transition flex items-center justify-center gap-2"
-        >
+        <button type="button" wire:click="unlockPos"
+          class="w-full rounded-xl bg-primary-600 hover:bg-primary-500 py-2.5 text-sm font-bold text-white shadow-md shadow-primary-500/20 active:scale-98 transition flex items-center justify-center gap-2">
           <x-heroicon-o-lock-open class="h-4 w-4" />
           <span>{{ __('Buka POS (Masuk)') }}</span>
         </button>
 
         {{-- Bottom Links: Admin Panel & Logout --}}
         <div class="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 pt-3 text-xs">
-          <button
-            type="button"
-            wire:click="openAdminPinModal"
-            class="inline-flex items-center gap-1.5 font-semibold text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition"
-          >
+          <button type="button" wire:click="openAdminPinModal"
+            class="inline-flex items-center gap-1.5 font-semibold text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition">
             <x-heroicon-o-shield-check class="h-4 w-4 text-primary-600" />
             <span>{{ __('Admin Panel') }}</span>
           </button>
 
-          <button
-            type="button"
-            wire:click="logoutDevice"
-            wire:confirm="{{ __('Yakin ingin logout perangkat?') }}"
-            class="inline-flex items-center gap-1 text-gray-500 hover:text-danger-600 dark:hover:text-danger-400 transition"
-          >
+          <button type="button" wire:click="logoutDevice" wire:confirm="{{ __('Yakin ingin logout perangkat?') }}"
+            class="inline-flex items-center gap-1 text-gray-500 hover:text-danger-600 dark:hover:text-danger-400 transition">
             <x-heroicon-o-arrow-right-on-rectangle class="h-4 w-4" />
             <span>{{ __('Logout') }}</span>
           </button>
@@ -1883,13 +1917,15 @@
   @endif
 
   {{-- ======================================================== --}}
-  {{-- POP-UP BUKA TOKO (Jika Toko Belum Dibuka / Beda Hari)   --}}
+  {{-- POP-UP BUKA TOKO (Jika Toko Belum Dibuka / Beda Hari) --}}
   {{-- ======================================================== --}}
-  @if (! $isPosLocked && $showOpenStoreModal)
+  @if (!$isPosLocked && $showOpenStoreModal)
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
       style="background-color: rgba(15, 23, 42, 0.68); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);">
-      <div class="w-full max-w-sm rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-2xl p-6 text-center space-y-5">
-        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400 shadow-sm">
+      <div
+        class="w-full max-w-sm rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-2xl p-6 text-center space-y-5">
+        <div
+          class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400 shadow-sm">
           <x-heroicon-o-building-storefront class="h-8 w-8" />
         </div>
 
@@ -1908,13 +1944,10 @@
           @endif
         </div>
 
-        <button
-          type="button"
-          wire:click="openStoreFromModal"
-          wire:loading.attr="disabled"
-          class="w-full rounded-xl bg-primary-600 hover:bg-primary-500 py-3 px-4 text-sm font-bold text-white shadow-md shadow-primary-500/20 active:scale-98 transition flex items-center justify-center gap-2 disabled:opacity-60"
-        >
-          <span wire:loading wire:target="openStoreFromModal" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+        <button type="button" wire:click="openStoreFromModal" wire:loading.attr="disabled"
+          class="w-full rounded-xl bg-primary-600 hover:bg-primary-500 py-3 px-4 text-sm font-bold text-white shadow-md shadow-primary-500/20 active:scale-98 transition flex items-center justify-center gap-2 disabled:opacity-60">
+          <span wire:loading wire:target="openStoreFromModal"
+            class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
           <x-heroicon-o-lock-open wire:loading.remove wire:target="openStoreFromModal" class="h-4 w-4" />
           <span>{{ __('Buka Toko') }}</span>
         </button>
@@ -1928,10 +1961,12 @@
   @if ($showAdminModal)
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
       style="background-color: rgba(15, 23, 42, 0.68); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);">
-      <div class="w-full max-w-sm rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-2xl p-6 space-y-4">
+      <div
+        class="w-full max-w-sm rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-2xl p-6 space-y-4">
         <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
           <div class="flex items-center gap-2">
-            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-sm">
+            <div
+              class="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-sm">
               <x-heroicon-o-shield-check class="h-5 w-5" />
             </div>
             <div>
@@ -1955,49 +1990,36 @@
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            wire:click="closeAdminPinModal"
-            class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600"
-          >
+          <button type="button" wire:click="closeAdminPinModal"
+            class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600">
             <x-heroicon-o-x-mark class="h-5 w-5" />
           </button>
         </div>
 
         @if ($adminPinError)
-          <div class="rounded-xl bg-danger-50 dark:bg-danger-950/50 border border-danger-200 dark:border-danger-800 p-2.5 text-xs font-semibold text-danger-700 dark:text-danger-400 text-center animate-pulse">
+          <div
+            class="rounded-xl bg-danger-50 dark:bg-danger-950/50 border border-danger-200 dark:border-danger-800 p-2.5 text-xs font-semibold text-danger-700 dark:text-danger-400 text-center animate-pulse">
             {{ $adminPinError }}
           </div>
         @endif
 
         <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5 text-center">
+          <label
+            class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5 text-center">
             {{ __('PIN Admin') }}
           </label>
-          <input
-            type="password"
-            inputmode="numeric"
-            autocomplete="one-time-code"
-            wire:model="adminPin"
-            wire:keydown.enter="submitAdminPin"
-            placeholder="••••"
-            class="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 px-4 py-2.5 text-center text-xl tracking-[0.4em] font-bold text-gray-900 dark:text-white focus:border-primary-500 focus:bg-white dark:focus:bg-gray-800 focus:ring-1 focus:ring-primary-500"
-          >
+          <input type="password" inputmode="numeric" autocomplete="one-time-code" wire:model="adminPin"
+            wire:keydown.enter="submitAdminPin" placeholder="••••"
+            class="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 px-4 py-2.5 text-center text-xl tracking-[0.4em] font-bold text-gray-900 dark:text-white focus:border-primary-500 focus:bg-white dark:focus:bg-gray-800 focus:ring-1 focus:ring-primary-500">
         </div>
 
         <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-gray-100 dark:border-gray-800">
-          <button
-            type="button"
-            wire:click="closeAdminPinModal"
-            class="rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-          >
+          <button type="button" wire:click="closeAdminPinModal"
+            class="rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
             {{ __('Batal') }}
           </button>
-          <button
-            type="button"
-            wire:click="submitAdminPin"
-            class="rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-2 text-xs font-bold hover:opacity-90 transition shadow-sm"
-          >
+          <button type="button" wire:click="submitAdminPin"
+            class="rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-2 text-xs font-bold hover:opacity-90 transition shadow-sm">
             @if ($adminPinAction === 'open_shift')
               {{ __('Verifikasi & Buka Kasir') }}
             @elseif ($adminPinAction === 'close_shift')
@@ -2293,19 +2315,19 @@
           const allDetails = (currentSelling && Array.isArray(currentSelling.selling_details)) ? currentSelling.selling_details : [];
           const filteredDetails = printerData.print_all_categories
             ? allDetails.filter(d => {
-                // Aturan sudah pernah print hanya berlaku di printer dapur (!show_price). Kasir (show_price) selalu ambil semua item.
-                if (!printerData.show_price && (skipKitchenPrint || d.is_kitchen_printed)) {
-                  return false;
-                }
-                return true;
-              })
+              // Aturan sudah pernah print hanya berlaku di printer dapur (!show_price). Kasir (show_price) selalu ambil semua item.
+              if (!printerData.show_price && (skipKitchenPrint || d.is_kitchen_printed)) {
+                return false;
+              }
+              return true;
+            })
             : allDetails.filter(d => {
-                if (!printerData.show_price && (skipKitchenPrint || d.is_kitchen_printed)) {
-                  return false;
-                }
-                const catId = d.product && d.product.category_id ? parseInt(d.product.category_id, 10) : null;
-                return catId !== null && Array.isArray(printerData.category_ids) && printerData.category_ids.includes(catId);
-              });
+              if (!printerData.show_price && (skipKitchenPrint || d.is_kitchen_printed)) {
+                return false;
+              }
+              const catId = d.product && d.product.category_id ? parseInt(d.product.category_id, 10) : null;
+              return catId !== null && Array.isArray(printerData.category_ids) && printerData.category_ids.includes(catId);
+            });
 
           // Lewati printer ini jika pesanan tidak mengandung menu dari kategori printer tersebut
           if (filteredDetails.length === 0) {
@@ -2364,115 +2386,115 @@
                 printerAction.align('center').text(printerData.header).align('left').text(dividerLine);
               }
               printerAction.table(['Station', isMerchantCopy ? (printerData.name + ' (Salinan)') : (printerData.name || 'Kasir')]);
-            printerAction.table(['@lang('Cashier')', currentSelling.user.name]);
-            if (currentSelling.order_type_label && currentSelling.order_type_label !== '-') {
-              printerAction.table(['@lang('Kategori')', currentSelling.order_type_label]);
-            }
-            if (currentSelling.table && currentSelling.table.number) {
-              printerAction.table(['@lang('Table')', currentSelling.table.number]);
-            }
-            if (currentSelling.payment_method && currentSelling.payment_method.name) {
-              printerAction.table(['@lang('Payment method')', currentSelling.payment_method.name]);
-            }
-            if (currentSelling.member && currentSelling.member.name) {
-              printerAction.table(['Member', currentSelling.member.name]);
-            }
-            printerAction.text(dividerLine);
-
-            filteredDetails.forEach(sellingDetail => {
-              let price = sellingDetail.price;
-              printerAction.table([
-                sellingDetail.product.name,
-                moneyFormat(sellingDetail.price / sellingDetail.qty) + ' x ' + sellingDetail.qty.toString()
-              ]);
-              if (sellingDetail.selected_variations && sellingDetail.selected_variations.length > 0) {
-                sellingDetail.selected_variations.forEach(v => {
-                  let extra = v.price > 0 ? ` (+${moneyFormat(v.price)})` : '';
-                  printerAction.text(`  - ${v.variation_name}: ${v.option_name}${extra}`);
-                });
+              printerAction.table(['@lang('Cashier')', currentSelling.user.name]);
+              if (currentSelling.order_type_label && currentSelling.order_type_label !== '-') {
+                printerAction.table(['@lang('Kategori')', currentSelling.order_type_label]);
               }
-              if (sellingDetail.note) {
-                printerAction.text(`  * ${sellingDetail.note}`);
+              if (currentSelling.table && currentSelling.table.number) {
+                printerAction.table(['@lang('Table')', currentSelling.table.number]);
               }
-              if (sellingDetail.discount_price > 0) {
-                price = price - sellingDetail.discount_price;
-                printerAction.align('right').text(`(${moneyFormat(sellingDetail.discount_price)})`);
+              if (currentSelling.payment_method && currentSelling.payment_method.name) {
+                printerAction.table(['@lang('Payment method')', currentSelling.payment_method.name]);
               }
-              printerAction.align('right').text(moneyFormat(price)).align('left');
-            });
-
-            printerAction.text(dividerLine);
-            if ("@js(feature(SellingTax::class))" == 'true') {
-              printerAction.table(['@lang('Tax')', `${currentSelling.tax}%`])
-                .table(['@lang('Tax price')', moneyFormat(currentSelling.tax_price)]);
-            }
-            printerAction.table(['@lang('Subtotal')', moneyFormat(currentSelling.total_price)]);
-            if ("@js(feature(Discount::class))" == 'true') {
-              printerAction.table([
-                '@lang('Discount')',
-                `(${moneyFormat(currentSelling.total_discount_per_item + currentSelling.discount_price)})`
-              ]);
-            }
-            printerAction
-              .table(['@lang('Total price')', moneyFormat(currentSelling.grand_total_price)])
-              .text(dividerLine)
-              .table(['@lang('Payed money')', moneyFormat(currentSelling.payed_money)])
-              .table(['@lang('Change')', moneyFormat(currentSelling.money_changes)])
-              .align('center');
-
-            if (printerData.footer) {
-              printerAction.text(printerData.footer);
-            }
-          } else {
-            // FORMAT NOTA CHECKER TANPA HARGA (DAPUR / BAR)
-            printerAction.size(1)
-              .align('center')
-              .text('*** ' + (printerData.name || 'CHECKER').toUpperCase() + ' ***')
-              .size(0);
-            if (printerData.header) {
-              printerAction.text(printerData.header);
-            }
-            printerAction.align('left')
-              .text(dividerLine)
-              .table(['No. Pesanan', currentSelling.code || ('#' + currentSelling.id)])
-              .table(['@lang('Cashier')', currentSelling.user.name]);
-            if (currentSelling.order_type_label && currentSelling.order_type_label !== '-') {
-              printerAction.table(['@lang('Kategori')', currentSelling.order_type_label]);
-            }
-            if (currentSelling.table && currentSelling.table.number) {
-              printerAction.table(['@lang('Table')', currentSelling.table.number]);
-            }
-            printerAction.text(dividerLine);
-
-            let totalQty = 0;
-            filteredDetails.forEach(sellingDetail => {
-              totalQty += Number(sellingDetail.qty || 1);
-              printerAction.text(`${sellingDetail.qty}x  ${sellingDetail.product.name}`);
-              if (sellingDetail.selected_variations && sellingDetail.selected_variations.length > 0) {
-                sellingDetail.selected_variations.forEach(v => {
-                  printerAction.text(`    - ${v.variation_name}: ${v.option_name}`);
-                });
+              if (currentSelling.member && currentSelling.member.name) {
+                printerAction.table(['Member', currentSelling.member.name]);
               }
-              if (sellingDetail.note) {
-                printerAction.text(`    * ${sellingDetail.note}`);
+              printerAction.text(dividerLine);
+
+              filteredDetails.forEach(sellingDetail => {
+                let price = sellingDetail.price;
+                printerAction.table([
+                  sellingDetail.product.name,
+                  moneyFormat(sellingDetail.price / sellingDetail.qty) + ' x ' + sellingDetail.qty.toString()
+                ]);
+                if (sellingDetail.selected_variations && sellingDetail.selected_variations.length > 0) {
+                  sellingDetail.selected_variations.forEach(v => {
+                    let extra = v.price > 0 ? ` (+${moneyFormat(v.price)})` : '';
+                    printerAction.text(`  - ${v.variation_name}: ${v.option_name}${extra}`);
+                  });
+                }
+                if (sellingDetail.note) {
+                  printerAction.text(`  * ${sellingDetail.note}`);
+                }
+                if (sellingDetail.discount_price > 0) {
+                  price = price - sellingDetail.discount_price;
+                  printerAction.align('right').text(`(${moneyFormat(sellingDetail.discount_price)})`);
+                }
+                printerAction.align('right').text(moneyFormat(price)).align('left');
+              });
+
+              printerAction.text(dividerLine);
+              if ("@js(feature(SellingTax::class))" == 'true') {
+                printerAction.table(['@lang('Tax')', `${currentSelling.tax}%`])
+                  .table(['@lang('Tax price')', moneyFormat(currentSelling.tax_price)]);
               }
-            });
+              printerAction.table(['@lang('Subtotal')', moneyFormat(currentSelling.total_price)]);
+              if ("@js(feature(Discount::class))" == 'true') {
+                printerAction.table([
+                  '@lang('Discount')',
+                  `(${moneyFormat(currentSelling.total_discount_per_item + currentSelling.discount_price)})`
+                ]);
+              }
+              printerAction
+                .table(['@lang('Total price')', moneyFormat(currentSelling.grand_total_price)])
+                .text(dividerLine)
+                .table(['@lang('Payed money')', moneyFormat(currentSelling.payed_money)])
+                .table(['@lang('Change')', moneyFormat(currentSelling.money_changes)])
+                .align('center');
 
-            printerAction.text(dividerLine)
-              .table(['TOTAL ITEM', `${totalQty} Porsi/Item`])
-              .align('center');
+              if (printerData.footer) {
+                printerAction.text(printerData.footer);
+              }
+            } else {
+              // FORMAT NOTA CHECKER TANPA HARGA (DAPUR / BAR)
+              printerAction.size(1)
+                .align('center')
+                .text('*** ' + (printerData.name || 'CHECKER').toUpperCase() + ' ***')
+                .size(0);
+              if (printerData.header) {
+                printerAction.text(printerData.header);
+              }
+              printerAction.align('left')
+                .text(dividerLine)
+                .table(['No. Pesanan', currentSelling.code || ('#' + currentSelling.id)])
+                .table(['@lang('Cashier')', currentSelling.user.name]);
+              if (currentSelling.order_type_label && currentSelling.order_type_label !== '-') {
+                printerAction.table(['@lang('Kategori')', currentSelling.order_type_label]);
+              }
+              if (currentSelling.table && currentSelling.table.number) {
+                printerAction.table(['@lang('Table')', currentSelling.table.number]);
+              }
+              printerAction.text(dividerLine);
 
-            if (printerData.footer) {
-              printerAction.text(printerData.footer);
+              let totalQty = 0;
+              filteredDetails.forEach(sellingDetail => {
+                totalQty += Number(sellingDetail.qty || 1);
+                printerAction.text(`${sellingDetail.qty}x  ${sellingDetail.product.name}`);
+                if (sellingDetail.selected_variations && sellingDetail.selected_variations.length > 0) {
+                  sellingDetail.selected_variations.forEach(v => {
+                    printerAction.text(`    - ${v.variation_name}: ${v.option_name}`);
+                  });
+                }
+                if (sellingDetail.note) {
+                  printerAction.text(`    * ${sellingDetail.note}`);
+                }
+              });
+
+              printerAction.text(dividerLine)
+                .table(['TOTAL ITEM', `${totalQty} Porsi/Item`])
+                .align('center');
+
+              if (printerData.footer) {
+                printerAction.text(printerData.footer);
+              }
             }
-          }
 
-          const printSuccess = await printerAction.cut().print(printerData.device_id || printerData.printerId || 'kasir');
-          if (printSuccess) {
-            anyPrinted = true;
+            const printSuccess = await printerAction.cut().print(printerData.device_id || printerData.printerId || 'kasir');
+            if (printSuccess) {
+              anyPrinted = true;
+            }
           }
         }
-      }
 
         if (anyPrinted && isAutomatic) {
           new FilamentNotification()
@@ -3815,7 +3837,7 @@
       if (html5QrcodeScanner && html5QrcodeScanner.getState() === Html5QrcodeScannerState.SCANNING) {
         html5QrcodeScanner.clear().then(() => {
           console.log('QR Code scanner stopped successfully.');
-        }).catch(err => {});
+        }).catch(err => { });
       }
     };
 
