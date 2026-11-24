@@ -228,6 +228,11 @@ if (-not (Test-Path $releasesDir)) {
 $apkNamed = Join-Path $releasesDir "mataverse-hub-v$newVersionName-code$newVersionCode.apk"
 Copy-Item -Path $apkSource -Destination $apkNamed -Force
 
+$publicDownloads = Join-Path $scriptDir "public\downloads"
+if (Test-Path $publicDownloads) {
+    Copy-Item -Path $apkSource -Destination (Join-Path $publicDownloads "lakasir-bridge.apk") -Force
+}
+
 # 5. Hitung Ukuran & SHA-256
 $apkFileItem = Get-Item $apkSource
 $apkBytes = $apkFileItem.Length
