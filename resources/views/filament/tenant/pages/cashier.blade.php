@@ -808,9 +808,7 @@
                   </button>
 
                   <template x-if="itemHasMissingRequired(item)">
-                    <span class="rounded-full bg-danger-100 px-2 py-0.5 text-[10px] font-bold text-danger-700 dark:bg-danger-900/40 dark:text-danger-400">
-                      {{ __('Wajib Dipilih') }}
-                    </span>
+                    <span class="text-sm font-bold text-danger-600 dark:text-danger-400" title="{{ __('Wajib Dipilih') }}">*</span>
                   </template>
                   <template x-if="!itemHasMissingRequired(item) && item.selected_variations && item.selected_variations.length > 0">
                     <span class="text-[11px] text-gray-500 dark:text-gray-400"
@@ -828,7 +826,7 @@
                         <span class="text-xs font-bold text-gray-800 dark:text-gray-200" x-text="variation.name"></span>
                         <span x-show="variation.is_required"
                           :class="isVariationMissingOnItem(item, variation) ? 'text-danger-600 dark:text-danger-400' : 'text-gray-400'"
-                          class="text-[10px] font-bold">* {{ __('Wajib') }}</span>
+                          class="text-xs font-bold">*</span>
                         <span x-show="!variation.is_required" class="text-[10px] text-gray-400">{{ __('Opsional') }}</span>
                       </div>
 
@@ -2265,16 +2263,22 @@
         let anyPrinted = false;
 
         for (const printerData of printersList) {
-          if (skipKitchenPrint && !printerData.show_price) {
-            continue;
-          }
           const allDetails = (currentSelling && Array.isArray(currentSelling.selling_details)) ? currentSelling.selling_details : [];
           const filteredDetails = printerData.print_all_categories
-            ? allDetails
+            ? allDetails.filter(d => {
+                // Aturan sudah pernah print hanya berlaku di printer dapur (!show_price). Kasir (show_price) selalu ambil semua item.
+                if (!printerData.show_price && (skipKitchenPrint || d.is_kitchen_printed)) {
+                  return false;
+                }
+                return true;
+              })
             : allDetails.filter(d => {
-              const catId = d.product && d.product.category_id ? parseInt(d.product.category_id, 10) : null;
-              return catId !== null && Array.isArray(printerData.category_ids) && printerData.category_ids.includes(catId);
-            });
+                if (!printerData.show_price && (skipKitchenPrint || d.is_kitchen_printed)) {
+                  return false;
+                }
+                const catId = d.product && d.product.category_id ? parseInt(d.product.category_id, 10) : null;
+                return catId !== null && Array.isArray(printerData.category_ids) && printerData.category_ids.includes(catId);
+              });
 
           // Lewati printer ini jika pesanan tidak mengandung menu dari kategori printer tersebut
           if (filteredDetails.length === 0) {

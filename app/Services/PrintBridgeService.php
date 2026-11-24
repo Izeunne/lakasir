@@ -96,10 +96,11 @@ class PrintBridgeService
         $queuedJobs = [];
 
         foreach ($activePrinters as $printer) {
-            if ($skipKitchenPrint && ! $printer->show_price) {
-                continue;
-            }
-            $filteredDetails = $selling->sellingDetails->filter(function ($detail) use ($printer) {
+            $filteredDetails = $selling->sellingDetails->filter(function ($detail) use ($printer, $skipKitchenPrint) {
+                if (! $printer->show_price && ($skipKitchenPrint || $detail->is_kitchen_printed)) {
+                    return false;
+                }
+
                 $categoryId = $detail->product?->category_id;
 
                 return $printer->appliesToCategory($categoryId ? (int) $categoryId : null);
