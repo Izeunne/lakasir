@@ -28,6 +28,16 @@ class LakasirBridgeInterface(
     }
 
     @JavascriptInterface
+    fun isServiceRunning(): Boolean {
+        return BridgeForegroundService.isRunning
+    }
+
+    @JavascriptInterface
+    fun triggerPoll() {
+        BridgeForegroundService.triggerPoll()
+    }
+
+    @JavascriptInterface
     fun isPrinterConfigured(): Boolean {
         val settings = settingsRepository.load()
         return settings.defaultPrinter() != null || settings.isReady()

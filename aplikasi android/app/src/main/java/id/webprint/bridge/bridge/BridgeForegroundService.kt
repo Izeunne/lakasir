@@ -24,6 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -31,6 +32,7 @@ import kotlinx.coroutines.launch
 class BridgeForegroundService : Service() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val processMutex = Mutex()
     private lateinit var settingsRepository: SettingsRepository
     private lateinit var runtimeStateRepository: RuntimeStateRepository
     private lateinit var printJobRepository: PrintJobRepository
@@ -43,6 +45,7 @@ class BridgeForegroundService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
         isRunning = true
         settingsRepository = SettingsRepository(this)
         runtimeStateRepository = RuntimeStateRepository(this)
@@ -55,7 +58,7 @@ class BridgeForegroundService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         isRunning = true
-        startNotificationLoop()
+        // startNotificationLoop() // Fitur notifikasi mobile dinonaktifkan sesuai permintaan pengguna
 
         if (loopJob?.isActive == true) {
             runtimeStateRepository.updateStatus("Polling sudah aktif.")
@@ -73,62 +76,7 @@ class BridgeForegroundService : Service() {
                     continue
                 }
 
-                try {
-                    updateNotification(getString(R.string.notification_polling, settings.baseUrl))
-                    runtimeStateRepository.registerPoll("Memantau antrean: Outlet #${settings.outletId}")
-                    val jobs = printJobRepository.fetchJobs(settings)
-                    if (jobs.isEmpty()) {
-                        delay(settings.pollingSeconds.coerceAtLeast(3L) * 1_000L)
-                        continue
-                    }
-
-                    runtimeStateRepository.appendLog("📥 ${jobs.size} job baru diterima")
-                    for (job in jobs) {
-                        if (!isActive) break
-
-                        val targetDevice = settings.findPrinter(job.targetPrinter)
-                        val printerLabel = if (targetDevice != null) {
-                            "'${targetDevice.name}' (${targetDevice.id})"
-                        } else {
-                            "Default Printer"
-                        }
-                        val targetTag = if (!job.targetPrinter.isNullOrBlank()) " [Target: ${job.targetPrinter}]" else ""
-
-                        updateNotification(getString(R.string.notification_printing, job.id))
-                        runtimeStateRepository.appendLog(
-                            "🖨️ Mencetak job #${job.id}$targetTag -> $printerLabel",
-                        )
-
-                        try {
-                            if (targetDevice != null) {
-                                printer.print(job, targetDevice)
-                            } else {
-                                printer.print(job, settings)
-                            }
-                            printJobRepository.markComplete(settings, job.id)
-                            runtimeStateRepository.registerPrinted("✅ Job #${job.id} sukses dicetak ke $printerLabel")
-                            updateNotification(getString(R.string.notification_success, job.id))
-                        } catch (printException: Exception) {
-                            if (printException is CancellationException) {
-                                throw printException
-                            }
-                            val printError = printException.message ?: printException.javaClass.simpleName
-                            updateNotification(getString(R.string.notification_error, printError))
-                            runtimeStateRepository.registerFailed("❌ Error cetak job #${job.id} ($printerLabel): $printError")
-                            runCatching {
-                                printJobRepository.markFailed(settings, job.id, printError)
-                            }
-                        }
-                    }
-                } catch (exception: Exception) {
-                    if (exception is CancellationException) {
-                        throw exception
-                    }
-                    val message = exception.message ?: exception.javaClass.simpleName
-                    updateNotification(getString(R.string.notification_error, message))
-                    runtimeStateRepository.registerFailed("❌ Error polling: $message")
-                }
-
+                processPendingJobs()
                 delay(settings.pollingSeconds.coerceAtLeast(3L) * 1_000L)
             }
         }
@@ -136,30 +84,82 @@ class BridgeForegroundService : Service() {
         return START_STICKY
     }
 
-    private fun startNotificationLoop() {
-        if (notificationJob?.isActive == true) return
-        notificationJob = serviceScope.launch {
-            while (isActive) {
-                val settings = settingsRepository.load()
-                if (settings.baseUrl.isNotBlank() && settings.token.isNotBlank() && settings.outletId > 0) {
-                    try {
-                        val notifs = notificationClient.fetchNotifications(settings)
-                        for (notif in notifs) {
-                            if (!isActive) break
-                            notificationHelper.showNotification(notif)
-                            runtimeStateRepository.appendLog("🔔 [Notifikasi] ${notif.title}: ${notif.message}")
-                            notificationClient.markRead(settings, notif.id)
-                        }
-                    } catch (e: Exception) {
-                        if (e is CancellationException) throw e
+    private suspend fun processPendingJobs() {
+        if (!processMutex.tryLock()) {
+            return
+        }
+        try {
+            val settings = settingsRepository.load()
+            if (!settings.isReady()) return
+
+            updateNotification(getString(R.string.notification_polling, settings.baseUrl))
+            runtimeStateRepository.registerPoll("Memantau antrean: Outlet #${settings.outletId}")
+            val jobs = printJobRepository.fetchJobs(settings)
+            if (jobs.isEmpty()) {
+                return
+            }
+
+            runtimeStateRepository.appendLog("📥 ${jobs.size} job baru diterima")
+            for (job in jobs) {
+                if (!isRunning || !serviceScope.isActive) break
+
+                val targetDevice = settings.findPrinter(job.targetPrinter)
+                val printerLabel = if (targetDevice != null) {
+                    "'${targetDevice.name}' (${targetDevice.id})"
+                } else {
+                    "Default Printer"
+                }
+                val targetTag = if (!job.targetPrinter.isNullOrBlank()) " [Target: ${job.targetPrinter}]" else ""
+
+                updateNotification(getString(R.string.notification_printing, job.id))
+                runtimeStateRepository.appendLog(
+                    "🖨️ Mencetak job #${job.id}$targetTag -> $printerLabel",
+                )
+
+                try {
+                    if (targetDevice != null) {
+                        printer.print(job, targetDevice)
+                    } else {
+                        printer.print(job, settings)
+                    }
+                    printJobRepository.markComplete(settings, job.id)
+                    runtimeStateRepository.registerPrinted("✅ Job #${job.id} sukses dicetak ke $printerLabel")
+                    updateNotification(getString(R.string.notification_success, job.id))
+                } catch (printException: Exception) {
+                    if (printException is CancellationException) {
+                        throw printException
+                    }
+                    val printError = printException.message ?: printException.javaClass.simpleName
+                    updateNotification(getString(R.string.notification_error, printError))
+                    runtimeStateRepository.registerFailed("❌ Error cetak job #${job.id} ($printerLabel): $printError")
+                    runCatching {
+                        printJobRepository.markFailed(settings, job.id, printError)
                     }
                 }
-                delay((settings.pollingSeconds.coerceAtLeast(3L) + 2L) * 1_000L)
             }
+        } catch (exception: Exception) {
+            if (exception is CancellationException) {
+                throw exception
+            }
+            val message = exception.message ?: exception.javaClass.simpleName
+            updateNotification(getString(R.string.notification_error, message))
+            runtimeStateRepository.registerFailed("❌ Error polling: $message")
+        } finally {
+            processMutex.unlock()
         }
     }
 
+    /**
+     * Fitur notifikasi pesanan di aplikasi mobile telah dinonaktifkan sesuai permintaan pengguna.
+     */
+    private fun startNotificationLoop() {
+        // Dinonaktifkan: Tidak melakukan polling ke /api/pos-notifications maupun memunculkan notifikasi suara/getar
+    }
+
     override fun onDestroy() {
+        if (instance == this) {
+            instance = null
+        }
         isRunning = false
         loopJob?.cancel()
         notificationJob?.cancel()
@@ -222,6 +222,17 @@ class BridgeForegroundService : Service() {
         @Volatile
         var isRunning = false
             private set
+
+        @Volatile
+        private var instance: BridgeForegroundService? = null
+
+        fun triggerPoll() {
+            instance?.let { service ->
+                service.serviceScope.launch {
+                    service.processPendingJobs()
+                }
+            }
+        }
     }
 
     private fun resolvePayloadSource(job: id.webprint.bridge.data.PrintJob): String {
