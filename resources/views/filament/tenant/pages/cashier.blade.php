@@ -1272,24 +1272,32 @@
     </form>
   </x-filament::modal>
   <x-filament::modal id="success-modal" width="xl" :close-by-clicking-away="false" :close-by-escaping="false">
-    <div class="flex flex-col items-center justify-center">
-      <x-heroicon-o-check-circle style="color: rgb(34 197 94); width: 200px" />
-      <p class="">@lang('Success')</p>
-      <p class="text-3xl font-bold">
+    <div class="flex flex-col items-center justify-center py-2 text-center">
+      <x-heroicon-o-check-circle class="h-28 w-28 text-emerald-500 mb-2" />
+      <p class="text-sm font-semibold text-gray-500 dark:text-gray-400">@lang('Success')</p>
+      <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">
         @lang('Change'):
-        <span id="changes"></span>
+        <span id="changes" class="text-lakasir-primary"></span>
       </p>
+      <div id="printStatusSuccess" class="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+        <x-heroicon-s-check-circle class="h-4 w-4" />
+        <span>{{ __('Struk sudah otomatis dicetak ke printer') }}</span>
+      </div>
+      <div id="printStatusWarning" class="mt-3 hidden inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+        <x-heroicon-s-exclamation-triangle class="h-4 w-4" />
+        <span>{{ __('Printer belum disetting di menu Pengaturan Printer') }}</span>
+      </div>
     </div>
     <x-slot name="footer">
       <div class="grid grid-cols-3 gap-x-2">
-        <x-filament::button icon="heroicon-m-printer" id="printReceiptButton">
-          {{ __('Print') }}
+        <x-filament::button color="gray" outlined icon="heroicon-m-printer" id="printReceiptButton" title="{{ __('Cetak ulang struk jika dibutuhkan lembar ekstra') }}">
+          {{ __('Cetak Ulang') }}
         </x-filament::button>
-        <x-filament::button icon="heroicon-m-document-arrow-down" color="info" id="pdfReceiptButton">
+        <x-filament::button icon="heroicon-m-document-arrow-down" color="info" outlined id="pdfReceiptButton">
           {{ __('Struk (PDF)') }}
         </x-filament::button>
-        <x-filament::button color="gray" x-on:click="$dispatch('close-modal', {id: 'success-modal'})">
-          {{ __('Close') }}
+        <x-filament::button color="primary" x-on:click="$dispatch('close-modal', {id: 'success-modal'})">
+          {{ __('Selesai') }}
         </x-filament::button>
       </div>
     </x-slot>
@@ -2243,9 +2251,10 @@
       ])->values());
 
       const legacyPrinter = getPrinter();
+      const hasBridgePrinter = Boolean(window.LakasirBridge && (typeof window.LakasirBridge.isPrinterConfigured !== 'function' || window.LakasirBridge.isPrinterConfigured()));
       const printersList = (Array.isArray(dbPrinters) && dbPrinters.length > 0)
         ? dbPrinters
-        : ((legacyPrinter && !(legacyPrinter instanceof Error) && (legacyPrinter.printerId || window.LakasirBridge)) ? [{
+        : ((legacyPrinter && !(legacyPrinter instanceof Error) && (legacyPrinter.printerId || hasBridgePrinter)) ? [{
           name: legacyPrinter.name || 'Printer Kasir',
           printerId: legacyPrinter.printerId || 'kasir',
           device_id: legacyPrinter.printerId || 'kasir',
@@ -2261,19 +2270,37 @@
 
       const defaultPaperWidth = (printersList[0] && printersList[0].paper_width) ? printersList[0].paper_width : '58mm';
 
+      const successBadge = document.getElementById('printStatusSuccess');
+      const warningBadge = document.getElementById('printStatusWarning');
+
       try {
         if (printersList.length === 0) {
-          if (!isAutomatic) {
-            new FilamentNotification()
-              .title('@lang('Printer belum diatur atau tidak aktif')')
-              .body('@lang('Struk otomatis disimpan dalam format PDF dan dibuka untuk dicetak.')')
-              .warning()
-              .send();
+          if (successBadge) successBadge.classList.add('hidden');
+          if (warningBadge) warningBadge.classList.remove('hidden');
 
+          if (typeof FilamentNotification !== 'undefined') {
+            const notif = new FilamentNotification()
+              .title('You should choose the printer first in printer setting')
+              .danger();
+            if (typeof FilamentNotificationAction !== 'undefined') {
+              notif.actions([
+                new FilamentNotificationAction('Setting')
+                  .icon('heroicon-o-cog-6-tooth')
+                  .button()
+                  .url('/member/printer'),
+              ]);
+            }
+            notif.send();
+          }
+
+          if (!isAutomatic) {
             window.open('/member/sellings/' + currentSelling.id + '/receipt-pdf?width=' + defaultPaperWidth, '_blank');
           }
           return;
         }
+
+        if (successBadge) successBadge.classList.remove('hidden');
+        if (warningBadge) warningBadge.classList.add('hidden');
 
         // Jika pencetakan otomatis dan background print bridge sedang aktif:
         // Picu polling instan agar background service mencetak ke printer yang sesuai tanpa double-print.
@@ -2525,9 +2552,10 @@
       ])->values());
 
       const legacyPrinter = getPrinter();
+      const hasBridgePrinter = Boolean(window.LakasirBridge && (typeof window.LakasirBridge.isPrinterConfigured !== 'function' || window.LakasirBridge.isPrinterConfigured()));
       const printersList = (Array.isArray(dbPrinters) && dbPrinters.length > 0)
         ? dbPrinters
-        : ((legacyPrinter && !(legacyPrinter instanceof Error) && (legacyPrinter.printerId || window.LakasirBridge)) ? [{
+        : ((legacyPrinter && !(legacyPrinter instanceof Error) && (legacyPrinter.printerId || hasBridgePrinter)) ? [{
           name: legacyPrinter.name || 'Printer Kasir',
           printerId: legacyPrinter.printerId || 'kasir',
           device_id: legacyPrinter.printerId || 'kasir',
@@ -2543,6 +2571,20 @@
         }] : []);
 
       if (printersList.length === 0) {
+        if (typeof FilamentNotification !== 'undefined') {
+          const notif = new FilamentNotification()
+            .title('You should choose the printer first in printer setting')
+            .danger();
+          if (typeof FilamentNotificationAction !== 'undefined') {
+            notif.actions([
+              new FilamentNotificationAction('Setting')
+                .icon('heroicon-o-cog-6-tooth')
+                .button()
+                .url('/member/printer'),
+            ]);
+          }
+          notif.send();
+        }
         return;
       }
 

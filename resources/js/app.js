@@ -7,6 +7,9 @@ let selectedDevice = null;
  */
 function getPrinter() {
   if (window.LakasirBridge && typeof window.LakasirBridge.isBridgeAvailable === 'function') {
+    if (typeof window.LakasirBridge.isPrinterConfigured === 'function' && !window.LakasirBridge.isPrinterConfigured()) {
+      return Error('printer didn\'t set');
+    }
     return {
       driver: 'android_bridge',
       name: 'Android Print Bridge (Dual-Mode)',
