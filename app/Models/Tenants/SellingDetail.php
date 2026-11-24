@@ -17,6 +17,8 @@ class SellingDetail extends Model
 
     protected $casts = [
         'selected_variations' => 'array',
+        'is_kitchen_printed' => 'boolean',
+        'kitchen_printed_at' => 'datetime',
     ];
 
     public function selling()

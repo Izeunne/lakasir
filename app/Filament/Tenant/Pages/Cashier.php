@@ -613,7 +613,33 @@ class Cashier extends Page implements HasForms, HasTable
             ]);
         }
 
-        $mappedProducts = collect($items)->map(function ($item) {
+        $draftItemStatusMap = [];
+        if ($activeDraft) {
+            $buildSig = function (array $item): string {
+                $vars = $item['selected_variations'] ?? [];
+                if (is_array($vars)) {
+                    usort($vars, fn ($a, $b) => ($a['option_id'] ?? 0) <=> ($b['option_id'] ?? 0));
+                }
+
+                return ($item['product_id'] ?? '') . '|' . ($item['price_unit_id'] ?? '') . '|' . md5(json_encode($vars)) . '|' . trim((string) ($item['note'] ?? ''));
+            };
+            foreach ($activeDraft->items ?? [] as $dItem) {
+                $draftItemStatusMap[$buildSig($dItem)] = [
+                    'is_kitchen_printed' => (bool) ($dItem['is_kitchen_printed'] ?? $activeDraft->is_kitchen_printed),
+                    'kitchen_printed_at' => $dItem['kitchen_printed_at'] ?? $activeDraft->kitchen_printed_at,
+                ];
+            }
+        }
+
+        $mappedProducts = collect($items)->map(function ($item) use ($draftItemStatusMap) {
+            $vars = $item['selected_variations'] ?? [];
+            if (is_array($vars)) {
+                usort($vars, fn ($a, $b) => ($a['option_id'] ?? 0) <=> ($b['option_id'] ?? 0));
+            }
+            $sig = ($item['product_id'] ?? '') . '|' . ($item['price_unit_id'] ?? '') . '|' . md5(json_encode($vars)) . '|' . trim((string) ($item['note'] ?? ''));
+            $status = $draftItemStatusMap[$sig] ?? null;
+            $kitchenPrintedAt = $status['kitchen_printed_at'] ?? null;
+
             return [
                 'product_id' => $item['product_id'],
                 'qty' => (float) ($item['qty'] ?? 1),
@@ -622,6 +648,8 @@ class Cashier extends Page implements HasForms, HasTable
                 'price_unit_id' => $item['price_unit_id'] ?? null,
                 'selected_variations' => $item['selected_variations'] ?? [],
                 'note' => $item['note'] ?? null,
+                'is_kitchen_printed' => (bool) ($status['is_kitchen_printed'] ?? false),
+                'kitchen_printed_at' => $kitchenPrintedAt ? \Illuminate\Support\Carbon::parse($kitchenPrintedAt) : null,
             ];
         })->values()->all();
 

@@ -1064,22 +1064,39 @@ trait CartInteraction
         };
 
         $existingPrintedQtyMap = [];
-        if ($alreadyKitchenPrinted) {
-            foreach ($existingItems as $exItem) {
-                $sig = $buildSignature($exItem);
-                $qty = floatval($exItem['printed_qty'] ?? $exItem['qty'] ?? 0);
-                $existingPrintedQtyMap[$sig] = ($existingPrintedQtyMap[$sig] ?? 0) + $qty;
+        $existingPrintedMetaMap = [];
+        foreach ($existingItems as $exItem) {
+            $sig = $buildSignature($exItem);
+            $exPrintedQty = floatval($exItem['printed_qty'] ?? ($alreadyKitchenPrinted ? ($exItem['qty'] ?? 0) : 0));
+            $existingPrintedQtyMap[$sig] = ($existingPrintedQtyMap[$sig] ?? 0) + $exPrintedQty;
+            if (! empty($exItem['is_kitchen_printed'])) {
+                $existingPrintedMetaMap[$sig] = $exItem['kitchen_printed_at'] ?? null;
             }
         }
+
+        $hasAnyConfiguredPrinter = \App\Models\Tenants\Printer::active()->exists();
+        $draftPrinters = \App\Models\Tenants\Printer::active()
+            ->get()
+            ->filter(fn ($p) => (bool) ($p->print_on_draft ?? ! $p->show_price));
 
         $itemsPayload = [];
         $itemsToPrint = [];
 
         foreach ($items as $item) {
             $sig = $buildSignature($item);
-            $alreadyPrinted = $alreadyKitchenPrinted ? ($existingPrintedQtyMap[$sig] ?? 0) : 0;
+            $product = $products->get($item['product_id']);
+            $categoryId = $product?->category_id ? (int) $product->category_id : null;
+            $matchesKitchenPrinter = ! $hasAnyConfiguredPrinter
+                ? true
+                : $draftPrinters->contains(fn ($p) => $p->appliesToCategory($categoryId));
+
+            $alreadyPrinted = $existingPrintedQtyMap[$sig] ?? 0;
             $currentQty = floatval($item['qty'] ?? 1);
-            $unprintedQty = max(0, $currentQty - $alreadyPrinted);
+            $unprintedQty = $matchesKitchenPrinter ? max(0, $currentQty - $alreadyPrinted) : 0;
+            $itemIsKitchenPrinted = $matchesKitchenPrinter && ($currentQty > 0);
+            $itemKitchenPrintedAt = $unprintedQty > 0
+                ? now()->toIso8601String()
+                : ($existingPrintedMetaMap[$sig] ?? ($itemIsKitchenPrinted ? now()->toIso8601String() : null));
 
             $itemsPayload[] = [
                 'product_id' => $item['product_id'],
@@ -1089,11 +1106,12 @@ trait CartInteraction
                 'price_unit_id' => $item['price_unit_id'] ?? null,
                 'selected_variations' => $item['selected_variations'] ?? [],
                 'note' => $item['note'] ?? null,
-                'printed_qty' => $currentQty,
+                'printed_qty' => $matchesKitchenPrinter ? $currentQty : 0,
+                'is_kitchen_printed' => $itemIsKitchenPrinted,
+                'kitchen_printed_at' => $itemKitchenPrintedAt,
             ];
 
             if ($unprintedQty > 0) {
-                $product = $products->get($item['product_id']);
                 $itemsToPrint[] = [
                     'product_id' => $item['product_id'],
                     'product' => [
