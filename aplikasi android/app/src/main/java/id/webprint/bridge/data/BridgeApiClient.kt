@@ -101,10 +101,16 @@ class BridgeApiClient {
     }
 
     private fun buildPollUrl(settings: BridgeSettings): String {
-        val queueType = QueueType.fromValue(settings.queueType).value
+        val queueType = if (settings.queueType == QueueType.CASHIER.value && settings.stationId.isBlank()) {
+            "all"
+        } else {
+            QueueType.fromValue(settings.queueType).value
+        }
         val httpUrl = "${settings.baseUrl}/api/print-queue/$queueType"
             .toHttpUrlOrNull()
             ?: error("Base URL tidak valid")
+
+        val activePrinters = settings.printers.ifEmpty { listOfNotNull(settings.legacyAsPrinterDevice()) }
 
         return httpUrl.newBuilder()
             .addQueryParameter("token", settings.token)
@@ -115,6 +121,23 @@ class BridgeApiClient {
                 }
                 if (settings.deviceId.isNotBlank()) {
                     addQueryParameter("device_id", settings.deviceId)
+                }
+                if (activePrinters.isNotEmpty()) {
+                    val connectedArray = JSONArray()
+                    for (printer in activePrinters) {
+                        val obj = JSONObject()
+                        obj.put("device_id", printer.id)
+                        obj.put("device_name", printer.name)
+                        obj.put("connection_type", if (printer.mode == PrinterMode.TCP.value) "lan" else "bluetooth")
+                        obj.put(
+                            "address",
+                            if (printer.mode == PrinterMode.BLUETOOTH.value) printer.bluetoothMacAddress else "${printer.host}:${printer.port}",
+                        )
+                        obj.put("paper_width", printer.paperWidthPreset)
+                        obj.put("is_connected", true)
+                        connectedArray.put(obj)
+                    }
+                    addQueryParameter("connected_printers", connectedArray.toString())
                 }
             }
             .build()

@@ -132,7 +132,7 @@
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
             Print
           </button>
-          <a href="/tenant/sellings/{{ $selling->id }}"
+          <a href="/member/sellings/{{ $selling->id }}"
              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition shadow-sm">
             ← Kembali
           </a>
@@ -200,8 +200,8 @@
             <div>
               <div class="font-bold text-gray-950 text-[10.5px]">{{ $detail->product->name }}</div>
               <div class="flex justify-between text-[9.5px] text-gray-600">
-                <span>{{ number_format($detail->qty, 0) }} x {{ number_format($detail->price, 0, ',', '.') }}</span>
-                <span class="font-bold text-gray-950">{{ number_format($detail->total_price ?? ($detail->qty * $detail->price), 0, ',', '.') }}</span>
+                <span>{{ number_format($detail->qty, 0) }} x {{ number_format($detail->price / max(1, (float) $detail->qty), 0, ',', '.') }}</span>
+                <span class="font-bold text-gray-950">{{ number_format($detail->total_price ?? $detail->price, 0, ',', '.') }}</span>
               </div>
               @if(!empty($detail->note))
                 <div class="text-[8.5px] text-gray-500 italic pl-1.5">↳ {{ $detail->note }}</div>

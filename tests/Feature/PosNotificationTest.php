@@ -3,8 +3,11 @@
 use App\Models\Tenants\PosNotification;
 use App\Services\PosNotificationService;
 use Illuminate\Support\Facades\Artisan;
+use Tests\RefreshDatabaseWithTenant;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\postJson;
+
+uses(RefreshDatabaseWithTenant::class);
 
 test('can dispatch notification using PosNotificationService', function () {
     $notif = PosNotificationService::send('Test Title', 'Test Message', [

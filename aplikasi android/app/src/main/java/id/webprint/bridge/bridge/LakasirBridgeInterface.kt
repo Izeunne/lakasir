@@ -86,8 +86,9 @@ class LakasirBridgeInterface(
         json.put("bridge_version", "1.1.0")
         json.put("outlet_id", settings.outletId)
 
+        val activePrinters = settings.printers.ifEmpty { listOfNotNull(settings.legacyAsPrinterDevice()) }
         val printersArray = JSONArray()
-        for (printer in settings.printers) {
+        for (printer in activePrinters) {
             val pObj = JSONObject()
             pObj.put("id", printer.id)
             pObj.put("name", printer.name)
@@ -102,8 +103,9 @@ class LakasirBridgeInterface(
     @JavascriptInterface
     fun getConnectedPrinters(): String {
         val settings = settingsRepository.load()
+        val activePrinters = settings.printers.ifEmpty { listOfNotNull(settings.legacyAsPrinterDevice()) }
         val printersArray = JSONArray()
-        for (printer in settings.printers) {
+        for (printer in activePrinters) {
             val pObj = JSONObject()
             pObj.put("device_id", printer.id)
             pObj.put("device_name", printer.name)
