@@ -888,21 +888,32 @@
             </div>
           </template>
           <template x-if="features.voucher">
-            <div class="flex items-center justify-between py-0.5">
+            <div class="flex items-start justify-between gap-2 py-0.5">
               <div>
                 <p class="text-gray-600 dark:text-gray-300 font-medium">{{ __('Voucher') }}</p>
                 <div class="flex flex-wrap gap-1.5 mt-1.5" x-show="!voucherCode && eligibleVouchers.length > 0">
                   <template x-for="v in eligibleVouchers" :key="v.id">
                     <button type="button" @click="assignVoucher(v.code)"
                       class="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-gray-100 px-2 py-1 text-[11px] font-semibold text-gray-700 hover:bg-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                      <x-heroicon-s-ticket class="h-3.5 w-3.5" />
+                      <x-heroicon-s-ticket class="h-3.5 w-3.5 text-lakasir-primary" />
                       <span x-text="v.code"></span>
+                      <span class="rounded bg-lakasir-primary/15 px-1 py-0.2 text-[10px] font-bold text-lakasir-primary"
+                        x-text="voucherBadgeLabel(v)"></span>
                     </button>
                   </template>
                 </div>
               </div>
-              <div class="flex items-center gap-x-2 font-bold text-gray-800 dark:text-gray-100">
-                <span x-text="voucherCode || '-'"></span>
+              <div class="flex items-center gap-x-2 font-bold text-gray-800 dark:text-gray-100 text-right">
+                <template x-if="voucherCode">
+                  <div class="flex flex-col items-end">
+                    <span x-text="voucherCode + (activeVoucher ? ' (' + voucherBadgeLabel(activeVoucher) + ')' : '')"></span>
+                    <span class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400"
+                      x-text="'-' + formatMoney(voucherDiscount)"></span>
+                  </div>
+                </template>
+                <template x-if="!voucherCode">
+                  <span>-</span>
+                </template>
                 <button type="button" x-show="voucherCode" @click="removeVoucher()"
                   class="p-1 bg-red-100 hover:bg-red-200 text-red-600 rounded-md flex items-center transition">
                   <x-heroicon-o-x-mark class="h-3.5 w-3.5 text-red-600" />
@@ -935,7 +946,14 @@
               <p class="font-bold text-lakasir-primary" x-text="tax + '%'"></p>
             </div>
           </template>
-          <template x-if="features.discount">
+          <template x-if="voucherCode && voucherDiscount > 0">
+            <div class="flex items-center justify-between py-0.5">
+              <p class="text-gray-600 dark:text-gray-300 font-medium"
+                x-text="'{{ __('Voucher') }} (' + voucherCode + (activeVoucher ? ' • ' + voucherBadgeLabel(activeVoucher) : '') + ')'"></p>
+              <p class="font-bold text-emerald-600 dark:text-emerald-400" x-text="'-' + formatMoney(voucherDiscount)"></p>
+            </div>
+          </template>
+          <template x-if="features.discount || totalDiscount > 0">
             <div class="flex items-center justify-between py-0.5">
               <p class="text-gray-600 dark:text-gray-300 font-medium">{{ __('Discount price') }}</p>
               <p class="font-bold text-lakasir-primary" x-text="'(' + formatMoney(totalDiscount) + ')'"></p>
@@ -1128,7 +1146,14 @@
                   <p class="font-bold text-lakasir-primary" x-text="tax + '%'"></p>
                 </div>
               </template>
-              <template x-if="features.discount">
+              <template x-if="voucherCode && voucherDiscount > 0">
+                <div class="flex items-center justify-between py-0.5">
+                  <p class="text-gray-600 dark:text-gray-300 font-medium"
+                    x-text="'{{ __('Voucher') }} (' + voucherCode + (activeVoucher ? ' • ' + voucherBadgeLabel(activeVoucher) : '') + ')'"></p>
+                  <p class="font-bold text-emerald-600 dark:text-emerald-400" x-text="'-' + formatMoney(voucherDiscount)"></p>
+                </div>
+              </template>
+              <template x-if="features.discount || totalDiscount > 0">
                 <div class="flex items-center justify-between py-0.5">
                   <p class="text-gray-600 dark:text-gray-300 font-medium">{{ __('Discount price') }}</p>
                   <p class="font-bold text-lakasir-primary" x-text="'(' + formatMoney(totalDiscount) + ')'"></p>
@@ -2909,6 +2934,16 @@
 
       get eligibleVouchers() {
         return this.vouchers.filter((v) => v.minimal_buying <= this.subTotal);
+      },
+
+      get activeVoucher() {
+        if (!this.voucherCode) return null;
+        return this.vouchers.find((v) => v.code === this.voucherCode) || null;
+      },
+
+      voucherBadgeLabel(v) {
+        if (!v) return '';
+        return v.type === 'percentage' ? `${v.nominal}%` : this.formatMoney(v.nominal);
       },
 
       get totalCartQty() {
