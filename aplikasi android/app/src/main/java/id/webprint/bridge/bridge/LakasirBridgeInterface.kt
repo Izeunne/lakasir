@@ -7,7 +7,9 @@ import android.util.Base64
 import android.webkit.JavascriptInterface
 import android.widget.Toast
 import id.webprint.bridge.data.PrinterDevice
+import id.webprint.bridge.data.PrinterMode
 import id.webprint.bridge.data.SettingsRepository
+import id.webprint.bridge.printer.BluetoothPrinterRepository
 import id.webprint.bridge.printer.EscPosPrinter
 import org.json.JSONArray
 import org.json.JSONObject
@@ -16,6 +18,7 @@ class LakasirBridgeInterface(
     private val context: Context,
     private val escPosPrinter: EscPosPrinter,
     private val settingsRepository: SettingsRepository,
+    private val bluetoothPrinterRepository: BluetoothPrinterRepository? = null,
     private val onOpenSettingsRequested: (() -> Unit)? = null,
     private val onReloadRequested: (() -> Unit)? = null,
 ) {
@@ -113,16 +116,39 @@ class LakasirBridgeInterface(
     @JavascriptInterface
     fun getConnectedPrinters(): String {
         val settings = settingsRepository.load()
-        val activePrinters = settings.printers.ifEmpty { listOfNotNull(settings.legacyAsPrinterDevice()) }
+        val activePrinters = settings.printers.ifEmpty { listOfNotNull(settings.legacyAsPrinterDevice()) }.toMutableList()
+
+        // Auto-detect paired/bonded Bluetooth devices on Android
+        try {
+            val bonded = bluetoothPrinterRepository?.getBondedPrinters() ?: emptyList()
+            for (b in bonded) {
+                if (b.address.isNotBlank() && activePrinters.none { it.bluetoothMacAddress.equals(b.address, ignoreCase = true) }) {
+                    activePrinters.add(
+                        PrinterDevice(
+                            id = "bt_${b.address.replace(":", "").lowercase()}",
+                            name = b.name.ifBlank { "Printer Bluetooth" },
+                            mode = PrinterMode.BLUETOOTH.value,
+                            bluetoothMacAddress = b.address,
+                            bluetoothPrinterName = b.name,
+                            paperWidthPreset = settings.paperWidthPreset,
+                            isDefault = activePrinters.isEmpty(),
+                        )
+                    )
+                }
+            }
+        } catch (_: Exception) {
+            // Ignore permission/adapter errors
+        }
+
         val printersArray = JSONArray()
         for (printer in activePrinters) {
             val pObj = JSONObject()
             pObj.put("device_id", printer.id)
             pObj.put("device_name", printer.name)
-            pObj.put("connection_type", printer.mode)
+            pObj.put("connection_type", if (printer.mode == PrinterMode.TCP.value) "lan" else "bluetooth")
             pObj.put(
                 "address",
-                if (printer.mode == "bluetooth") printer.bluetoothMacAddress else "${printer.host}:${printer.port}",
+                if (printer.mode == PrinterMode.BLUETOOTH.value) printer.bluetoothMacAddress else "${printer.host}:${printer.port}",
             )
             pObj.put("paper_width", printer.paperWidthPreset)
             pObj.put("is_connected", true)

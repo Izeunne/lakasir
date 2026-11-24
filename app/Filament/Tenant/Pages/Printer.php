@@ -70,8 +70,8 @@ class Printer extends Page implements HasActions, HasForms, HasTable
                 ->label(__('Sinkron Mobile'))
                 ->icon('heroicon-o-arrow-path')
                 ->color('gray')
-                ->action(fn () => $this->refreshMobilePrinters())
-                ->extraAttributes(['onclick' => 'syncMobileBridgePrinters()']),
+                ->extraAttributes(['onclick' => 'syncMobileBridgePrinters(); return false;'])
+                ->action(fn () => $this->refreshMobilePrinters()),
 
             Action::make('setup_bridge')
                 ->label(__('Setup Mobile Bridge'))

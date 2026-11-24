@@ -35,7 +35,7 @@
 
       <div class="flex items-center gap-2 shrink-0">
         <x-filament::button
-          wire:click="refreshMobilePrinters"
+          type="button"
           color="gray"
           size="sm"
           icon="heroicon-o-arrow-path"
@@ -121,25 +121,43 @@
     }
   });
 
-  // Fungsi sinkronisasi langsung jika dibuka di dalam WebView Android LakasirBridge
+  // Fungsi sinkronisasi langsung jika dibuka di dalam WebView Android LakasirBridge / MataverseBridge
   window.syncMobileBridgePrinters = function () {
-    if (window.LakasirBridge && typeof window.LakasirBridge.getConnectedPrinters === 'function') {
+    const bridge = window.MataverseBridge || window.LakasirBridge;
+    if (bridge && typeof bridge.getConnectedPrinters === 'function') {
       try {
-        const raw = window.LakasirBridge.getConnectedPrinters();
+        const raw = bridge.getConnectedPrinters();
+        const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          $wire.syncFromMobileBridge(parsed, 'Mataverse Android WebView');
+          return;
+        }
+      } catch (e) {
+        console.warn('Gagal membaca getConnectedPrinters dari Bridge:', e);
+      }
+    }
+    // Jika dibuka di browser biasa atau bridge belum mengembalikan printer, panggil refresh dari database
+    $wire.refreshMobilePrinters();
+  };
+
+  // Jalankan auto-detect saat halaman dibuka di Android WebView
+  function runAutoDetectPrinters() {
+    const bridge = window.MataverseBridge || window.LakasirBridge;
+    if (bridge && typeof bridge.getConnectedPrinters === 'function') {
+      try {
+        const raw = bridge.getConnectedPrinters();
         const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
         if (Array.isArray(parsed) && parsed.length > 0) {
           $wire.syncFromMobileBridge(parsed, 'Mataverse Android WebView');
         }
       } catch (e) {
-        console.warn('Gagal membaca getConnectedPrinters dari LakasirBridge:', e);
+        console.warn('Auto-detect error:', e);
       }
     }
-  };
-
-  // Jalankan auto-detect saat halaman dibuka di Android WebView
-  if (window.LakasirBridge) {
-    window.syncMobileBridgePrinters();
   }
+
+  runAutoDetectPrinters();
+  setTimeout(runAutoDetectPrinters, 600);
 
   // Handler Test Cetak per Station (mendukung Virtual Simulator & Direct Bridge)
   $wire.on('trigger-station-test-print', async (eventData) => {

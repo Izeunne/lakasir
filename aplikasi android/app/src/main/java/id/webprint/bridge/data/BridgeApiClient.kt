@@ -1,5 +1,6 @@
 package id.webprint.bridge.data
 
+import id.webprint.bridge.printer.BluetoothPrinterRepository
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -68,6 +69,67 @@ class BridgeApiClient {
                 .put("status", "failed")
                 .put("reason", reason.take(500)),
         )
+    }
+
+    fun syncPrinters(settings: BridgeSettings): Boolean {
+        if (settings.baseUrl.isBlank() || settings.token.isBlank()) return false
+        val cleanBase = settings.baseUrl.trim().trimEnd('/')
+        val url = "$cleanBase/api/print-queue/printers/sync"
+            .toHttpUrlOrNull()
+            ?.newBuilder()
+            ?.addQueryParameter("token", settings.token)
+            ?.build()
+            ?.toString() ?: return false
+
+        val activePrinters = settings.printers.ifEmpty { listOfNotNull(settings.legacyAsPrinterDevice()) }.toMutableList()
+        try {
+            val bonded = BluetoothPrinterRepository().getBondedPrinters()
+            for (b in bonded) {
+                if (b.address.isNotBlank() && activePrinters.none { it.bluetoothMacAddress.equals(b.address, ignoreCase = true) }) {
+                    activePrinters.add(
+                        PrinterDevice(
+                            id = "bt_${b.address.replace(":", "").lowercase()}",
+                            name = b.name.ifBlank { "Printer Bluetooth" },
+                            mode = PrinterMode.BLUETOOTH.value,
+                            bluetoothMacAddress = b.address,
+                            bluetoothPrinterName = b.name,
+                            paperWidthPreset = settings.paperWidthPreset,
+                        )
+                    )
+                }
+            }
+        } catch (_: Exception) {}
+
+        val bodyJson = JSONObject()
+        bodyJson.put("outlet_id", settings.outletId)
+        bodyJson.put("device_model", "Mataverse Android App")
+        val arr = JSONArray()
+        for (p in activePrinters) {
+            val o = JSONObject()
+            o.put("device_id", p.id)
+            o.put("device_name", p.name)
+            o.put("connection_type", if (p.mode == PrinterMode.TCP.value) "lan" else "bluetooth")
+            o.put("address", if (p.mode == PrinterMode.BLUETOOTH.value) p.bluetoothMacAddress else "${p.host}:${p.port}")
+            o.put("paper_width", p.paperWidthPreset)
+            o.put("is_connected", true)
+            arr.put(o)
+        }
+        bodyJson.put("printers", arr)
+
+        return try {
+            val request = Request.Builder()
+                .url(url)
+                .header("Accept", "application/json")
+                .header("Content-Type", JSON_MEDIA_TYPE)
+                .post(bodyJson.toString().toRequestBody(JSON_MEDIA))
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                response.isSuccessful
+            }
+        } catch (_: Exception) {
+            false
+        }
     }
 
     private fun sendQueueStatus(

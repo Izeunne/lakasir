@@ -35,6 +35,7 @@ import com.google.android.material.textfield.TextInputEditText
 import id.webprint.bridge.bridge.LakasirBridgeInterface
 import id.webprint.bridge.bridge.ServiceController
 import id.webprint.bridge.data.BluetoothTransportMode
+import id.webprint.bridge.data.BridgeApiClient
 import id.webprint.bridge.data.BridgeSettings
 import id.webprint.bridge.data.PaperWidthPreset
 import id.webprint.bridge.data.PrinterDevice
@@ -66,6 +67,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var escPosPrinter: EscPosPrinter
     private lateinit var lakasirBridgeInterface: LakasirBridgeInterface
     private val queueDiagnostics = QueueDiagnostics()
+    private val bridgeApiClient = BridgeApiClient()
     private val currentPrinters = mutableListOf<PrinterDevice>()
     private val uiScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var refreshTick = 0
@@ -229,6 +231,7 @@ class MainActivity : AppCompatActivity() {
             context = this,
             escPosPrinter = escPosPrinter,
             settingsRepository = settingsRepository,
+            bluetoothPrinterRepository = bluetoothPrinterRepository,
             onOpenSettingsRequested = {
                 binding.mainTabLayout.getTabAt(2)?.select()
             },
@@ -237,6 +240,7 @@ class MainActivity : AppCompatActivity() {
             },
         )
         binding.posWebView.addJavascriptInterface(lakasirBridgeInterface, "LakasirBridge")
+        binding.posWebView.addJavascriptInterface(lakasirBridgeInterface, "MataverseBridge")
 
         binding.posWebView.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
@@ -434,6 +438,7 @@ class MainActivity : AppCompatActivity() {
         binding.saveButton.setOnClickListener {
             val updated = collectSettingsFromForm() ?: return@setOnClickListener
             settingsRepository.save(updated)
+            syncPrintersToServerAsync()
             applyScreenAwake(updated.keepScreenOn)
             if (updated.backgroundServerEnabled && !isServiceActive()) {
                 serviceController.start()
@@ -1139,10 +1144,23 @@ class MainActivity : AppCompatActivity() {
             }
     }
 
+    private fun syncPrintersToServerAsync() {
+        val settings = settingsRepository.load()
+        if (settings.baseUrl.isBlank() || settings.token.isBlank()) return
+        uiScope.launch(Dispatchers.IO) {
+            try {
+                bridgeApiClient.syncPrinters(settings)
+            } catch (e: Exception) {
+                android.util.Log.w("MainActivity", "Sync printers to server failed: ${e.message}")
+            }
+        }
+    }
+
     private fun savePrintersToRepository() {
         val current = settingsRepository.load()
         val updated = current.copy(printers = currentPrinters)
         settingsRepository.save(updated)
+        syncPrintersToServerAsync()
     }
 
     private fun confirmDeletePrinterDevice(device: PrinterDevice) {
