@@ -21,7 +21,12 @@
           id: 'modal-selected-table'
         })">
       <p class="text-gray-600 dark:text-gray-300 font-medium">{{ __('Table') }}</p>
-      <div class="font-bold text-gray-800 dark:text-gray-100">{!! $cartDetail['table_id'] ?? '-' !!}</div>
+      @php
+        $selectedTableNumber = isset($cartDetail['table_id']) && isset($tableOption)
+          ? ($tableOption->firstWhere('id', $cartDetail['table_id'])?->number ?? $cartDetail['table_id'])
+          : null;
+      @endphp
+      <div class="font-bold text-gray-800 dark:text-gray-100">{{ $selectedTableNumber ?: '-' }}</div>
     </div>
   @endif
   @feature(Voucher::class)

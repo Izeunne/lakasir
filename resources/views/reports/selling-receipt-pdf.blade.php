@@ -161,8 +161,8 @@
     ]);
 
     $webParts = array_filter([
-        !empty($about?->website) ? $about->website : null,
-        !empty($about?->email) ? $about->email : null,
+        !empty($about?->website) ? 'Web: ' . $about->website : null,
+        !empty($about?->email) ? 'Email: ' . $about->email : null,
     ]);
   @endphp
 

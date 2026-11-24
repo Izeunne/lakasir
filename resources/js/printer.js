@@ -1,9 +1,10 @@
 class Printer {
-  constructor(printerId, paperWidth = '58mm') {
+  constructor(printerId, paperWidth = '58mm', driver = null) {
     this.commands = '';
     this.paperWidth = paperWidth;
     this.lineWidth = paperWidth === '80mm' ? 48 : 32;
     this.printerId = printerId;
+    this.driver = driver;
   }
 
   async print(targetPrinter = 'kasir') {
@@ -62,7 +63,16 @@ class Printer {
       }
     }
 
-    // 2. FALLBACK: WebUSB jika dibuka di Chrome Desktop/Laptop
+    // 2. BRIDGE QUEUE (Bluetooth / LAN / Mobile saat diakses di browser biasa):
+    const isBridgeNetworkOrBt = ['bluetooth', 'lan', 'mobile', 'network'].includes(String(this.driver || '').toLowerCase()) ||
+      (!this.driver && typeof this.printerId === 'string' && isNaN(Number(this.printerId)));
+    if (isBridgeNetworkOrBt) {
+      console.log('Job cetak dikirim melalui antrean Print Bridge server untuk printer:', targetPrinter);
+      this.clearCommands();
+      return true;
+    }
+
+    // 3. FALLBACK: WebUSB jika dibuka di Chrome Desktop/Laptop
     try {
       if (!navigator.usb) {
         console.warn('WebUSB tidak didukung di browser ini.');
@@ -165,15 +175,14 @@ class Printer {
 
   table(data) {
     let row = '';
-    const totalTextLength = data.reduce((sum, text) => sum + text.length, 0);
+    const items = data.map(text => String(text ?? ''));
+    const totalTextLength = items.reduce((sum, text) => sum + text.length, 0);
 
-    const totalPadding = this.lineWidth - totalTextLength;
-    data.forEach((text, index) => {
+    const padCount = Math.max(1, this.lineWidth - totalTextLength);
+    items.forEach((text, index) => {
       row += text;
-      if (index < data.length) {
-        for (let i = 0; i < totalPadding; i++) {
-          row += ' ';
-        }
+      if (index < items.length - 1) {
+        row += ' '.repeat(padCount);
       }
     });
 
@@ -182,19 +191,21 @@ class Printer {
   }
 
   tableCustom(data) {
-    const totalTextLength = data.reduce((sum, text) => sum + text.text.length, 0);
+    const items = data.map(cell => ({
+      style: cell.style,
+      text: String(cell.text ?? ''),
+    }));
+    const totalTextLength = items.reduce((sum, cell) => sum + cell.text.length, 0);
 
-    const totalPadding = this.lineWidth - totalTextLength;
+    const padCount = Math.max(1, this.lineWidth - totalTextLength);
     let row = '';
 
-    data.forEach((cell, index) => {
+    items.forEach((cell, index) => {
       let style = cell.style === 'B' ? '\x1b\x45\x01' : '\x1b\x45\x00';
 
       row += style + cell.text;
-      if (index < data.length) {
-        for (let i = 0; i < totalPadding; i++) {
-          row += ' ';
-        }
+      if (index < items.length - 1) {
+        row += ' '.repeat(padCount);
       }
     });
 

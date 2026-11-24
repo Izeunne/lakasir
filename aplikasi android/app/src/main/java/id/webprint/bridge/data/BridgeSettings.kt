@@ -53,8 +53,12 @@ data class BridgeSettings(
         if (target.isNullOrBlank()) {
             return defaultPrinter()
         }
+        val cleanTarget = target.trim()
         return printers.firstOrNull {
-            it.id.equals(target, ignoreCase = true) || it.name.equals(target, ignoreCase = true)
+            it.id.equals(cleanTarget, ignoreCase = true) ||
+                it.name.equals(cleanTarget, ignoreCase = true) ||
+                (it.bluetoothMacAddress.isNotBlank() && it.bluetoothMacAddress.equals(cleanTarget, ignoreCase = true)) ||
+                (it.host.isNotBlank() && ("${it.host}:${it.port}".equals(cleanTarget, ignoreCase = true) || it.host.equals(cleanTarget, ignoreCase = true)))
         } ?: defaultPrinter()
     }
 

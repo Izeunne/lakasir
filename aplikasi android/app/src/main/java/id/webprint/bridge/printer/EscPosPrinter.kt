@@ -474,6 +474,10 @@ class EscPosPrinter(
         wrapText(title, columns).forEach { it.writeLineTo(output) }
         output.write(BOLD_OFF)
 
+        item.modifiers.forEach { mod ->
+            wrapText("  - $mod", columns).forEach { line -> line.writeLineTo(output) }
+        }
+
         item.notes?.takeIf { it.isNotBlank() }?.let {
             wrapText("Catatan: $it", columns).forEach { line -> line.writeLineTo(output) }
         }

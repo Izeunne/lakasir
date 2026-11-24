@@ -152,6 +152,7 @@
       'print_all_categories' => (bool) $p->print_all_categories,
       'category_ids' => array_map('intval', $p->category_ids ?? []),
       'show_price' => (bool) $p->show_price,
+      'show_header' => (bool) ($p->show_header ?? true),
       'header' => $p->header,
       'footer' => $p->footer,
       'copies' => (int) ($p->copies ?: 1),
@@ -213,7 +214,7 @@
           const isMerchantCopy = (copyIndex > 1);
           const shouldShowHeader = (printerData.show_header !== false && printerData.show_header !== 0) && !isMerchantCopy;
 
-          const printer = new Printer(targetDeviceId, paperWidth);
+          const printer = new Printer(targetDeviceId, paperWidth, printerData.driver);
           let printerAction = printer.font('a');
 
           if (printerData.show_price) {

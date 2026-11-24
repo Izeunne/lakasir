@@ -101,6 +101,7 @@
     'print_all_categories' => (bool) $p->print_all_categories,
     'category_ids' => array_map('intval', $p->category_ids ?? []),
     'show_price' => (bool) $p->show_price,
+    'show_header' => (bool) ($p->show_header ?? true),
     'header' => $p->header,
     'footer' => $p->footer,
     'copies' => (int) $p->copies,
@@ -154,7 +155,7 @@
     try {
       const targetId = st.device_id || st.name || 'kasir';
 
-      const printer = new Printer(targetId, paperWidth);
+      const printer = new Printer(targetId, paperWidth, st.connection_type || st.driver);
       let action = printer.font('a').align('center');
 
       if (st.show_price) {

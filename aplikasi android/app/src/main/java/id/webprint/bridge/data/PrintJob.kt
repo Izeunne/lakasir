@@ -98,7 +98,7 @@ data class PrintJob(
                 number = cleanNullable(optString("number")),
                 notes = cleanNullable(optString("notes")),
                 createdAt = cleanNullable(optString("created_at")),
-                stationName = cleanNullable(stationJson?.optString("name")),
+                stationName = cleanNullable(optString("station_name")) ?: cleanNullable(stationJson?.optString("name")),
                 stationCode = cleanNullable(stationJson?.optString("code")),
                 items = optJSONArray("items").toKitchenItems(),
             )
@@ -111,14 +111,19 @@ data class PrintJob(
 
             return buildList(length()) {
                 for (index in 0 until length()) {
-                    val item = getJSONObject(index)
-                    add(
-                        LabelValueRow(
-                            label = cleanNullable(item.optString("label")).orEmpty(),
-                            value = cleanNullable(item.optString("value")).orEmpty(),
-                            strong = item.optBoolean("strong"),
-                        ),
-                    )
+                    val raw = opt(index)
+                    when (raw) {
+                        is JSONObject -> add(
+                            LabelValueRow(
+                                label = cleanNullable(raw.optString("label")).orEmpty(),
+                                value = cleanNullable(raw.optString("value")).orEmpty(),
+                                strong = raw.optBoolean("strong"),
+                            ),
+                        )
+                        is String -> cleanNullable(raw)?.let {
+                            add(LabelValueRow(label = "- $it", value = "", strong = false))
+                        }
+                    }
                 }
             }
         }
@@ -158,6 +163,7 @@ data class PrintJob(
                             name = cleanNullable(item.optString("name")).orEmpty(),
                             qty = item.optDouble("qty", 0.0),
                             notes = cleanNullable(item.optString("notes")),
+                            modifiers = item.optJSONArray("modifiers").toStringList(),
                         ),
                     )
                 }
@@ -237,4 +243,5 @@ data class KitchenItemPayload(
     val name: String,
     val qty: Double,
     val notes: String?,
+    val modifiers: List<String> = emptyList(),
 )

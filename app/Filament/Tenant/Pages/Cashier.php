@@ -106,7 +106,7 @@ class Cashier extends Page implements HasForms, HasTable
 
     public ?Collection $tableOption;
 
-    private float $discount_price = 0;
+    public float $discount_price = 0;
 
     public array $posProducts = [];
 
@@ -433,19 +433,12 @@ class Cashier extends Page implements HasForms, HasTable
 
     public function storeCart(): void
     {
-        if ($this->cartDetail['voucher']) {
+        $this->calculateTotalPrice();
+
+        if (! empty($this->cartDetail['voucher'])) {
             $this->validateVoucher($this->cartDetail['voucher']);
         }
 
-        if ($discount_price = str_replace(',', '', $this->cartDetail['discount_price'])) {
-            $this->cartItems->each(function (CartItem $item) {
-                if ($item->discount_price && $item->discount_price > 0) {
-                    $this->discount_price += $item->discount_price;
-                }
-            });
-            $this->discount_price += floatval($discount_price);
-            $this->total_price = $this->sub_total + ($this->sub_total * $this->tax / 100) - $this->discount_price;
-        }
         $this->fillMember();
         $this->fillPayemntMethod();
 
@@ -763,6 +756,11 @@ class Cashier extends Page implements HasForms, HasTable
                 $this->discount_price += $item->discount_price;
             }
         });
+
+        $manualDiscount = floatval(str_replace(',', '', (string) ($this->cartDetail['discount_price'] ?? 0)));
+        if ($manualDiscount > 0) {
+            $this->discount_price += $manualDiscount;
+        }
 
         $this->total_price = $this->sub_total + ($this->sub_total * $this->tax / 100) - $this->discount_price;
     }
