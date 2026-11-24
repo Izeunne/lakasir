@@ -422,6 +422,41 @@
     overflow: hidden;
     border-radius: 0.5rem;
   }
+
+  .pos-card-list {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+  .pos-card-grid {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+  }
+  .pos-card-body-large {
+    padding: 0.75rem;
+    flex: 1 1 0%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0.375rem;
+  }
+  .pos-card-body-compact {
+    padding: 0.625rem;
+    flex: 1 1 0%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0.25rem;
+  }
+  .pos-card-body-list {
+    flex: 1 1 0%;
+    min-width: 0;
+    padding: 0 0.25rem;
+  }
 </style>
 
 <div class="pos-main-layout flex flex-col md:flex-row gap-3 lg:gap-4 items-start w-full">
@@ -498,8 +533,9 @@
         <div @click="selectProduct(product)"
           :class="[
             getProductCartQty(product.id) > 0 ? 'ring-2 ring-primary-500 border-primary-500 bg-primary-50/30 dark:bg-primary-950/20' : 'border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900',
-            viewMode === 'list' ? 'flex flex-row items-center gap-3 p-2.5 rounded-xl border shadow-xs cursor-pointer select-none hover:shadow-md transition-all' : 'flex flex-col justify-between overflow-hidden rounded-xl border shadow-xs cursor-pointer select-none hover:shadow-md transition-all'
-          ]">
+            viewMode === 'list' ? 'pos-card-list' : 'pos-card-grid'
+          ]"
+          class="rounded-xl border shadow-xs cursor-pointer select-none hover:shadow-md transition-all">
           {{-- Image --}}
           <div class="bg-gray-100 dark:bg-gray-800"
             :class="{
@@ -512,7 +548,11 @@
           </div>
 
           {{-- Info --}}
-          <div :class="viewMode === 'list' ? 'flex-1 min-w-0' : (viewMode === 'compact' ? 'p-1.5 flex-1 flex flex-col justify-between gap-1' : 'p-2.5 flex-1 flex flex-col justify-between gap-1')">
+          <div :class="{
+              'pos-card-body-list': viewMode === 'list',
+              'pos-card-body-compact': viewMode === 'compact',
+              'pos-card-body-large': viewMode === 'grid'
+            }">
             <div>
               <p class="font-extrabold text-primary-600 dark:text-primary-400"
                 :class="viewMode === 'compact' ? 'text-[11px]' : 'text-xs'"
@@ -1801,40 +1841,6 @@
           >
         </div>
 
-        {{-- Numeric Touch Keypad --}}
-        <div class="grid grid-cols-3 gap-1.5 sm:gap-2">
-          @foreach (range(1, 9) as $digit)
-            <button
-              type="button"
-              wire:click="appendPosPin('{{ $digit }}')"
-              class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700/80 py-2.5 text-base font-bold text-gray-800 dark:text-gray-200 shadow-sm active:scale-95 transition"
-            >
-              {{ $digit }}
-            </button>
-          @endforeach
-          <button
-            type="button"
-            wire:click="clearPosPin"
-            class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800/60 dark:hover:bg-gray-700 py-2.5 text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 shadow-sm active:scale-95 transition"
-          >
-            {{ __('Clear') }}
-          </button>
-          <button
-            type="button"
-            wire:click="appendPosPin('0')"
-            class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700/80 py-2.5 text-base font-bold text-gray-800 dark:text-gray-200 shadow-sm active:scale-95 transition"
-          >
-            0
-          </button>
-          <button
-            type="button"
-            wire:click="backspacePosPin"
-            class="flex items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800/60 dark:hover:bg-gray-700 py-2.5 text-gray-600 dark:text-gray-400 shadow-sm active:scale-95 transition"
-          >
-            <x-heroicon-o-backspace class="h-5 w-5" />
-          </button>
-        </div>
-
         {{-- Unlock Action --}}
         <button
           type="button"
@@ -1971,40 +1977,6 @@
             placeholder="••••"
             class="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 px-4 py-2.5 text-center text-xl tracking-[0.4em] font-bold text-gray-900 dark:text-white focus:border-primary-500 focus:bg-white dark:focus:bg-gray-800 focus:ring-1 focus:ring-primary-500"
           >
-        </div>
-
-        {{-- Numeric Touch Keypad for Admin PIN --}}
-        <div class="grid grid-cols-3 gap-1.5 sm:gap-2">
-          @foreach (range(1, 9) as $digit)
-            <button
-              type="button"
-              wire:click="appendAdminPin('{{ $digit }}')"
-              class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700/80 py-2 text-base font-bold text-gray-800 dark:text-gray-200 shadow-sm active:scale-95 transition"
-            >
-              {{ $digit }}
-            </button>
-          @endforeach
-          <button
-            type="button"
-            wire:click="clearAdminPin"
-            class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800/60 dark:hover:bg-gray-700 py-2 text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 shadow-sm active:scale-95 transition"
-          >
-            {{ __('Clear') }}
-          </button>
-          <button
-            type="button"
-            wire:click="appendAdminPin('0')"
-            class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700/80 py-2 text-base font-bold text-gray-800 dark:text-gray-200 shadow-sm active:scale-95 transition"
-          >
-            0
-          </button>
-          <button
-            type="button"
-            wire:click="backspaceAdminPin"
-            class="flex items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800/60 dark:hover:bg-gray-700 py-2 text-gray-600 dark:text-gray-400 shadow-sm active:scale-95 transition"
-          >
-            <x-heroicon-o-backspace class="h-5 w-5" />
-          </button>
         </div>
 
         <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-gray-100 dark:border-gray-800">
