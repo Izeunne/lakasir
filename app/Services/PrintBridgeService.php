@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Tenants\About;
 use App\Models\Tenants\CartDraft;
+use App\Models\Tenants\Category;
 use App\Models\Tenants\MobilePrinter;
 use App\Models\Tenants\Printer;
 use App\Models\Tenants\PrintQueue;
@@ -56,11 +57,56 @@ class PrintBridgeService
                 ]
             );
 
-            // Update device_name on any linked Printer station
-            Printer::where('device_id', $deviceId)->update([
-                'device_name' => $mobilePrinter->device_name,
-                'connection_type' => $mobilePrinter->connection_type,
-            ]);
+            // Otomatis sinkronkan atau buat data ke Station Printer di database agar pengguna tidak perlu add manual
+            $station = Printer::where('device_id', $deviceId)->first();
+            if (! $station) {
+                // Tentukan peran printer cerdas (Kasir atau Checker Dapur/Bar)
+                $isKitchenOrBar = (bool) preg_match('/(dapur|kitchen|bar|minuman|drink|checker)/i', $deviceName . ' ' . $deviceId);
+                $showPrice = ! $isKitchenOrBar;
+
+                $categoryIds = [];
+                $printAllCategories = true;
+                if ($isKitchenOrBar) {
+                    $printAllCategories = false;
+                    if (preg_match('/(minuman|bar|drink)/i', $deviceName . ' ' . $deviceId)) {
+                        $cat = Category::where('name', 'like', '%minuman%')->first();
+                        if ($cat) {
+                            $categoryIds = [(int) $cat->id];
+                        }
+                    } elseif (preg_match('/(dapur|kitchen|makanan|food)/i', $deviceName . ' ' . $deviceId)) {
+                        $cat = Category::where('name', 'like', '%makanan%')->first();
+                        if ($cat) {
+                            $categoryIds = [(int) $cat->id];
+                        }
+                    }
+                    if (empty($categoryIds)) {
+                        $printAllCategories = true;
+                    }
+                }
+
+                Printer::create([
+                    'name' => $deviceName,
+                    'driver' => $connectionType,
+                    'device_id' => $deviceId,
+                    'device_name' => $deviceName,
+                    'connection_type' => $connectionType,
+                    'paper_width' => $paperWidth,
+                    'print_all_categories' => $printAllCategories,
+                    'category_ids' => $categoryIds,
+                    'show_price' => $showPrice,
+                    'show_header' => true,
+                    'print_on_draft' => $isKitchenOrBar,
+                    'copies' => 1,
+                    'is_active' => true,
+                ]);
+            } else {
+                $station->update([
+                    'device_name' => $mobilePrinter->device_name,
+                    'connection_type' => $mobilePrinter->connection_type,
+                    'paper_width' => $paperWidth,
+                    'is_active' => true,
+                ]);
+            }
         }
 
         if ($markOthersDisconnected) {

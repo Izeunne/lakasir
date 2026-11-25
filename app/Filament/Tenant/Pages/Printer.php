@@ -509,10 +509,11 @@ class Printer extends Page implements HasActions, HasForms, HasTable
     public function syncFromMobileBridge(array $printers, ?string $deviceModel = 'Mataverse Android App'): void
     {
         $synced = PrintBridgeService::syncMobilePrinters($printers, 1, $deviceModel, true);
+        $this->syncFrontendPrinters();
 
         Notification::make()
             ->title(__('Sinkronisasi Mobile Berhasil'))
-            ->body(__(':count printer terhubung dari Aplikasi Mobile berhasil dideteksi.', ['count' => $synced->count()]))
+            ->body(__(':count printer terhubung berhasil disinkronkan langsung ke Station Printer.', ['count' => $synced->count()]))
             ->success()
             ->send();
     }
