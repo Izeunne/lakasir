@@ -539,11 +539,47 @@ class Printer extends Page implements HasActions, HasForms, HasTable
     }
 
     /**
+     * Delete an individual mobile printer from list.
+     */
+    public function deleteMobilePrinter(int $id): void
+    {
+        $printer = MobilePrinter::find($id);
+        if ($printer) {
+            $name = $printer->device_name;
+            $printer->delete();
+
+            Notification::make()
+                ->title(__('Printer Mobile Dihapus'))
+                ->body(__('Perangkat ":name" berhasil dihapus dari daftar.', ['name' => $name]))
+                ->success()
+                ->send();
+        }
+    }
+
+    /**
+     * Reset unmapped mobile printers list.
+     */
+    public function resetMobilePrinters(): void
+    {
+        $boundDeviceIds = PrinterModel::pluck('device_id')->filter()->all();
+        $deleted = MobilePrinter::whereNotIn('device_id', $boundDeviceIds)->delete();
+
+        Notification::make()
+            ->title(__('Daftar Printer Mobile Direset'))
+            ->body(__(':count perangkat yang tidak terpakai berhasil dibersihkan.', ['count' => $deleted]))
+            ->success()
+            ->send();
+    }
+
+    /**
      * Clear disconnected mobile printers.
      */
     public function clearDisconnectedPrinters(): void
     {
-        $deleted = MobilePrinter::where('is_connected', false)->delete();
+        $boundDeviceIds = PrinterModel::pluck('device_id')->filter()->all();
+        $deleted = MobilePrinter::where('is_connected', false)
+            ->whereNotIn('device_id', $boundDeviceIds)
+            ->delete();
 
         Notification::make()
             ->title(__('Daftar Printer Mobile Diperbarui'))

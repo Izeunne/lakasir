@@ -43,6 +43,19 @@
           {{ __('Sinkron Mobile') }}
         </x-filament::button>
 
+        @if ($connectedMobilePrinters->isNotEmpty())
+          <x-filament::button
+            type="button"
+            color="danger"
+            size="sm"
+            outlined
+            icon="heroicon-o-trash"
+            wire:click="resetMobilePrinters"
+            wire:confirm="{{ __('Bersihkan semua printer mobile yang tidak terikat pada station printer?') }}">
+            {{ __('Bersihkan') }}
+          </x-filament::button>
+        @endif
+
         <x-filament::button
           tag="a"
           href="/print-client.html"
@@ -74,7 +87,17 @@
               </div>
               <p class="text-[11px] text-gray-500 dark:text-gray-400 font-mono truncate">{{ $mp->device_id }} • {{ $mp->paper_width }}</p>
             </div>
-            <span class="inline-flex h-2 w-2 rounded-full bg-success-500 shrink-0" title="Online"></span>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <span class="inline-flex h-2 w-2 rounded-full bg-success-500 shrink-0" title="Online"></span>
+              <button
+                type="button"
+                wire:click="deleteMobilePrinter({{ $mp->id }})"
+                wire:confirm="{{ __('Hapus perangkat :name dari daftar printer mobile?', ['name' => $mp->device_name]) }}"
+                class="text-gray-400 hover:text-danger-600 transition p-0.5 rounded"
+                title="{{ __('Hapus perangkat ini') }}">
+                <x-heroicon-m-x-mark class="h-4 w-4" />
+              </button>
+            </div>
           </div>
         @endforeach
       </div>

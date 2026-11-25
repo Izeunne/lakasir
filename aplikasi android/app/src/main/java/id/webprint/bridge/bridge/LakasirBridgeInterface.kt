@@ -116,29 +116,8 @@ class LakasirBridgeInterface(
     @JavascriptInterface
     fun getConnectedPrinters(): String {
         val settings = settingsRepository.load()
-        val activePrinters = settings.printers.ifEmpty { listOfNotNull(settings.legacyAsPrinterDevice()) }.toMutableList()
-
-        // Auto-detect paired/bonded Bluetooth devices on Android
-        try {
-            val bonded = bluetoothPrinterRepository?.getBondedPrinters() ?: emptyList()
-            for (b in bonded) {
-                if (b.address.isNotBlank() && activePrinters.none { it.bluetoothMacAddress.equals(b.address, ignoreCase = true) }) {
-                    activePrinters.add(
-                        PrinterDevice(
-                            id = "bt_${b.address.replace(":", "").lowercase()}",
-                            name = b.name.ifBlank { "Printer Bluetooth" },
-                            mode = PrinterMode.BLUETOOTH.value,
-                            bluetoothMacAddress = b.address,
-                            bluetoothPrinterName = b.name,
-                            paperWidthPreset = settings.paperWidthPreset,
-                            isDefault = activePrinters.isEmpty(),
-                        )
-                    )
-                }
-            }
-        } catch (_: Exception) {
-            // Ignore permission/adapter errors
-        }
+        // Hanya sinkronkan printer yang telah didaftarkan di pengaturan mobile
+        val activePrinters = settings.printers.ifEmpty { listOfNotNull(settings.legacyAsPrinterDevice()) }
 
         val printersArray = JSONArray()
         for (printer in activePrinters) {

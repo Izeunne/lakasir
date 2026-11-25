@@ -81,28 +81,13 @@ class BridgeApiClient {
             ?.build()
             ?.toString() ?: return false
 
-        val activePrinters = settings.printers.ifEmpty { listOfNotNull(settings.legacyAsPrinterDevice()) }.toMutableList()
-        try {
-            val bonded = BluetoothPrinterRepository().getBondedPrinters()
-            for (b in bonded) {
-                if (b.address.isNotBlank() && activePrinters.none { it.bluetoothMacAddress.equals(b.address, ignoreCase = true) }) {
-                    activePrinters.add(
-                        PrinterDevice(
-                            id = "bt_${b.address.replace(":", "").lowercase()}",
-                            name = b.name.ifBlank { "Printer Bluetooth" },
-                            mode = PrinterMode.BLUETOOTH.value,
-                            bluetoothMacAddress = b.address,
-                            bluetoothPrinterName = b.name,
-                            paperWidthPreset = settings.paperWidthPreset,
-                        )
-                    )
-                }
-            }
-        } catch (_: Exception) {}
+        // Hanya sinkronkan printer yang telah didaftarkan di pengaturan mobile
+        val activePrinters = settings.printers.ifEmpty { listOfNotNull(settings.legacyAsPrinterDevice()) }
 
         val bodyJson = JSONObject()
         bodyJson.put("outlet_id", settings.outletId)
         bodyJson.put("device_model", "Mataverse Android App")
+        bodyJson.put("replace", true)
         val arr = JSONArray()
         for (p in activePrinters) {
             val o = JSONObject()

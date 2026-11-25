@@ -64,6 +64,14 @@ class PrintBridgeService
         }
 
         if ($markOthersDisconnected) {
+            $boundStationDeviceIds = Printer::pluck('device_id')->filter()->all();
+
+            // Hapus printer mobile yang tidak dikirim lagi oleh mobile app dan tidak terikat pada station printer aktif
+            MobilePrinter::where('outlet_id', $outletId)
+                ->when(!empty($activeDeviceIds), fn ($q) => $q->whereNotIn('device_id', $activeDeviceIds))
+                ->whereNotIn('device_id', $boundStationDeviceIds)
+                ->delete();
+
             MobilePrinter::where('outlet_id', $outletId)
                 ->when(!empty($activeDeviceIds), fn ($q) => $q->whereNotIn('device_id', $activeDeviceIds))
                 ->update(['is_connected' => false]);
