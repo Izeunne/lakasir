@@ -91,12 +91,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private var pendingBluetoothAction: (() -> Unit)? = null
+
     private val bluetoothPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) { result ->
         if (result.values.all { it }) {
-            showBluetoothPrinterPicker()
+            val action = pendingBluetoothAction ?: { showBluetoothPrinterPicker() }
+            pendingBluetoothAction = null
+            action.invoke()
         } else {
+            pendingBluetoothAction = null
             Toast.makeText(this, R.string.bluetooth_permission_warning, Toast.LENGTH_LONG).show()
         }
     }
@@ -117,6 +122,7 @@ class MainActivity : AppCompatActivity() {
         escPosPrinter = EscPosPrinter(this)
 
         requestNotificationPermissionIfNeeded()
+        requestBluetoothPermissionsIfNeeded()
         setupBackPressHandler()
         setupTabs()
         bindPaperWidthPresetOptions()
@@ -628,18 +634,34 @@ class MainActivity : AppCompatActivity() {
         binding.stationIdSection.visibility = if (currentQueueType() == QueueType.KITCHEN) View.VISIBLE else View.GONE
     }
 
-    private fun ensureBluetoothPermissionsAndPick() {
+    private fun requestBluetoothPermissionsIfNeeded() {
+        if (!hasBluetoothPermissions()) {
+            val permissions = requiredBluetoothPermissions()
+            if (permissions.isNotEmpty()) {
+                bluetoothPermissionLauncher.launch(permissions)
+            }
+        }
+    }
+
+    private fun runWithBluetoothPermissions(action: () -> Unit) {
         if (!bluetoothPrinterRepository.isBluetoothAvailable()) {
-            Toast.makeText(this, R.string.bluetooth_not_available, Toast.LENGTH_LONG).show()
+            Toast.makeText(this, R.string.bluetooth_not_available, Toast.LENGTH_SHORT).show()
             return
         }
 
         if (!hasBluetoothPermissions()) {
+            pendingBluetoothAction = action
             requestBluetoothPermissions()
             return
         }
 
-        showBluetoothPrinterPicker()
+        action()
+    }
+
+    private fun ensureBluetoothPermissionsAndPick() {
+        runWithBluetoothPermissions {
+            showBluetoothPrinterPicker()
+        }
     }
 
     private fun hasBluetoothPermissions(): Boolean {
@@ -651,7 +673,9 @@ class MainActivity : AppCompatActivity() {
     private fun requestBluetoothPermissions() {
         val permissions = requiredBluetoothPermissions()
         if (permissions.isEmpty()) {
-            showBluetoothPrinterPicker()
+            val action = pendingBluetoothAction ?: { showBluetoothPrinterPicker() }
+            pendingBluetoothAction = null
+            action.invoke()
             return
         }
         bluetoothPermissionLauncher.launch(permissions)
@@ -674,26 +698,30 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val printers = bluetoothPrinterRepository.getBondedPrinters()
-        if (printers.isEmpty()) {
-            Toast.makeText(this, R.string.bluetooth_no_paired_printer, Toast.LENGTH_LONG).show()
-            return
-        }
-
-        val items = printers.map { it.label }.toTypedArray()
-        val currentAddress = binding.bluetoothMacAddressInput.text?.toString()?.trim()
-        val selectedIndex = printers.indexOfFirst { it.address.equals(currentAddress, ignoreCase = true) }
-
-        AlertDialog.Builder(this)
-            .setTitle(R.string.dialog_bluetooth_printer_title)
-            .setSingleChoiceItems(items, selectedIndex) { dialog, which ->
-                val printer: BluetoothPrinterOption = printers[which]
-                binding.bluetoothMacAddressInput.setText(printer.address)
-                binding.bluetoothPrinterNameInput.setText(printer.name)
-                dialog.dismiss()
+        try {
+            val printers = bluetoothPrinterRepository.getBondedPrinters()
+            if (printers.isEmpty()) {
+                Toast.makeText(this, R.string.bluetooth_no_paired_printer, Toast.LENGTH_LONG).show()
+                return
             }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+
+            val items = printers.map { it.label }.toTypedArray()
+            val currentAddress = binding.bluetoothMacAddressInput.text?.toString()?.trim()
+            val selectedIndex = printers.indexOfFirst { it.address.equals(currentAddress, ignoreCase = true) }
+
+            AlertDialog.Builder(this)
+                .setTitle(R.string.dialog_bluetooth_printer_title)
+                .setSingleChoiceItems(items, selectedIndex) { dialog, which ->
+                    val printer: BluetoothPrinterOption = printers[which]
+                    binding.bluetoothMacAddressInput.setText(printer.address)
+                    binding.bluetoothPrinterNameInput.setText(printer.name)
+                    dialog.dismiss()
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+        } catch (e: Throwable) {
+            Toast.makeText(this, "Gagal memuat printer Bluetooth: ${e.message}", Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun currentBluetoothTransportMode(): BluetoothTransportMode {
@@ -1022,23 +1050,34 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnSelectBt.setOnClickListener {
-            val printers = bluetoothPrinterRepository.getBondedPrinters()
-            if (printers.isEmpty()) {
-                Toast.makeText(this, R.string.bluetooth_no_paired_printer, Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            val labels = printers.map { it.label }.toTypedArray()
-            AlertDialog.Builder(this)
-                .setTitle("Pilih Printer Bluetooth")
-                .setItems(labels) { _, which ->
-                    val chosen = printers[which]
-                    inputBtMac.setText(chosen.address)
-                    selectedBtName = chosen.name
-                    if (inputName.text.isNullOrBlank()) {
-                        inputName.setText(chosen.name)
-                    }
+            runWithBluetoothPermissions {
+                if (!bluetoothPrinterRepository.isBluetoothEnabled()) {
+                    Toast.makeText(this, R.string.bluetooth_enable_first, Toast.LENGTH_SHORT).show()
+                    return@runWithBluetoothPermissions
                 }
-                .show()
+
+                try {
+                    val printers = bluetoothPrinterRepository.getBondedPrinters()
+                    if (printers.isEmpty()) {
+                        Toast.makeText(this, R.string.bluetooth_no_paired_printer, Toast.LENGTH_LONG).show()
+                        return@runWithBluetoothPermissions
+                    }
+                    val labels = printers.map { it.label }.toTypedArray()
+                    AlertDialog.Builder(this)
+                        .setTitle("Pilih Printer Bluetooth")
+                        .setItems(labels) { _, which ->
+                            val chosen = printers[which]
+                            inputBtMac.setText(chosen.address)
+                            selectedBtName = chosen.name
+                            if (inputName.text.isNullOrBlank()) {
+                                inputName.setText(chosen.name)
+                            }
+                        }
+                        .show()
+                } catch (e: Throwable) {
+                    Toast.makeText(this, "Gagal memuat printer Bluetooth: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
         }
 
         if (deviceToEdit != null) {
