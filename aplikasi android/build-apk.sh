@@ -136,6 +136,10 @@ keyPassword=mataverse2026
 EOF
 fi
 
+# Pastikan keystore dan signing.properties juga tersedia di subfolder app
+cp -f "$KEYSTORE_FILE" "$ANDROID_DIR/app/mataverse-release-key.jks"
+cp -f "$SIGNING_PROPS_FILE" "$ANDROID_DIR/app/signing.properties"
+
 # 2. Update versionCode & versionName di build.gradle.kts
 echo "📝 Memperbarui versi di app/build.gradle.kts..."
 sed -i '' -E "s/versionCode = [0-9]+/versionCode = $NEW_VERSION_CODE/" "$GRADLE_FILE"
