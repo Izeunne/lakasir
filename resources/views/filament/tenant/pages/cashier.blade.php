@@ -468,6 +468,38 @@
     min-width: 0;
     padding: 0 0.25rem;
   }
+
+  .pos-cart-col {
+    background-color: #eef2f6 !important;
+    border-color: #cbd5e1 !important;
+  }
+  .dark .pos-cart-col {
+    background-color: #0b1120 !important;
+    border-color: #1e293b !important;
+  }
+  .pos-initials-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    user-select: none;
+  }
+
+  .pos-box-order-type,
+  .pos-box-details,
+  .pos-box-total {
+    background-color: #e2e8f0 !important;
+    border-color: #cbd5e1 !important;
+  }
+  .dark .pos-box-order-type,
+  .dark .pos-box-details,
+  .dark .pos-box-total {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+  }
 </style>
 
 <div class="pos-main-layout flex flex-col md:flex-row gap-3 lg:gap-4 items-start w-full">
@@ -544,13 +576,24 @@
             getProductCartQty(product.id) > 0 ? 'ring-2 ring-primary-500 border-primary-500 bg-primary-50/30 dark:bg-primary-950/20' : 'border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900',
             viewMode === 'list' ? 'pos-card-list' : 'pos-card-grid'
           ]" class="rounded-xl border shadow-xs cursor-pointer select-none hover:shadow-md transition-all">
-          {{-- Image --}}
+          {{-- Image or Unique Initials --}}
           <div class="bg-gray-100 dark:bg-gray-800" :class="{
               'pos-img-list': viewMode === 'list',
               'pos-img-compact': viewMode === 'compact',
               'pos-img-large': viewMode === 'grid'
             }">
-            <img :src="product.hero_image" :alt="product.name" loading="lazy" class="h-full w-full object-cover" />
+            <template x-if="product.has_image">
+              <img :src="product.hero_image" :alt="product.name" loading="lazy"
+                x-on:error="product.has_image = false"
+                class="h-full w-full object-cover" />
+            </template>
+            <template x-if="!product.has_image">
+              <div class="pos-initials-box"
+                :style="initialsStyle(product)"
+                :class="viewMode === 'list' ? 'text-xs' : (viewMode === 'compact' ? 'text-base' : 'text-xl sm:text-2xl')"
+                x-text="product.initials || fallbackInitials(product.name)">
+              </div>
+            </template>
           </div>
 
           {{-- Info --}}
@@ -892,7 +935,7 @@
       {{-- Pilihan Kategori Pesanan (Wajib) --}}
       <div>
         <div
-          :class="!orderType ? 'border-amber-300 bg-amber-50/50 dark:border-amber-600/60 dark:bg-amber-950/20' : 'border-gray-200/90 bg-white dark:border-gray-700/80 dark:bg-gray-800/60'"
+          :class="!orderType ? 'border-amber-300 bg-amber-50/50 dark:border-amber-600/60 dark:bg-amber-950/20' : 'pos-box-order-type'"
           class="w-full rounded-xl border px-3.5 py-2.5 transition-colors shadow-2xs">
           <div class="mb-2 flex items-center justify-between">
             <span class="text-xs font-bold text-gray-800 dark:text-gray-200">{{ __('Kategori Pesanan') }}</span>
@@ -925,7 +968,7 @@
       {{-- Detail Member, Meja, Voucher, Diskon (100% Frontend) --}}
       <div>
         <div
-          class="w-full rounded-xl border border-gray-200/90 bg-white px-3.5 py-2.5 text-xs text-gray-700 shadow-2xs dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-200 space-y-2.5">
+          class="pos-box-details w-full rounded-xl border px-3.5 py-2.5 text-xs text-gray-700 shadow-2xs dark:text-gray-200 space-y-2.5">
           <template x-if="features.member">
             <div class="flex items-center justify-between hover:underline cursor-pointer py-0.5"
               @click="$dispatch('open-modal', { id: 'modal-selected-member' })">
@@ -990,7 +1033,7 @@
       {{-- Total Ringkasan (100% Frontend) --}}
       <div>
         <div
-          class="w-full rounded-xl border border-gray-200/90 bg-white px-3.5 py-2.5 text-xs text-gray-700 shadow-2xs dark:border-gray-700/80 dark:bg-gray-800/60 dark:text-gray-200 space-y-2">
+          class="pos-box-total w-full rounded-xl border px-3.5 py-2.5 text-xs text-gray-700 shadow-2xs dark:text-gray-200 space-y-2">
           <div class="flex items-center justify-between py-0.5">
             <p class="text-gray-600 dark:text-gray-300 font-medium">{{ __('Sub total') }}</p>
             <p class="font-bold text-lakasir-primary" x-text="formatMoney(subTotal)"></p>
@@ -2930,6 +2973,29 @@
 
       formatMoney(value) {
         return moneyFormat(Number(value) || 0);
+      },
+
+      initialsStyle(product) {
+        const palettes = [
+          { bg: '#ffedd5', fg: '#c2410c' },
+          { bg: '#dbeafe', fg: '#1d4ed8' },
+          { bg: '#dcfce7', fg: '#15803d' },
+          { bg: '#fae8ff', fg: '#a21caf' },
+          { bg: '#fef3c7', fg: '#b45309' },
+          { bg: '#e0e7ff', fg: '#4338ca' },
+          { bg: '#ffe4e6', fg: '#be123c' },
+          { bg: '#ccfbf1', fg: '#0f766e' },
+        ];
+        const idx = (Number(product?.id) || 0) % palettes.length;
+        const p = palettes[idx];
+        return `background-color: ${p.bg}; color: ${p.fg};`;
+      },
+
+      fallbackInitials(name) {
+        const words = String(name || 'MNU').toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').trim().split(/\s+/).filter(Boolean);
+        if (words.length >= 3) return (words[0][0] + words[1][0] + words[2][0]).slice(0, 4);
+        if (words.length === 2) return (words[0].slice(0, 2) + words[1][0]).slice(0, 4);
+        return (words[0] || 'MNU').slice(0, 3);
       },
 
       categoryEmoji(name) {

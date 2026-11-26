@@ -281,13 +281,21 @@ class Cashier extends Page implements HasForms, HasTable
             ->orderBy('name')
             ->get();
 
-        $this->posProducts = $products->map(function (Product $product) {
+        $usedInitials = [];
+
+        $this->posProducts = $products->map(function (Product $product) use (&$usedInitials) {
+            $hasImage = ! empty($product->hero_images) && count($product->hero_images) > 0;
+            $initials = $this->generateUniqueProductInitials($product->name, $usedInitials);
+            $usedInitials[$initials] = true;
+
             return [
                 'id' => $product->id,
                 'name' => $product->name,
                 'sku' => $product->sku,
                 'selling_price' => (float) $product->selling_price,
                 'hero_image' => $product->hero_image,
+                'has_image' => $hasImage,
+                'initials' => $initials,
                 'category_id' => $product->category_id,
                 'category_name' => $product->category?->name,
                 'is_non_stock' => (bool) $product->is_non_stock,
@@ -329,6 +337,56 @@ class Cashier extends Page implements HasForms, HasTable
                     ->all(),
             ];
         })->values()->all();
+    }
+
+    private function generateUniqueProductInitials(string $name, array $usedInitials): string
+    {
+        $words = preg_split('/[^a-zA-Z0-9]+/', strtoupper(trim($name)), -1, PREG_SPLIT_NO_EMPTY);
+        if (empty($words)) {
+            $words = ['MNU'];
+        }
+
+        $candidates = [];
+
+        if (count($words) >= 3) {
+            $candidates[] = $words[0][0] . $words[1][0] . $words[2][0];
+            if (isset($words[3])) {
+                $candidates[] = $words[0][0] . $words[1][0] . $words[2][0] . $words[3][0];
+            }
+            $candidates[] = $words[0][0] . $words[1][0] . substr($words[2], 0, 2);
+            $candidates[] = substr($words[0], 0, 2) . $words[1][0] . $words[2][0];
+        } elseif (count($words) === 2) {
+            $candidates[] = strlen($words[0]) >= 2
+                ? substr($words[0], 0, 2) . $words[1][0]
+                : $words[0][0] . substr($words[1], 0, 2);
+            $candidates[] = substr($words[0], 0, 2) . substr($words[1], 0, 2);
+            $candidates[] = $words[0][0] . substr($words[1], 0, 3);
+            $candidates[] = substr($words[0], 0, 3) . $words[1][0];
+        } else {
+            $w = $words[0];
+            $candidates[] = str_pad(substr($w, 0, 3), 3, 'X');
+            if (strlen($w) >= 4) {
+                $candidates[] = substr($w, 0, 4);
+            }
+            if (strlen($w) >= 5) {
+                $candidates[] = $w[0] . $w[2] . $w[4];
+                $candidates[] = substr($w, 0, 2) . substr($w, -2);
+            }
+        }
+
+        foreach ($candidates as $cand) {
+            if (strlen($cand) >= 3 && ! isset($usedInitials[$cand])) {
+                return $cand;
+            }
+        }
+
+        $base = substr($candidates[0], 0, 3);
+        $counter = 2;
+        while (isset($usedInitials[$base . $counter])) {
+            $counter++;
+        }
+
+        return $base . $counter;
     }
 
     public function refreshPosDrafts(): void
